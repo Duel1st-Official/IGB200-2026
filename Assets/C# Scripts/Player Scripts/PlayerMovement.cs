@@ -8,9 +8,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("References")]
     public Rigidbody2D rb;
     public Animator animator;
-
-    [Header("Placement")]
-    public KeyCode placeKey = KeyCode.E;
+    public SelectionWheel selectionWheel;
 
     [Header("Movement Info")]
     public Vector2 movementInput;
@@ -31,22 +29,12 @@ public class PlayerMovement : MonoBehaviour
         animator.SetFloat("LastMoveY", -1f);
 
         animator.SetBool("IsMoving", false);
+        animator.SetBool("IsBuildMode", false);
     }
 
     private void Update()
     {
-        // =========================
-        // PLACEMENT
-        // =========================
-
-        if (Input.GetKeyDown(placeKey))
-        {
-            PlayPlacement();
-        }
-
-        // =========================
-        // MOVEMENT INPUT
-        // =========================
+        UpdateCurrentMode();
 
         movementInput = Vector2.zero;
 
@@ -70,6 +58,7 @@ public class PlayerMovement : MonoBehaviour
             movementInput.x = 1f;
         }
 
+        // Prevent diagonal movement from being faster
         if (movementInput.sqrMagnitude > 1f)
         {
             movementInput.Normalize();
@@ -81,6 +70,19 @@ public class PlayerMovement : MonoBehaviour
     private void FixedUpdate()
     {
         rb.linearVelocity = movementInput * moveSpeed;
+    }
+
+    private void UpdateCurrentMode()
+    {
+        if (selectionWheel == null)
+        {
+            animator.SetBool("IsBuildMode", false);
+            return;
+        }
+
+        bool buildMode = selectionWheel.IsBuildMode();
+
+        animator.SetBool("IsBuildMode", buildMode);
     }
 
     private void UpdateAnimator()
@@ -112,18 +114,6 @@ public class PlayerMovement : MonoBehaviour
             animator.SetFloat("MoveX", 0f);
             animator.SetFloat("MoveY", 0f);
         }
-    }
-
-    private void PlayPlacement()
-    {
-        // Stop movement immediately
-        movementInput = Vector2.zero;
-        rb.linearVelocity = Vector2.zero;
-
-        animator.SetBool("IsMoving", false);
-
-        // Fire one-shot placement animation
-        animator.SetTrigger("Place");
     }
 
     private Vector2 GetCardinalDirection(Vector2 direction)

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 6843a4cb6b797564c86d6c9bd5df8b74
+guid: 85ff802bb2f7adf40bf9befbe24a28f9
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -32,6 +32,24 @@ TextureImporter:
   - first:
       213: -2489361789744274214
     second: East_9
+  - first:
+      213: 4046788518582207670
+    second: East_10
+  - first:
+      213: -4181403502051661910
+    second: East_11
+  - first:
+      213: -6116017250779625715
+    second: East_12
+  - first:
+      213: -8685028787316647620
+    second: East_13
+  - first:
+      213: -3831170944158412274
+    second: East_14
+  - first:
+      213: 7509032288695063416
+    second: East_15
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -130,12 +148,12 @@ TextureImporter:
       name: East_0
       rect:
         serializedVersion: 2
-        x: 11
-        y: 7
-        width: 26
-        height: 31
+        x: 6
+        y: 0
+        width: 24
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -149,15 +167,37 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
+      name: East_1
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 0
+        width: 24
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba17c42f7c225a580800000000000000
+      internalID: -8816602453348945493
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
       name: East_2
       rect:
         serializedVersion: 2
-        x: 56
-        y: 6
-        width: 25
-        height: 31
+        x: 70
+        y: 0
+        width: 24
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -174,12 +214,12 @@ TextureImporter:
       name: East_3
       rect:
         serializedVersion: 2
-        x: 100
-        y: 6
-        width: 25
-        height: 31
+        x: 102
+        y: 0
+        width: 24
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -196,12 +236,12 @@ TextureImporter:
       name: East_4
       rect:
         serializedVersion: 2
-        x: 144
-        y: 7
+        x: 134
+        y: 0
         width: 24
-        height: 30
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -218,12 +258,12 @@ TextureImporter:
       name: East_5
       rect:
         serializedVersion: 2
-        x: 188
-        y: 7
-        width: 22
-        height: 30
+        x: 166
+        y: 0
+        width: 23
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -240,12 +280,12 @@ TextureImporter:
       name: East_6
       rect:
         serializedVersion: 2
-        x: 231
-        y: 7
-        width: 23
-        height: 31
+        x: 198
+        y: 0
+        width: 24
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -262,12 +302,12 @@ TextureImporter:
       name: East_7
       rect:
         serializedVersion: 2
-        x: 274
-        y: 7
-        width: 22
-        height: 31
+        x: 230
+        y: 0
+        width: 24
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -284,12 +324,12 @@ TextureImporter:
       name: East_8
       rect:
         serializedVersion: 2
-        x: 318
-        y: 7
-        width: 23
-        height: 31
+        x: 262
+        y: 0
+        width: 24
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -306,12 +346,12 @@ TextureImporter:
       name: East_9
       rect:
         serializedVersion: 2
-        x: 362
-        y: 7
-        width: 23
-        height: 31
+        x: 294
+        y: 0
+        width: 24
+        height: 32
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -324,11 +364,143 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: East_10
+      rect:
+        serializedVersion: 2
+        x: 326
+        y: 0
+        width: 24
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6b4c83387b4192830800000000000000
+      internalID: 4046788518582207670
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: East_11
+      rect:
+        serializedVersion: 2
+        x: 358
+        y: 0
+        width: 24
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa7e2ad3baba8f5c0800000000000000
+      internalID: -4181403502051661910
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: East_12
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 0
+        width: 24
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d078e17e6ba8f1ba0800000000000000
+      internalID: -6116017250779625715
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: East_13
+      rect:
+        serializedVersion: 2
+        x: 422
+        y: 0
+        width: 24
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c3913fb4554987780800000000000000
+      internalID: -8685028787316647620
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: East_14
+      rect:
+        serializedVersion: 2
+        x: 454
+        y: 0
+        width: 24
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e02d3af1352f4dac0800000000000000
+      internalID: -3831170944158412274
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: East_15
+      rect:
+        serializedVersion: 2
+        x: 486
+        y: 0
+        width: 24
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8739b9ef411753860800000000000000
+      internalID: 7509032288695063416
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: b4c376568c88ab44fb215efd21d58e74
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -340,6 +512,12 @@ TextureImporter:
     nameFileIdTable:
       East_0: 888789885651089065
       East_1: -8816602453348945493
+      East_10: 4046788518582207670
+      East_11: -4181403502051661910
+      East_12: -6116017250779625715
+      East_13: -8685028787316647620
+      East_14: -3831170944158412274
+      East_15: 7509032288695063416
       East_2: 5407964954403350842
       East_3: -246450088229463257
       East_4: -5599660669506328535
