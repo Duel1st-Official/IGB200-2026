@@ -23,15 +23,6 @@ TextureImporter:
   - first:
       213: -7603258892148539255
     second: North_6
-  - first:
-      213: 3979444944341709165
-    second: North_7
-  - first:
-      213: -1023320786730510428
-    second: North_8
-  - first:
-      213: -8040278795046863884
-    second: North_9
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -130,10 +121,10 @@ TextureImporter:
       name: North_0
       rect:
         serializedVersion: 2
-        x: 5
-        y: 0
+        x: 13
+        y: 7
         width: 23
-        height: 32
+        height: 33
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -152,10 +143,10 @@ TextureImporter:
       name: North_1
       rect:
         serializedVersion: 2
-        x: 37
-        y: 0
+        x: 61
+        y: 7
         width: 23
-        height: 32
+        height: 34
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -174,10 +165,10 @@ TextureImporter:
       name: North_2
       rect:
         serializedVersion: 2
-        x: 69
-        y: 0
-        width: 22
-        height: 32
+        x: 109
+        y: 7
+        width: 23
+        height: 35
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -196,10 +187,10 @@ TextureImporter:
       name: North_3
       rect:
         serializedVersion: 2
-        x: 100
-        y: 0
+        x: 157
+        y: 7
         width: 23
-        height: 32
+        height: 34
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -218,10 +209,10 @@ TextureImporter:
       name: North_4
       rect:
         serializedVersion: 2
-        x: 133
-        y: 0
-        width: 22
-        height: 32
+        x: 205
+        y: 7
+        width: 23
+        height: 33
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -240,10 +231,10 @@ TextureImporter:
       name: North_5
       rect:
         serializedVersion: 2
-        x: 164
-        y: 0
-        width: 24
-        height: 32
+        x: 253
+        y: 7
+        width: 23
+        height: 34
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -262,10 +253,10 @@ TextureImporter:
       name: North_6
       rect:
         serializedVersion: 2
-        x: 196
-        y: 0
-        width: 24
-        height: 32
+        x: 301
+        y: 7
+        width: 23
+        height: 35
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -276,72 +267,6 @@ TextureImporter:
       bones: []
       spriteID: 9800826425ccb7690800000000000000
       internalID: -7603258892148539255
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: North_7
-      rect:
-        serializedVersion: 2
-        x: 228
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: d6136b6c714d93730800000000000000
-      internalID: 3979444944341709165
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: North_8
-      rect:
-        serializedVersion: 2
-        x: 260
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 4a797af8a2f6cc1f0800000000000000
-      internalID: -1023320786730510428
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: North_9
-      rect:
-        serializedVersion: 2
-        x: 292
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 4fb302ef8013b6090800000000000000
-      internalID: -8040278795046863884
       vertices: []
       indices: 
       edges: []
@@ -367,9 +292,6 @@ TextureImporter:
       North_4: -2623053159156879275
       North_5: -1768217045582499065
       North_6: -7603258892148539255
-      North_7: 3979444944341709165
-      North_8: -1023320786730510428
-      North_9: -8040278795046863884
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

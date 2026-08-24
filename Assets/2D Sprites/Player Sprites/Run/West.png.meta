@@ -14,6 +14,12 @@ TextureImporter:
   - first:
       213: 8708793652329925811
     second: West_3
+  - first:
+      213: -1357066341181635460
+    second: West_4
+  - first:
+      213: -9169811149682457777
+    second: West_5
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -114,7 +120,7 @@ TextureImporter:
         serializedVersion: 2
         x: 6
         y: 0
-        width: 21
+        width: 19
         height: 31
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -136,7 +142,7 @@ TextureImporter:
         serializedVersion: 2
         x: 38
         y: 0
-        width: 21
+        width: 19
         height: 31
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -156,9 +162,9 @@ TextureImporter:
       name: West_2
       rect:
         serializedVersion: 2
-        x: 71
+        x: 70
         y: 0
-        width: 21
+        width: 19
         height: 31
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -178,9 +184,9 @@ TextureImporter:
       name: West_3
       rect:
         serializedVersion: 2
-        x: 103
+        x: 102
         y: 0
-        width: 20
+        width: 19
         height: 31
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -192,6 +198,50 @@ TextureImporter:
       bones: []
       spriteID: 3bc4d458fa9dbd870800000000000000
       internalID: 8708793652329925811
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: West_4
+      rect:
+        serializedVersion: 2
+        x: 134
+        y: 0
+        width: 19
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c74ca3d4a5bba2de0800000000000000
+      internalID: -1357066341181635460
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: West_5
+      rect:
+        serializedVersion: 2
+        x: 166
+        y: 0
+        width: 19
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f43c2c5d7594eb080800000000000000
+      internalID: -9169811149682457777
       vertices: []
       indices: 
       edges: []
@@ -214,6 +264,8 @@ TextureImporter:
       West_1: 1289164801346357947
       West_2: 3067985673902991704
       West_3: 8708793652329925811
+      West_4: -1357066341181635460
+      West_5: -9169811149682457777
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

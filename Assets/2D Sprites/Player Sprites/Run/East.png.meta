@@ -14,6 +14,12 @@ TextureImporter:
   - first:
       213: -246450088229463257
     second: East_3
+  - first:
+      213: -5599660669506328535
+    second: East_4
+  - first:
+      213: -7051552623725183645
+    second: East_5
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -112,10 +118,10 @@ TextureImporter:
       name: East_0
       rect:
         serializedVersion: 2
-        x: 5
+        x: 7
         y: 0
-        width: 21
-        height: 32
+        width: 19
+        height: 31
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -134,10 +140,10 @@ TextureImporter:
       name: East_1
       rect:
         serializedVersion: 2
-        x: 37
+        x: 39
         y: 0
-        width: 21
-        height: 32
+        width: 19
+        height: 31
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -156,10 +162,10 @@ TextureImporter:
       name: East_2
       rect:
         serializedVersion: 2
-        x: 70
+        x: 71
         y: 0
-        width: 21
-        height: 32
+        width: 19
+        height: 31
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -178,10 +184,10 @@ TextureImporter:
       name: East_3
       rect:
         serializedVersion: 2
-        x: 102
+        x: 103
         y: 0
-        width: 20
-        height: 32
+        width: 19
+        height: 31
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -192,6 +198,50 @@ TextureImporter:
       bones: []
       spriteID: 72b183453fe649cf0800000000000000
       internalID: -246450088229463257
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: East_4
+      rect:
+        serializedVersion: 2
+        x: 135
+        y: 0
+        width: 19
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 92869531a420a42b0800000000000000
+      internalID: -5599660669506328535
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: East_5
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 0
+        width: 19
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 36df2ebdf3ad32e90800000000000000
+      internalID: -7051552623725183645
       vertices: []
       indices: 
       edges: []
@@ -214,6 +264,8 @@ TextureImporter:
       East_1: -8816602453348945493
       East_2: 5407964954403350842
       East_3: -246450088229463257
+      East_4: -5599660669506328535
+      East_5: -7051552623725183645
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

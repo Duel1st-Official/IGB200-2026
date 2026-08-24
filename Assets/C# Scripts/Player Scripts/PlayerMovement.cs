@@ -77,12 +77,15 @@ public class PlayerMovement : MonoBehaviour
         if (selectionWheel == null)
         {
             animator.SetBool("IsBuildMode", false);
+            animator.SetBool("IsRemoveMode", false);
             return;
         }
 
         bool buildMode = selectionWheel.IsBuildMode();
+        bool removeMode = selectionWheel.IsRemoveMode();
 
         animator.SetBool("IsBuildMode", buildMode);
+        animator.SetBool("IsRemoveMode", removeMode);
     }
 
     private void UpdateAnimator()

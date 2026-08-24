@@ -23,33 +23,6 @@ TextureImporter:
   - first:
       213: 5832272776837548538
     second: South_6
-  - first:
-      213: 5996873883059851050
-    second: South_7
-  - first:
-      213: -8297514306859019720
-    second: South_8
-  - first:
-      213: -7349086082254239370
-    second: South_9
-  - first:
-      213: -652191339913030705
-    second: South_10
-  - first:
-      213: -1183504185225169203
-    second: South_11
-  - first:
-      213: -6099742499573843618
-    second: South_12
-  - first:
-      213: 6313013912132689629
-    second: South_13
-  - first:
-      213: 1096552006592812930
-    second: South_14
-  - first:
-      213: 9122816228377931536
-    second: South_15
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -148,10 +121,10 @@ TextureImporter:
       name: South_0
       rect:
         serializedVersion: 2
-        x: 4
-        y: 0
-        width: 24
-        height: 32
+        x: 14
+        y: 7
+        width: 22
+        height: 33
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -170,10 +143,10 @@ TextureImporter:
       name: South_1
       rect:
         serializedVersion: 2
-        x: 36
-        y: 0
-        width: 24
-        height: 32
+        x: 62
+        y: 7
+        width: 22
+        height: 34
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -192,10 +165,10 @@ TextureImporter:
       name: South_2
       rect:
         serializedVersion: 2
-        x: 68
-        y: 0
-        width: 24
-        height: 32
+        x: 110
+        y: 7
+        width: 22
+        height: 34
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -214,10 +187,10 @@ TextureImporter:
       name: South_3
       rect:
         serializedVersion: 2
-        x: 100
-        y: 0
-        width: 24
-        height: 32
+        x: 157
+        y: 7
+        width: 22
+        height: 33
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -236,10 +209,10 @@ TextureImporter:
       name: South_4
       rect:
         serializedVersion: 2
-        x: 132
-        y: 0
-        width: 24
-        height: 32
+        x: 205
+        y: 7
+        width: 22
+        height: 33
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -258,10 +231,10 @@ TextureImporter:
       name: South_5
       rect:
         serializedVersion: 2
-        x: 164
-        y: 0
-        width: 24
-        height: 32
+        x: 253
+        y: 7
+        width: 22
+        height: 34
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -280,10 +253,10 @@ TextureImporter:
       name: South_6
       rect:
         serializedVersion: 2
-        x: 196
-        y: 0
-        width: 24
-        height: 32
+        x: 301
+        y: 7
+        width: 23
+        height: 35
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -294,204 +267,6 @@ TextureImporter:
       bones: []
       spriteID: af94598903560f050800000000000000
       internalID: 5832272776837548538
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: South_7
-      rect:
-        serializedVersion: 2
-        x: 228
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: a2f899a160d293350800000000000000
-      internalID: 5996873883059851050
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: South_8
-      rect:
-        serializedVersion: 2
-        x: 260
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 83252f433be49dc80800000000000000
-      internalID: -8297514306859019720
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: South_9
-      rect:
-        serializedVersion: 2
-        x: 292
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 6790873352dc20a90800000000000000
-      internalID: -7349086082254239370
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: South_10
-      rect:
-        serializedVersion: 2
-        x: 324
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: fc3d5ea8e63f2f6f0800000000000000
-      internalID: -652191339913030705
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: South_11
-      rect:
-        serializedVersion: 2
-        x: 356
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: dc63779c639539fe0800000000000000
-      internalID: -1183504185225169203
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: South_12
-      rect:
-        serializedVersion: 2
-        x: 388
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: e593c83b38c595ba0800000000000000
-      internalID: -6099742499573843618
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: South_13
-      rect:
-        serializedVersion: 2
-        x: 420
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: dde94ce84b45c9750800000000000000
-      internalID: 6313013912132689629
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: South_14
-      rect:
-        serializedVersion: 2
-        x: 452
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 287d4be7d3cb73f00800000000000000
-      internalID: 1096552006592812930
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: South_15
-      rect:
-        serializedVersion: 2
-        x: 484
-        y: 0
-        width: 24
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 01fa2a36601ca9e70800000000000000
-      internalID: 9122816228377931536
       vertices: []
       indices: 
       edges: []
@@ -512,20 +287,11 @@ TextureImporter:
     nameFileIdTable:
       South_0: 5594754092541031236
       South_1: -805059760679182345
-      South_10: -652191339913030705
-      South_11: -1183504185225169203
-      South_12: -6099742499573843618
-      South_13: 6313013912132689629
-      South_14: 1096552006592812930
-      South_15: 9122816228377931536
       South_2: 7383949796990244970
       South_3: -4613496850694580467
       South_4: -1788914783557125339
       South_5: -3979213125831303303
       South_6: 5832272776837548538
-      South_7: 5996873883059851050
-      South_8: -8297514306859019720
-      South_9: -7349086082254239370
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
