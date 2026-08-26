@@ -15,6 +15,9 @@ public class PlayerMovement : MonoBehaviour
     public GameObject actionBar;
     public RectTransform actionBarFill;
 
+    [Header("Action Bar Settings")]
+    public float completedBarDisplayTime = 0.05f;
+
     private Vector2 movementInput;
     private Vector2 lastMoveDirection = Vector2.down;
 
@@ -35,13 +38,11 @@ public class PlayerMovement : MonoBehaviour
         animator.SetBool("IsBuildMode", false);
         animator.SetBool("IsRemoveMode", false);
 
-        // Start action bar hidden
         if (actionBar != null)
         {
             actionBar.SetActive(false);
         }
 
-        // Start fill empty
         SetBarFill(0f);
     }
 
@@ -56,13 +57,17 @@ public class PlayerMovement : MonoBehaviour
         if (actionLocked)
         {
             movementInput = Vector2.zero;
-            animator.SetBool("IsMoving", false);
+
+            animator.SetBool(
+                "IsMoving",
+                false
+            );
 
             return;
         }
 
         // =========================
-        // MOVEMENT
+        // MOVEMENT INPUT
         // =========================
 
         movementInput = Vector2.zero;
@@ -87,7 +92,6 @@ public class PlayerMovement : MonoBehaviour
             movementInput.x = 1f;
         }
 
-        // Prevent faster diagonal movement
         if (movementInput.sqrMagnitude > 1f)
         {
             movementInput.Normalize();
@@ -141,7 +145,7 @@ public class PlayerMovement : MonoBehaviour
     }
 
     // =========================================================
-    // ANIMATION
+    // ANIMATOR
     // =========================================================
 
     private void UpdateAnimator()
@@ -220,33 +224,33 @@ public class PlayerMovement : MonoBehaviour
 
     public void StartAction(float duration)
     {
+        // IMPORTANT:
+        // Completely cancel the previous bar/action coroutine.
         if (actionCoroutine != null)
         {
-            StopCoroutine(
-                actionCoroutine
-            );
+            StopCoroutine(actionCoroutine);
+            actionCoroutine = null;
         }
 
         actionLocked = true;
 
-        movementInput =
-            Vector2.zero;
-
-        rb.linearVelocity =
-            Vector2.zero;
+        movementInput = Vector2.zero;
+        rb.linearVelocity = Vector2.zero;
 
         animator.SetBool(
             "IsMoving",
             false
         );
 
-        // Show bar
+        // =========================
+        // RESET + SHOW BAR
+        // =========================
+
         if (actionBar != null)
         {
             actionBar.SetActive(true);
         }
 
-        // Reset bar to empty
         SetBarFill(0f);
 
         actionCoroutine =
@@ -256,19 +260,18 @@ public class PlayerMovement : MonoBehaviour
     }
 
     // =========================================================
-    // ACTION BAR TIMER
+    // ACTION TIMER
     // =========================================================
 
     private IEnumerator ActionLockRoutine(
         float duration)
     {
-        float timer = 0f;
-
-        // Safety
         if (duration <= 0f)
         {
             duration = 0.01f;
         }
+
+        float timer = 0f;
 
         while (timer < duration)
         {
@@ -284,22 +287,38 @@ public class PlayerMovement : MonoBehaviour
             yield return null;
         }
 
-        // Fully filled
+        // =========================
+        // ACTION COMPLETE
+        // =========================
+
         SetBarFill(1f);
 
         actionLocked = false;
-        actionCoroutine = null;
 
-        // Small visual delay so player sees it finish
-        yield return new WaitForSeconds(0.05f);
+        // Keep the completed bar visible
+        // for a very short moment.
+        if (completedBarDisplayTime > 0f)
+        {
+            yield return new WaitForSeconds(
+                completedBarDisplayTime
+            );
+        }
+
+        // =========================
+        // HIDE BAR
+        // =========================
 
         if (actionBar != null)
         {
             actionBar.SetActive(false);
         }
 
-        // Prepare for next action
         SetBarFill(0f);
+
+        // IMPORTANT:
+        // Only clear this AFTER everything
+        // in the coroutine has finished.
+        actionCoroutine = null;
     }
 
     // =========================================================
@@ -332,5 +351,27 @@ public class PlayerMovement : MonoBehaviour
     public bool IsPerformingAction()
     {
         return actionLocked;
+    }
+
+    // =========================================================
+    // SAFETY
+    // =========================================================
+
+    private void OnDisable()
+    {
+        if (actionCoroutine != null)
+        {
+            StopCoroutine(actionCoroutine);
+            actionCoroutine = null;
+        }
+
+        actionLocked = false;
+
+        if (actionBar != null)
+        {
+            actionBar.SetActive(false);
+        }
+
+        SetBarFill(0f);
     }
 }

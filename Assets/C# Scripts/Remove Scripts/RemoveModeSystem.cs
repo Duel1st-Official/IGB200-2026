@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class RemoveModeSystem : MonoBehaviour
@@ -8,6 +9,7 @@ public class RemoveModeSystem : MonoBehaviour
     public Transform player;
     public Animator playerAnimator;
     public PlayerMovement playerMovement;
+    public CameraShake2D cameraShake;
 
     [Header("Preview")]
     public GameObject validRemovePreviewPrefab;
@@ -17,22 +19,25 @@ public class RemoveModeSystem : MonoBehaviour
     public LayerMask removableLayers;
     public float checkSize = 0.4f;
 
-    [Header("Grid")]
-    public float gridSize = 0.5f;
-
     [Header("Remove Range")]
-    public int maxRemoveBlocks = 5;
+    public float maxRemoveDistance = 2.5f;
 
     [Header("Action Animation")]
     public float removeActionDuration = 0.5f;
+
+    [Header("Destroy Wiggle")]
+    public float wiggleAmount = 6f;
+    public float wiggleSpeed = 30f;
 
     private GameObject validPreview;
     private GameObject invalidPreview;
 
     private RemovableBuildItem hoveredItem;
+    private RemovableBuildItem itemBeingRemoved;
 
     private Vector2 mouseWorldPosition;
-    private Vector2 currentGridPosition;
+
+    private Coroutine removeCoroutine;
 
     private void Start()
     {
@@ -54,9 +59,7 @@ public class RemoveModeSystem : MonoBehaviour
             selectionWheel.IsWheelOpen())
         {
             hoveredItem = null;
-
             HidePreviews();
-
             return;
         }
 
@@ -67,18 +70,25 @@ public class RemoveModeSystem : MonoBehaviour
         if (!selectionWheel.IsRemoveMode())
         {
             hoveredItem = null;
-
             HidePreviews();
-
             return;
         }
 
         UpdateMousePosition();
+
+        // Don't allow another removal
+        // while one is already happening
+        if (itemBeingRemoved != null)
+        {
+            HidePreviews();
+            return;
+        }
+
         DetectRemovableItem();
         UpdatePreview();
 
         // =========================
-        // PLAYER CURRENTLY ACTING
+        // ACTION LOCK
         // =========================
 
         if (playerMovement != null &&
@@ -88,7 +98,7 @@ public class RemoveModeSystem : MonoBehaviour
         }
 
         // =========================
-        // RIGHT CLICK TO REMOVE
+        // RIGHT CLICK
         // =========================
 
         if (Input.GetMouseButtonDown(1))
@@ -147,26 +157,10 @@ public class RemoveModeSystem : MonoBehaviour
                 worldPosition.x,
                 worldPosition.y
             );
-
-        float snappedX =
-            Mathf.Round(
-                worldPosition.x / gridSize
-            ) * gridSize;
-
-        float snappedY =
-            Mathf.Round(
-                worldPosition.y / gridSize
-            ) * gridSize;
-
-        currentGridPosition =
-            new Vector2(
-                snappedX,
-                snappedY
-            );
     }
 
     // =========================================================
-    // RANGE CHECK
+    // RANGE
     // =========================================================
 
     private bool IsWithinRange()
@@ -176,21 +170,18 @@ public class RemoveModeSystem : MonoBehaviour
             return true;
         }
 
-        float maxDistance =
-            maxRemoveBlocks *
-            gridSize;
-
         float distance =
             Vector2.Distance(
                 player.position,
-                currentGridPosition
+                mouseWorldPosition
             );
 
-        return distance <= maxDistance;
+        return distance <=
+               maxRemoveDistance;
     }
 
     // =========================================================
-    // DETECT REMOVABLE ITEM
+    // DETECT ITEM
     // =========================================================
 
     private void DetectRemovableItem()
@@ -237,7 +228,7 @@ public class RemoveModeSystem : MonoBehaviour
     }
 
     // =========================================================
-    // UPDATE PREVIEW
+    // PREVIEW
     // =========================================================
 
     private void UpdatePreview()
@@ -277,7 +268,7 @@ public class RemoveModeSystem : MonoBehaviour
                 invalidPreview.SetActive(true);
 
                 invalidPreview.transform.position =
-                    currentGridPosition;
+                    mouseWorldPosition;
             }
 
             if (validPreview != null)
@@ -288,14 +279,18 @@ public class RemoveModeSystem : MonoBehaviour
     }
 
     // =========================================================
-    // REMOVE ITEM
+    // TRY REMOVE
     // =========================================================
 
     private void TryRemoveItem()
     {
-        // Extra safety
         if (selectionWheel != null &&
             selectionWheel.IsWheelOpen())
+        {
+            return;
+        }
+
+        if (itemBeingRemoved != null)
         {
             return;
         }
@@ -324,8 +319,19 @@ public class RemoveModeSystem : MonoBehaviour
             return;
         }
 
+        // =========================
+        // SAVE ITEM
+        // =========================
+
+        itemBeingRemoved =
+            hoveredItem;
+
+        hoveredItem = null;
+
         Vector2 targetPosition =
-            hoveredItem.transform.position;
+            itemBeingRemoved.transform.position;
+
+        HidePreviews();
 
         // =========================
         // FACE TARGET
@@ -336,7 +342,7 @@ public class RemoveModeSystem : MonoBehaviour
         );
 
         // =========================
-        // STOP PLAYER
+        // START ACTION
         // =========================
 
         if (playerMovement != null)
@@ -347,7 +353,7 @@ public class RemoveModeSystem : MonoBehaviour
         }
 
         // =========================
-        // PLAY ANIMATION
+        // REMOVE ANIMATION
         // =========================
 
         if (playerAnimator != null)
@@ -362,16 +368,109 @@ public class RemoveModeSystem : MonoBehaviour
         }
 
         // =========================
-        // REMOVE OBJECT
+        // START WIGGLE + REMOVE
         // =========================
 
-        hoveredItem.Remove();
-
-        hoveredItem = null;
+        removeCoroutine =
+            StartCoroutine(
+                RemoveWithWiggle()
+            );
     }
 
     // =========================================================
-    // FACE ACTION POSITION
+    // WIGGLE THEN DESTROY
+    // =========================================================
+
+    private IEnumerator RemoveWithWiggle()
+    {
+        if (itemBeingRemoved == null)
+        {
+            yield break;
+        }
+
+        Transform itemTransform =
+            itemBeingRemoved.transform;
+
+        Quaternion originalRotation =
+            itemTransform.localRotation;
+
+        float timer = 0f;
+
+        while (timer < removeActionDuration)
+        {
+            timer += Time.deltaTime;
+
+            if (itemBeingRemoved == null)
+            {
+                yield break;
+            }
+
+            // =========================
+            // WIGGLE
+            // =========================
+
+            float progress =
+                Mathf.Clamp01(
+                    timer / removeActionDuration
+                );
+
+            // Gets stronger as destruction gets closer
+            float strength =
+                Mathf.Lerp(
+                    0.3f,
+                    1f,
+                    progress
+                );
+
+            float rotation =
+                Mathf.Sin(
+                    timer * wiggleSpeed
+                )
+                * wiggleAmount
+                * strength;
+
+            itemTransform.localRotation =
+                originalRotation *
+                Quaternion.Euler(
+                    0f,
+                    0f,
+                    rotation
+                );
+
+            yield return null;
+        }
+
+        // Restore rotation right before destroy
+        if (itemBeingRemoved != null)
+        {
+            itemTransform.localRotation =
+                originalRotation;
+        }
+
+        // =========================
+        // CAMERA SHAKE
+        // =========================
+
+        if (cameraShake != null)
+        {
+            cameraShake.Shake();
+        }
+
+        // =========================
+        // DESTROY
+        // =========================
+
+        if (itemBeingRemoved != null)
+        {
+            itemBeingRemoved.Remove();
+        }
+
+        itemBeingRemoved = null;
+        removeCoroutine = null;
+    }
+
+    // =========================================================
+    // FACE TARGET
     // =========================================================
 
     private void FaceActionPosition(
@@ -387,12 +486,12 @@ public class RemoveModeSystem : MonoBehaviour
             targetPosition -
             (Vector2)player.position;
 
-        if (direction.sqrMagnitude <= 0.001f)
+        if (direction.sqrMagnitude <=
+            0.001f)
         {
             return;
         }
 
-        // LEFT / RIGHT
         if (Mathf.Abs(direction.x) >
             Mathf.Abs(direction.y))
         {
@@ -411,8 +510,6 @@ public class RemoveModeSystem : MonoBehaviour
                 );
             }
         }
-
-        // UP / DOWN
         else
         {
             if (direction.y > 0f)
@@ -431,6 +528,10 @@ public class RemoveModeSystem : MonoBehaviour
             }
         }
     }
+
+    // =========================================================
+    // ANIMATOR DIRECTION
+    // =========================================================
 
     private void SetAnimatorDirection(
         float x,
@@ -477,13 +578,9 @@ public class RemoveModeSystem : MonoBehaviour
 
         if (player != null)
         {
-            float radius =
-                maxRemoveBlocks *
-                gridSize;
-
             Gizmos.DrawWireSphere(
                 player.position,
-                radius
+                maxRemoveDistance
             );
         }
     }
