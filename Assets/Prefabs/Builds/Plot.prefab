@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8667960899653482604}
   - component: {fileID: -358288229963476569}
   - component: {fileID: 6376127902706515472}
+  - component: {fileID: 2248312837672965477}
   m_Layer: 3
   m_Name: Plot
   m_TagString: Untagged
@@ -109,6 +110,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridCell: {x: 0, y: 0}
   placementSystem: {fileID: 0}
+--- !u!114 &2248312837672965477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4826204611079752087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ab774c60da8f3643ba1e0c1093fc422, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  selectionWheel: {fileID: 0}
+  mainCamera: {fileID: 0}
+  spriteRenderer: {fileID: 0}
+  outlineMaterial: {fileID: 2100000, guid: 524a0744852071b4497737b1329c1152, type: 2}
+  allowClick: 1
+  showDebugLogs: 0
 --- !u!1 &6519828910645659539
 GameObject:
   m_ObjectHideFlags: 0

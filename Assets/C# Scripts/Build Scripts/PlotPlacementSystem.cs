@@ -17,6 +17,8 @@ public class PlotPlacementSystem : MonoBehaviour
     public PlayerMovement playerMovement;
     public CameraShake2D cameraShake;
 
+    private bool plotPlacementActive = false;
+
     // =========================================================
     // PLOT
     // =========================================================
@@ -25,7 +27,7 @@ public class PlotPlacementSystem : MonoBehaviour
     public GameObject plotPrefab;
 
     // =========================================================
-    // PREVIEW
+    // PREVIEWS
     // =========================================================
 
     [Header("Preview Prefabs")]
@@ -44,18 +46,14 @@ public class PlotPlacementSystem : MonoBehaviour
     // =========================================================
 
     [Header("Build Area")]
-    [Tooltip("How many grid cells wide the entire build area is.")]
     public int gridWidth = 18;
-
-    [Tooltip("How many grid cells tall the entire build area is.")]
     public int gridHeight = 9;
 
     // =========================================================
-    // PLAYER PLACEMENT RANGE
+    // PLAYER RANGE
     // =========================================================
 
     [Header("Placement Range")]
-    [Tooltip("How many grid blocks away from the player they can build.")]
     public int maxPlacementBlocks = 5;
 
     // =========================================================
@@ -64,15 +62,15 @@ public class PlotPlacementSystem : MonoBehaviour
 
     [Header("Collision")]
     public LayerMask blockingLayers;
-    public float checkSize = 0.4f;
+    public float checkSize = 0.8f;
 
     // =========================================================
     // GRASS
     // =========================================================
 
-    [Header("Grass Breaking")]
+    [Header("Grass / Foliage")]
     public LayerMask grassLayers;
-    public float grassBreakCheckSize = 0.45f;
+    public float grassBreakCheckSize = 0.9f;
 
     // =========================================================
     // SORTING
@@ -80,15 +78,13 @@ public class PlotPlacementSystem : MonoBehaviour
 
     [Header("Plot Sorting")]
     public int baseSortingOrder = 0;
-
-    [Tooltip("Sorting difference between each grid row.")]
     public int sortingOrderPerRow = 10;
 
     // =========================================================
     // ACTION
     // =========================================================
 
-    [Header("Action Animation")]
+    [Header("Action")]
     public float placeActionDuration = 0.5f;
 
     // =========================================================
@@ -99,6 +95,18 @@ public class PlotPlacementSystem : MonoBehaviour
     public float startingScale = 0.12f;
     public float smallScale = 0.35f;
     public float middleScale = 0.65f;
+
+    // =========================================================
+    // BUILD PARTICLES
+    // =========================================================
+
+    [Header("Build Particle Effect")]
+    public GameObject buildParticlePrefab;
+
+    public float buildParticleLifetime = 2f;
+
+    public Vector3 buildParticleOffset =
+        Vector3.zero;
 
     // =========================================================
     // PRIVATE
@@ -134,7 +142,13 @@ public class PlotPlacementSystem : MonoBehaviour
 
     private void Update()
     {
-        // TAB selection wheel is currently open.
+        if (!plotPlacementActive)
+        {
+            HidePreviews();
+            return;
+        }
+
+        // Selection wheel open.
         if (selectionWheel == null ||
             selectionWheel.IsWheelOpen())
         {
@@ -142,7 +156,7 @@ public class PlotPlacementSystem : MonoBehaviour
             return;
         }
 
-        // Not currently in Build Mode.
+        // Not Build Mode.
         if (!selectionWheel.IsBuildMode())
         {
             HidePreviews();
@@ -155,7 +169,7 @@ public class PlotPlacementSystem : MonoBehaviour
 
         UpdatePreview();
 
-        // Player is currently placing/removing something.
+        // Player already doing something.
         if (playerMovement != null &&
             playerMovement.IsPerformingAction())
         {
@@ -178,7 +192,9 @@ public class PlotPlacementSystem : MonoBehaviour
         if (validPreviewPrefab != null)
         {
             validPreview =
-                Instantiate(validPreviewPrefab);
+                Instantiate(
+                    validPreviewPrefab
+                );
 
             validPreview.SetActive(false);
         }
@@ -186,14 +202,16 @@ public class PlotPlacementSystem : MonoBehaviour
         if (invalidPreviewPrefab != null)
         {
             invalidPreview =
-                Instantiate(invalidPreviewPrefab);
+                Instantiate(
+                    invalidPreviewPrefab
+                );
 
             invalidPreview.SetActive(false);
         }
     }
 
     // =========================================================
-    // MOUSE -> GRID
+    // UPDATE GRID POSITION
     // =========================================================
 
     private void UpdateGridPosition()
@@ -230,7 +248,7 @@ public class PlotPlacementSystem : MonoBehaviour
     }
 
     // =========================================================
-    // WORLD POSITION -> GRID CELL
+    // GET GRID CELL
     // =========================================================
 
     public Vector2Int GetGridCell(
@@ -255,7 +273,7 @@ public class PlotPlacementSystem : MonoBehaviour
     }
 
     // =========================================================
-    // 18 x 9 BUILD AREA
+    // BUILD AREA
     // =========================================================
 
     private bool IsInsideBuildArea()
@@ -264,26 +282,6 @@ public class PlotPlacementSystem : MonoBehaviour
             GetGridCell(
                 currentGridPosition
             );
-
-        /*
-         * With:
-         *
-         * Width  = 18
-         * Height = 9
-         *
-         * X cells:
-         *
-         * -9 through 8
-         *
-         * = exactly 18 cells
-         *
-         *
-         * Y cells:
-         *
-         * -4 through 4
-         *
-         * = exactly 9 cells
-         */
 
         int minX =
             -(gridWidth / 2);
@@ -301,22 +299,14 @@ public class PlotPlacementSystem : MonoBehaviour
             gridHeight -
             1;
 
-        if (cell.x < minX)
+        if (cell.x < minX ||
+            cell.x > maxX)
         {
             return false;
         }
 
-        if (cell.x > maxX)
-        {
-            return false;
-        }
-
-        if (cell.y < minY)
-        {
-            return false;
-        }
-
-        if (cell.y > maxY)
+        if (cell.y < minY ||
+            cell.y > maxY)
         {
             return false;
         }
@@ -355,19 +345,11 @@ public class PlotPlacementSystem : MonoBehaviour
 
     private void CheckPlacement()
     {
-        // -----------------------------------------
-        // OUTSIDE 18 x 9 BUILD AREA
-        // -----------------------------------------
-
         if (!IsInsideBuildArea())
         {
             canPlace = false;
             return;
         }
-
-        // -----------------------------------------
-        // TOO FAR FROM PLAYER
-        // -----------------------------------------
 
         if (!IsWithinRange())
         {
@@ -380,20 +362,14 @@ public class PlotPlacementSystem : MonoBehaviour
                 currentGridPosition
             );
 
-        // -----------------------------------------
-        // GRID CELL ALREADY OCCUPIED
-        // -----------------------------------------
-
+        // Already occupied.
         if (occupiedCells.Contains(cell))
         {
             canPlace = false;
             return;
         }
 
-        // -----------------------------------------
-        // PHYSICAL OBJECT BLOCKING
-        // -----------------------------------------
-
+        // Collision check.
         Collider2D hit =
             Physics2D.OverlapBox(
                 currentGridPosition,
@@ -413,15 +389,11 @@ public class PlotPlacementSystem : MonoBehaviour
     }
 
     // =========================================================
-    // UPDATE PREVIEW
+    // PREVIEW
     // =========================================================
 
     private void UpdatePreview()
     {
-        // -----------------------------------------
-        // VALID
-        // -----------------------------------------
-
         if (canPlace)
         {
             if (validPreview != null)
@@ -437,11 +409,6 @@ public class PlotPlacementSystem : MonoBehaviour
                 invalidPreview.SetActive(false);
             }
         }
-
-        // -----------------------------------------
-        // INVALID
-        // -----------------------------------------
-
         else
         {
             if (invalidPreview != null)
@@ -477,38 +444,33 @@ public class PlotPlacementSystem : MonoBehaviour
     }
 
     // =========================================================
-    // PLACE PLOT
+    // PLACE
     // =========================================================
 
     private void TryPlacePlot()
     {
-        // Selection wheel open.
         if (selectionWheel != null &&
             selectionWheel.IsWheelOpen())
         {
             return;
         }
 
-        // Already performing an action.
         if (playerMovement != null &&
             playerMovement.IsPerformingAction())
         {
             return;
         }
 
-        // Outside 18 x 9 build area.
         if (!IsInsideBuildArea())
         {
             return;
         }
 
-        // Too far from player.
         if (!IsWithinRange())
         {
             return;
         }
 
-        // Invalid location.
         if (!canPlace)
         {
             return;
@@ -517,7 +479,7 @@ public class PlotPlacementSystem : MonoBehaviour
         if (plotPrefab == null)
         {
             Debug.LogWarning(
-                "Plot Prefab has not been assigned."
+                "Plot Prefab is missing."
             );
 
             return;
@@ -529,7 +491,7 @@ public class PlotPlacementSystem : MonoBehaviour
             );
 
         // =====================================================
-        // FACE TARGET
+        // FACE PLOT
         // =====================================================
 
         FaceActionPosition(
@@ -537,7 +499,7 @@ public class PlotPlacementSystem : MonoBehaviour
         );
 
         // =====================================================
-        // LOCK PLAYER DURING ACTION
+        // LOCK PLAYER
         // =====================================================
 
         if (playerMovement != null)
@@ -548,7 +510,7 @@ public class PlotPlacementSystem : MonoBehaviour
         }
 
         // =====================================================
-        // PLAYER PLACE ANIMATION
+        // PLAYER ANIMATION
         // =====================================================
 
         if (playerAnimator != null)
@@ -574,7 +536,7 @@ public class PlotPlacementSystem : MonoBehaviour
             );
 
         // =====================================================
-        // SORT PLOT DEPENDING ON GRID ROW
+        // SORTING
         // =====================================================
 
         SetPlotSorting(
@@ -583,19 +545,18 @@ public class PlotPlacementSystem : MonoBehaviour
         );
 
         // =====================================================
-        // SAVE FINAL SCALE
+        // SCALE
         // =====================================================
 
         Vector3 finalScale =
             newPlot.transform.localScale;
 
-        // Start tiny.
         newPlot.transform.localScale =
             finalScale *
             startingScale;
 
         // =====================================================
-        // REMOVABLE BUILD ITEM
+        // REMOVABLE
         // =====================================================
 
         RemovableBuildItem removable =
@@ -611,16 +572,15 @@ public class PlotPlacementSystem : MonoBehaviour
         }
 
         // =====================================================
-        // OCCUPY GRID CELL
+        // OCCUPY CELL
         // =====================================================
 
         occupiedCells.Add(cell);
 
-        // Hide preview while action happens.
         HidePreviews();
 
         // =====================================================
-        // BUILD ANIMATION
+        // BUILD ROUTINE
         // =====================================================
 
         StartCoroutine(
@@ -634,7 +594,7 @@ public class PlotPlacementSystem : MonoBehaviour
     }
 
     // =========================================================
-    // PLOT DEPTH SORTING
+    // SORTING
     // =========================================================
 
     private void SetPlotSorting(
@@ -655,21 +615,6 @@ public class PlotPlacementSystem : MonoBehaviour
                 plot.AddComponent<SortingGroup>();
         }
 
-        /*
-         * Higher Y:
-         *
-         * farther up the screen
-         * farther away
-         * lower sorting order
-         *
-         *
-         * Lower Y:
-         *
-         * closer to bottom
-         * closer to camera
-         * higher sorting order
-         */
-
         int calculatedOrder =
             baseSortingOrder -
             (
@@ -682,191 +627,11 @@ public class PlotPlacementSystem : MonoBehaviour
     }
 
     // =========================================================
-    // BUILD ANIMATION
+    // FIND GRASS AND START SHAKE
     // =========================================================
-
-    private IEnumerator BuildPlotRoutine(
-    GameObject plot,
-    Vector3 finalScale)
-    {
-        if (plot == null)
-        {
-            yield break;
-        }
-
-        // =========================================================
-        // FIND GRASS UNDER NEW PLOT
-        // =========================================================
-
-        InteractiveGrass[] shakingGrass =
-            StartGrassBuildShake(
-                plot.transform.position
-            );
-
-        float duration =
-            Mathf.Max(
-                placeActionDuration,
-                0.01f
-            );
-
-        float timer = 0f;
-
-        while (timer < duration)
-        {
-            timer += Time.deltaTime;
-
-            float progress =
-                Mathf.Clamp01(
-                    timer /
-                    duration
-                );
-
-            float scaleMultiplier;
-
-            // =====================================================
-            // STAGE 1
-            // TINY -> SMALL
-            // =====================================================
-
-            if (progress < 0.25f)
-            {
-                float t =
-                    progress /
-                    0.25f;
-
-                scaleMultiplier =
-                    Mathf.Lerp(
-                        startingScale,
-                        smallScale,
-                        EaseOutCubic(t)
-                    );
-            }
-
-            // =====================================================
-            // STAGE 2
-            // SMALL -> MEDIUM
-            // =====================================================
-
-            else if (progress < 0.60f)
-            {
-                float t =
-                    (progress - 0.25f) /
-                    0.35f;
-
-                scaleMultiplier =
-                    Mathf.Lerp(
-                        smallScale,
-                        middleScale,
-                        EaseOutCubic(t)
-                    );
-            }
-
-            // =====================================================
-            // STAGE 3
-            // MEDIUM -> FULL
-            // =====================================================
-
-            else
-            {
-                float t =
-                    (progress - 0.60f) /
-                    0.40f;
-
-                scaleMultiplier =
-                    Mathf.Lerp(
-                        middleScale,
-                        1f,
-                        EaseOutExpo(t)
-                    );
-            }
-
-            if (plot != null)
-            {
-                plot.transform.localScale =
-                    finalScale *
-                    scaleMultiplier;
-            }
-
-            yield return null;
-        }
-
-        // =========================================================
-        // FINAL PLOT SIZE
-        // =========================================================
-
-        if (plot != null)
-        {
-            plot.transform.localScale =
-                finalScale;
-        }
-
-        // =========================================================
-        // BREAK THE GRASS
-        // =========================================================
-
-        foreach (
-            InteractiveGrass grass
-            in shakingGrass)
-        {
-            if (grass != null)
-            {
-                grass.BreakGrass();
-            }
-        }
-
-        // =========================================================
-        // CAMERA SHAKE
-        // =========================================================
-
-        if (cameraShake != null)
-        {
-            cameraShake.Shake();
-        }
-    }
-
-    // =========================================================
-    // BREAK GRASS
-    // =========================================================
-
-    private void BreakGrassAtPosition(
-        Vector2 position)
-    {
-        Collider2D[] grassHits =
-            Physics2D.OverlapBoxAll(
-                position,
-                Vector2.one *
-                grassBreakCheckSize,
-                0f,
-                grassLayers
-            );
-
-        foreach (Collider2D hit in grassHits)
-        {
-            if (hit == null)
-            {
-                continue;
-            }
-
-            InteractiveGrass grass =
-                hit.GetComponent
-                <InteractiveGrass>();
-
-            if (grass == null)
-            {
-                grass =
-                    hit.GetComponentInParent
-                    <InteractiveGrass>();
-            }
-
-            if (grass != null)
-            {
-                grass.BreakGrass();
-            }
-        }
-    }
 
     private InteractiveGrass[] StartGrassBuildShake(
-    Vector2 position)
+        Vector2 position)
     {
         Collider2D[] hits =
             Physics2D.OverlapBoxAll(
@@ -888,7 +653,8 @@ public class PlotPlacementSystem : MonoBehaviour
             }
 
             InteractiveGrass grass =
-                hit.GetComponent<InteractiveGrass>();
+                hit.GetComponent
+                <InteractiveGrass>();
 
             if (grass == null)
             {
@@ -923,6 +689,170 @@ public class PlotPlacementSystem : MonoBehaviour
         }
 
         return grassArray;
+    }
+
+    // =========================================================
+    // BUILD ROUTINE
+    // =========================================================
+
+    private IEnumerator BuildPlotRoutine(
+        GameObject plot,
+        Vector3 finalScale)
+    {
+        if (plot == null)
+        {
+            yield break;
+        }
+
+        // Grass underneath starts shaking.
+        InteractiveGrass[] shakingGrass =
+            StartGrassBuildShake(
+                plot.transform.position
+            );
+
+        float duration =
+            Mathf.Max(
+                placeActionDuration,
+                0.01f
+            );
+
+        float timer = 0f;
+
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+
+            float progress =
+                Mathf.Clamp01(
+                    timer /
+                    duration
+                );
+
+            float scaleMultiplier;
+
+            // =================================================
+            // STAGE 1
+            // TINY -> SMALL
+            // =================================================
+
+            if (progress < 0.25f)
+            {
+                float t =
+                    progress /
+                    0.25f;
+
+                scaleMultiplier =
+                    Mathf.Lerp(
+                        startingScale,
+                        smallScale,
+                        EaseOutCubic(t)
+                    );
+            }
+
+            // =================================================
+            // STAGE 2
+            // SMALL -> MEDIUM
+            // =================================================
+
+            else if (progress < 0.60f)
+            {
+                float t =
+                    (progress - 0.25f) /
+                    0.35f;
+
+                scaleMultiplier =
+                    Mathf.Lerp(
+                        smallScale,
+                        middleScale,
+                        EaseOutCubic(t)
+                    );
+            }
+
+            // =================================================
+            // STAGE 3
+            // MEDIUM -> FULL
+            // =================================================
+
+            else
+            {
+                float t =
+                    (progress - 0.60f) /
+                    0.40f;
+
+                scaleMultiplier =
+                    Mathf.Lerp(
+                        middleScale,
+                        1f,
+                        EaseOutExpo(t)
+                    );
+            }
+
+            if (plot != null)
+            {
+                plot.transform.localScale =
+                    finalScale *
+                    scaleMultiplier;
+            }
+
+            yield return null;
+        }
+
+        // =====================================================
+        // FINAL SCALE
+        // =====================================================
+
+        if (plot != null)
+        {
+            plot.transform.localScale =
+                finalScale;
+        }
+
+        // =====================================================
+        // BREAK GRASS
+        // =====================================================
+
+        foreach (
+            InteractiveGrass grass
+            in shakingGrass)
+        {
+            if (grass != null)
+            {
+                grass.BreakGrass();
+            }
+        }
+
+        // =====================================================
+        // BUILD PARTICLE
+        // =====================================================
+
+        if (plot != null &&
+            buildParticlePrefab != null)
+        {
+            GameObject particles =
+                Instantiate(
+                    buildParticlePrefab,
+
+                    plot.transform.position +
+                    buildParticleOffset,
+
+                    // Never inherit plot rotation.
+                    Quaternion.identity
+                );
+
+            Destroy(
+                particles,
+                buildParticleLifetime
+            );
+        }
+
+        // =====================================================
+        // CAMERA SHAKE
+        // =====================================================
+
+        if (cameraShake != null)
+        {
+            cameraShake.Shake();
+        }
     }
 
     // =========================================================
@@ -983,11 +913,9 @@ public class PlotPlacementSystem : MonoBehaviour
             return;
         }
 
-        // Horizontal direction.
         if (Mathf.Abs(direction.x) >
             Mathf.Abs(direction.y))
         {
-            // RIGHT
             if (direction.x > 0f)
             {
                 SetAnimatorDirection(
@@ -995,8 +923,6 @@ public class PlotPlacementSystem : MonoBehaviour
                     0f
                 );
             }
-
-            // LEFT
             else
             {
                 SetAnimatorDirection(
@@ -1005,11 +931,8 @@ public class PlotPlacementSystem : MonoBehaviour
                 );
             }
         }
-
-        // Vertical direction.
         else
         {
-            // UP
             if (direction.y > 0f)
             {
                 SetAnimatorDirection(
@@ -1017,8 +940,6 @@ public class PlotPlacementSystem : MonoBehaviour
                     1f
                 );
             }
-
-            // DOWN
             else
             {
                 SetAnimatorDirection(
@@ -1049,7 +970,7 @@ public class PlotPlacementSystem : MonoBehaviour
     }
 
     // =========================================================
-    // FREE GRID CELL
+    // FREE CELL
     // =========================================================
 
     public void FreeGridCell(
@@ -1062,16 +983,30 @@ public class PlotPlacementSystem : MonoBehaviour
     // DEBUG
     // =========================================================
 
+    public void ActivatePlotPlacement()
+    {
+        plotPlacementActive = true;
+    }
+
+    public void DeactivatePlotPlacement()
+    {
+        plotPlacementActive = false;
+        HidePreviews();
+    }
+
+    public bool IsPlotPlacementActive()
+    {
+        return plotPlacementActive;
+    }
+
     private void OnDrawGizmosSelected()
     {
-        // Placement collision box.
         Gizmos.DrawWireCube(
             currentGridPosition,
             Vector3.one *
             checkSize
         );
 
-        // Player's placement radius.
         if (player != null)
         {
             float radius =
@@ -1084,50 +1019,40 @@ public class PlotPlacementSystem : MonoBehaviour
             );
         }
 
-        // =====================================================
-        // DRAW ENTIRE BUILD AREA
-        // =====================================================
-
-        if (gridSize > 0f)
+        if (gridSize <= 0f)
         {
-            float worldWidth =
-                gridWidth *
-                gridSize;
-
-            float worldHeight =
-                gridHeight *
-                gridSize;
-
-            /*
-             * Width 18 is asymmetric around zero:
-             * -9 through 8.
-             *
-             * Therefore the centre needs to be shifted
-             * half a grid cell to the left.
-             */
-
-            float centerX =
-                gridWidth % 2 == 0
-                    ? -gridSize * 0.5f
-                    : 0f;
-
-            float centerY =
-                gridHeight % 2 == 0
-                    ? -gridSize * 0.5f
-                    : 0f;
-
-            Gizmos.DrawWireCube(
-                new Vector3(
-                    centerX,
-                    centerY,
-                    0f
-                ),
-                new Vector3(
-                    worldWidth,
-                    worldHeight,
-                    0f
-                )
-            );
+            return;
         }
+
+        float worldWidth =
+            gridWidth *
+            gridSize;
+
+        float worldHeight =
+            gridHeight *
+            gridSize;
+
+        float centerX =
+            gridWidth % 2 == 0
+                ? -gridSize * 0.5f
+                : 0f;
+
+        float centerY =
+            gridHeight % 2 == 0
+                ? -gridSize * 0.5f
+                : 0f;
+
+        Gizmos.DrawWireCube(
+            new Vector3(
+                centerX,
+                centerY,
+                0f
+            ),
+            new Vector3(
+                worldWidth,
+                worldHeight,
+                0f
+            )
+        );
     }
 }
