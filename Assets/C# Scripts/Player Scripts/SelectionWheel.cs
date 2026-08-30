@@ -1,7 +1,8 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
+﻿using TMPro;
+using UnityEditor;
+using UnityEngine;
 using UnityEngine.InputSystem;
-using TMPro;
+using UnityEngine.UI;
 
 public class SelectionWheel : MonoBehaviour
 {
@@ -9,7 +10,7 @@ public class SelectionWheel : MonoBehaviour
     {
         Normal,
         Build,
-        Remove
+        Remove,
     }
 
     [Header("References")]
@@ -956,6 +957,11 @@ public class SelectionWheel : MonoBehaviour
         currentMode = newMode;
 
         UpdateModeText();
+    }
+
+    public bool IsInspectorMode()
+    {
+        return currentMode == PlayerMode.Normal;
     }
 
     // =========================================================
