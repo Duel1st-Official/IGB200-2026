@@ -1,28 +1,22 @@
 fileFormatVersion: 2
-guid: 7959f93c554c4b54fae2f3cb8ee1d368
+guid: a7839b886a8c93e4d93c16608a02e08f
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7818689757044616098
-    second: Plots_0
+      213: -5418871830010561904
+    second: Water Plot_0
   - first:
-      213: 1272313374670823227
-    second: Plots_1
+      213: -3261466214524563487
+    second: Water Plot_1
   - first:
-      213: -4850483222051155900
-    second: Plots_2
+      213: 7972089375667400012
+    second: Water Plot_2
   - first:
-      213: 8222000043031654104
-    second: Plots_3
+      213: -1997559865040036895
+    second: Water Plot_3
   - first:
-      213: 537722549517416286
-    second: Plots_4
-  - first:
-      213: 8542913439422267187
-    second: Plots_5
-  - first:
-      213: 332446633682338461
-    second: Plots_6
+      213: 6320579941163459793
+    second: Water Plot_4
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -55,7 +49,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -69,7 +63,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 570
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -93,7 +87,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -118,155 +112,67 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Plots_0
+      name: Water Plot_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 306
-        width: 757
-        height: 718
+        x: 53
+        y: 65
+        width: 615
+        height: 625
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2ab21a9a8e0918c60800000000000000
-      internalID: 7818689757044616098
+      spriteID: 09a79d0f7cc4cc4b0800000000000000
+      internalID: -5418871830010561904
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Plots_1
+      name: Water Plot_2
       rect:
         serializedVersion: 2
-        x: 814
-        y: 418
-        width: 669
-        height: 604
+        x: 781
+        y: 65
+        width: 611
+        height: 620
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b3f9b34f54a28a110800000000000000
-      internalID: 1272313374670823227
+      spriteID: c4d225a9c0d82ae60800000000000000
+      internalID: 7972089375667400012
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Plots_2
+      name: Water Plot_3
       rect:
         serializedVersion: 2
-        x: 1416
-        y: 599
-        width: 7
-        height: 15
+        x: 1503
+        y: 66
+        width: 610
+        height: 618
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 44016a0653f9facb0800000000000000
-      internalID: -4850483222051155900
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Plots_3
-      rect:
-        serializedVersion: 2
-        x: 64
-        y: 14
-        width: 657
-        height: 492
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 8dee5242a796a1270800000000000000
-      internalID: 8222000043031654104
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Plots_4
-      rect:
-        serializedVersion: 2
-        x: 762
-        y: 14
-        width: 707
-        height: 494
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: e57f3bf4fcf567700800000000000000
-      internalID: 537722549517416286
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Plots_5
-      rect:
-        serializedVersion: 2
-        x: 1416
-        y: 343
-        width: 37
-        height: 33
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 33fbca7c2868e8670800000000000000
-      internalID: 8542913439422267187
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Plots_6
-      rect:
-        serializedVersion: 2
-        x: 1398
-        y: 121
-        width: 13
-        height: 9
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: d920963b3761d9400800000000000000
-      internalID: 332446633682338461
+      spriteID: 1eb16b2e2ed3744e0800000000000000
+      internalID: -1997559865040036895
       vertices: []
       indices: 
       edges: []
@@ -275,7 +181,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: c84aa70de02ede74f9563f587631eba7
     internalID: 0
     vertices: []
     indices: 
@@ -285,13 +191,11 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Plots_0: 7818689757044616098
-      Plots_1: 1272313374670823227
-      Plots_2: -4850483222051155900
-      Plots_3: 8222000043031654104
-      Plots_4: 537722549517416286
-      Plots_5: 8542913439422267187
-      Plots_6: 332446633682338461
+      Water Plot_0: -5418871830010561904
+      Water Plot_1: -3261466214524563487
+      Water Plot_2: 7972089375667400012
+      Water Plot_3: -1997559865040036895
+      Water Plot_4: 6320579941163459793
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
