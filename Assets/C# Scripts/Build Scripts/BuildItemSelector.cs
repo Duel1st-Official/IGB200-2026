@@ -2,6 +2,13 @@ using UnityEngine;
 
 public class BuildItemSelector : MonoBehaviour
 {
+    public enum BuildItem
+    {
+        Plot,
+        Trap,
+        WaterPlot
+    }
+
     // =========================================================
     // REFERENCES
     // =========================================================
@@ -11,14 +18,25 @@ public class BuildItemSelector : MonoBehaviour
 
     [SerializeField] private PlotPlacementSystem plotPlacementSystem;
     [SerializeField] private TrapPlacementSystem trapPlacementSystem;
+    [SerializeField] private WaterPlotPlacementSystem waterPlotPlacementSystem;
 
     // =========================================================
-    // DEFAULT SELECTION
+    // CURRENT SELECTION
     // =========================================================
 
-    [Header("Default Build Item")]
-    [Tooltip("When entering Build Mode, Plot will be selected by default.")]
-    [SerializeField] private bool defaultToPlot = true;
+    [Header("Current Build Item")]
+    [SerializeField] private BuildItem currentBuildItem = BuildItem.Plot;
+
+    // =========================================================
+    // SCROLL SETTINGS
+    // =========================================================
+
+    [Header("Scroll Wheel")]
+    [Tooltip("Prevents extremely sensitive mouse wheels from cycling multiple times instantly.")]
+    [SerializeField] private float scrollCooldown = 0.12f;
+
+    [Tooltip("Reverse the mouse wheel direction if desired.")]
+    [SerializeField] private bool invertScroll = false;
 
     // =========================================================
     // DEBUG
@@ -28,23 +46,11 @@ public class BuildItemSelector : MonoBehaviour
     [SerializeField] private bool showDebugLogs = false;
 
     // =========================================================
-    // BUILD ITEM
-    // =========================================================
-
-    public enum BuildItem
-    {
-        Plot,
-        Trap
-    }
-
-    [Header("Current Selection")]
-    [SerializeField] private BuildItem currentBuildItem = BuildItem.Plot;
-
-    // =========================================================
     // PRIVATE
     // =========================================================
 
     private bool wasInBuildMode = false;
+    private float nextScrollTime = 0f;
 
     // =========================================================
     // START
@@ -78,7 +84,13 @@ public class BuildItemSelector : MonoBehaviour
                 FindFirstObjectByType<TrapPlacementSystem>();
         }
 
-        // Start disabled until Build Mode is active.
+        if (waterPlotPlacementSystem == null)
+        {
+            waterPlotPlacementSystem =
+                FindFirstObjectByType<WaterPlotPlacementSystem>();
+        }
+
+        // Start with everything inactive.
         DisableAllPlacementSystems();
     }
 
@@ -98,18 +110,12 @@ public class BuildItemSelector : MonoBehaviour
 
         if (isBuildMode && !wasInBuildMode)
         {
-            if (defaultToPlot)
-            {
-                SelectPlot();
-            }
-            else
-            {
-                SelectTrap();
-            }
+            // Start on Plot whenever Build Mode begins.
+            SelectBuildItem(BuildItem.Plot);
         }
 
         // =====================================================
-        // LEFT BUILD MODE
+        // JUST LEFT BUILD MODE
         // =====================================================
 
         if (!isBuildMode && wasInBuildMode)
@@ -121,7 +127,7 @@ public class BuildItemSelector : MonoBehaviour
             isBuildMode;
 
         // =====================================================
-        // NOT BUILD MODE
+        // ONLY WORK IN BUILD MODE
         // =====================================================
 
         if (!isBuildMode)
@@ -130,97 +136,192 @@ public class BuildItemSelector : MonoBehaviour
         }
 
         // =====================================================
-        // DON'T CHANGE WHILE WHEEL IS OPEN
+        // DON'T SWITCH ITEMS WHILE TAB WHEEL IS OPEN
         // =====================================================
 
-        if (selectionWheel.IsWheelOpen())
+        if (selectionWheel != null &&
+            selectionWheel.IsWheelOpen())
         {
             return;
         }
 
         // =====================================================
-        // 1 = PLOT
+        // SCROLL COOLDOWN
         // =====================================================
 
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        if (Time.unscaledTime <
+            nextScrollTime)
         {
-            SelectPlot();
+            return;
         }
 
         // =====================================================
-        // 2 = TRAP
+        // READ MOUSE WHEEL
         // =====================================================
 
-        if (Input.GetKeyDown(KeyCode.Alpha2))
+        float scroll =
+            Input.mouseScrollDelta.y;
+
+        if (Mathf.Abs(scroll) <
+            0.01f)
         {
-            SelectTrap();
+            return;
+        }
+
+        if (invertScroll)
+        {
+            scroll *= -1f;
+        }
+
+        // =====================================================
+        // SCROLL UP
+        // =====================================================
+
+        if (scroll > 0f)
+        {
+            PreviousBuildItem();
+        }
+
+        // =====================================================
+        // SCROLL DOWN
+        // =====================================================
+
+        else if (scroll < 0f)
+        {
+            NextBuildItem();
+        }
+
+        nextScrollTime =
+            Time.unscaledTime +
+            scrollCooldown;
+    }
+
+    // =========================================================
+    // NEXT ITEM
+    // =========================================================
+
+    private void NextBuildItem()
+    {
+        switch (currentBuildItem)
+        {
+            case BuildItem.Plot:
+                SelectBuildItem(
+                    BuildItem.Trap
+                );
+                break;
+
+            case BuildItem.Trap:
+                SelectBuildItem(
+                    BuildItem.WaterPlot
+                );
+                break;
+
+            case BuildItem.WaterPlot:
+                SelectBuildItem(
+                    BuildItem.Plot
+                );
+                break;
         }
     }
 
     // =========================================================
-    // SELECT PLOT
+    // PREVIOUS ITEM
     // =========================================================
 
-    public void SelectPlot()
+    private void PreviousBuildItem()
+    {
+        switch (currentBuildItem)
+        {
+            case BuildItem.Plot:
+                SelectBuildItem(
+                    BuildItem.WaterPlot
+                );
+                break;
+
+            case BuildItem.Trap:
+                SelectBuildItem(
+                    BuildItem.Plot
+                );
+                break;
+
+            case BuildItem.WaterPlot:
+                SelectBuildItem(
+                    BuildItem.Trap
+                );
+                break;
+        }
+    }
+
+    // =========================================================
+    // SELECT BUILD ITEM
+    // =========================================================
+
+    public void SelectBuildItem(
+        BuildItem item)
     {
         currentBuildItem =
-            BuildItem.Plot;
+            item;
 
-        // Trap OFF
-        if (trapPlacementSystem != null)
+        // First turn everything off.
+        DisableAllPlacementSystems();
+
+        // =====================================================
+        // PLOT
+        // =====================================================
+
+        if (currentBuildItem ==
+            BuildItem.Plot)
         {
-            trapPlacementSystem
-                .DeactivateTrapPlacement();
+            if (plotPlacementSystem != null)
+            {
+                plotPlacementSystem
+                    .ActivatePlotPlacement();
+            }
         }
 
-        // Plot ON
-        if (plotPlacementSystem != null)
+        // =====================================================
+        // TRAP
+        // =====================================================
+
+        else if (currentBuildItem ==
+                 BuildItem.Trap)
         {
-            plotPlacementSystem
-                .ActivatePlotPlacement();
+            if (trapPlacementSystem != null)
+            {
+                trapPlacementSystem
+                    .ActivateTrapPlacement();
+            }
         }
+
+        // =====================================================
+        // WATER PLOT
+        // =====================================================
+
+        else if (currentBuildItem ==
+                 BuildItem.WaterPlot)
+        {
+            if (waterPlotPlacementSystem != null)
+            {
+                waterPlotPlacementSystem
+                    .ActivateWaterPlotPlacement();
+            }
+        }
+
+        // =====================================================
+        // DEBUG
+        // =====================================================
 
         if (showDebugLogs)
         {
             Debug.Log(
-                "Build Item Selected: PLOT"
+                "Build Item Selected: " +
+                currentBuildItem
             );
         }
     }
 
     // =========================================================
-    // SELECT TRAP
-    // =========================================================
-
-    public void SelectTrap()
-    {
-        currentBuildItem =
-            BuildItem.Trap;
-
-        // Plot OFF
-        if (plotPlacementSystem != null)
-        {
-            plotPlacementSystem
-                .DeactivatePlotPlacement();
-        }
-
-        // Trap ON
-        if (trapPlacementSystem != null)
-        {
-            trapPlacementSystem
-                .ActivateTrapPlacement();
-        }
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                "Build Item Selected: TRAP"
-            );
-        }
-    }
-
-    // =========================================================
-    // DISABLE EVERYTHING
+    // DISABLE ALL
     // =========================================================
 
     private void DisableAllPlacementSystems()
@@ -236,20 +337,47 @@ public class BuildItemSelector : MonoBehaviour
             trapPlacementSystem
                 .DeactivateTrapPlacement();
         }
+
+        if (waterPlotPlacementSystem != null)
+        {
+            waterPlotPlacementSystem
+                .DeactivateWaterPlotPlacement();
+        }
     }
 
     // =========================================================
-    // GET CURRENT BUILD ITEM
+    // PUBLIC SELECTORS
+    // =========================================================
+
+    public void SelectPlot()
+    {
+        SelectBuildItem(
+            BuildItem.Plot
+        );
+    }
+
+    public void SelectTrap()
+    {
+        SelectBuildItem(
+            BuildItem.Trap
+        );
+    }
+
+    public void SelectWaterPlot()
+    {
+        SelectBuildItem(
+            BuildItem.WaterPlot
+        );
+    }
+
+    // =========================================================
+    // GETTERS
     // =========================================================
 
     public BuildItem GetCurrentBuildItem()
     {
         return currentBuildItem;
     }
-
-    // =========================================================
-    // CHECK CURRENT ITEM
-    // =========================================================
 
     public bool IsPlotSelected()
     {
@@ -261,5 +389,11 @@ public class BuildItemSelector : MonoBehaviour
     {
         return currentBuildItem ==
                BuildItem.Trap;
+    }
+
+    public bool IsWaterPlotSelected()
+    {
+        return currentBuildItem ==
+               BuildItem.WaterPlot;
     }
 }
