@@ -10,20 +10,40 @@ public class InspectablePlot : MonoBehaviour
     [SerializeField] private SelectionWheel selectionWheel;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Plot plot;
+
+    [Header("Inspection UI")]
+    [SerializeField] private PlotInspectionUI inspectionUI;
 
     // =========================================================
-    // OUTLINE
+    // OUTLINE MATERIALS
     // =========================================================
 
-    [Header("Outline")]
-    [SerializeField] private Material outlineMaterial;
+    [Header("Outline Materials")]
+
+    [Tooltip("Material used when the mouse is hovering over the plot.")]
+    [SerializeField] private Material hoverOutlineMaterial;
+
+    [Tooltip("Material used while this plot is actively being inspected.")]
+    [SerializeField] private Material inspectedOutlineMaterial;
 
     // =========================================================
-    // CLICK
+    // INTERACTION
     // =========================================================
 
     [Header("Interaction")]
+
     [SerializeField] private bool allowClick = true;
+
+    [Tooltip("Maximum distance the player can inspect the plot from.")]
+    [SerializeField] private float interactionDistance = 5f;
+
+    // =========================================================
+    // PLAYER
+    // =========================================================
+
+    [Header("Player")]
+    [SerializeField] private Transform player;
 
     // =========================================================
     // DEBUG
@@ -39,7 +59,7 @@ public class InspectablePlot : MonoBehaviour
     private Material normalMaterial;
 
     private bool isHovered;
-    private bool outlineActive;
+    private bool isInspected;
 
     // =========================================================
     // AWAKE
@@ -48,7 +68,7 @@ public class InspectablePlot : MonoBehaviour
     private void Awake()
     {
         // =====================================================
-        // FIND CAMERA
+        // CAMERA
         // =====================================================
 
         if (mainCamera == null)
@@ -57,7 +77,7 @@ public class InspectablePlot : MonoBehaviour
         }
 
         // =====================================================
-        // FIND SPRITE
+        // SPRITE RENDERER
         // =====================================================
 
         if (spriteRenderer == null)
@@ -69,6 +89,22 @@ public class InspectablePlot : MonoBehaviour
             {
                 spriteRenderer =
                     GetComponentInChildren<SpriteRenderer>();
+            }
+        }
+
+        // =====================================================
+        // PLOT
+        // =====================================================
+
+        if (plot == null)
+        {
+            plot =
+                GetComponent<Plot>();
+
+            if (plot == null)
+            {
+                plot =
+                    GetComponentInChildren<Plot>();
             }
         }
 
@@ -90,7 +126,7 @@ public class InspectablePlot : MonoBehaviour
     private void Start()
     {
         // =====================================================
-        // AUTO FIND SELECTION WHEEL
+        // SELECTION WHEEL
         // =====================================================
 
         if (selectionWheel == null)
@@ -98,6 +134,36 @@ public class InspectablePlot : MonoBehaviour
             selectionWheel =
                 FindFirstObjectByType<SelectionWheel>();
         }
+
+        // =====================================================
+        // INSPECTION UI
+        // =====================================================
+
+        if (inspectionUI == null)
+        {
+            inspectionUI =
+                FindFirstObjectByType<PlotInspectionUI>();
+        }
+
+        // =====================================================
+        // PLAYER
+        // =====================================================
+
+        if (player == null)
+        {
+            GameObject playerObject =
+                GameObject.FindGameObjectWithTag(
+                    "Player"
+                );
+
+            if (playerObject != null)
+            {
+                player =
+                    playerObject.transform;
+            }
+        }
+
+        RefreshMaterial();
     }
 
     // =========================================================
@@ -107,7 +173,7 @@ public class InspectablePlot : MonoBehaviour
     private void Update()
     {
         // =====================================================
-        // ONLY INSPECT DURING NORMAL MODE
+        // NORMAL MODE ONLY
         // =====================================================
 
         if (!IsNormalMode())
@@ -117,7 +183,7 @@ public class InspectablePlot : MonoBehaviour
         }
 
         // =====================================================
-        // DISABLE WHILE TAB WHEEL IS OPEN
+        // SELECTION WHEEL OPEN
         // =====================================================
 
         if (selectionWheel != null &&
@@ -128,21 +194,25 @@ public class InspectablePlot : MonoBehaviour
         }
 
         // =====================================================
-        // CHECK HOVER
+        // HOVER CHECK
         // =====================================================
 
         bool hovering =
             IsMouseOverPlot();
 
+        bool withinRange =
+            IsPlayerWithinRange();
+
         SetHovered(
-            hovering
+            hovering &&
+            withinRange
         );
 
         // =====================================================
-        // CLICK PLOT
+        // CLICK TO INSPECT
         // =====================================================
 
-        if (hovering &&
+        if (isHovered &&
             allowClick &&
             Input.GetMouseButtonDown(0))
         {
@@ -161,7 +231,8 @@ public class InspectablePlot : MonoBehaviour
             return false;
         }
 
-        return selectionWheel.IsNormalMode();
+        return
+            selectionWheel.IsNormalMode();
     }
 
     // =========================================================
@@ -187,13 +258,39 @@ public class InspectablePlot : MonoBehaviour
         mouseWorld.z =
             bounds.center.z;
 
-        return bounds.Contains(
-            mouseWorld
-        );
+        return
+            bounds.Contains(
+                mouseWorld
+            );
     }
 
     // =========================================================
-    // SET HOVER
+    // PLAYER RANGE
+    // =========================================================
+
+    private bool IsPlayerWithinRange()
+    {
+        // If player wasn't found,
+        // allow interaction rather than breaking it.
+
+        if (player == null)
+        {
+            return true;
+        }
+
+        float distance =
+            Vector2.Distance(
+                player.position,
+                transform.position
+            );
+
+        return
+            distance <=
+            interactionDistance;
+    }
+
+    // =========================================================
+    // HOVER
     // =========================================================
 
     private void SetHovered(
@@ -204,63 +301,107 @@ public class InspectablePlot : MonoBehaviour
             return;
         }
 
-        isHovered = hovered;
+        isHovered =
+            hovered;
 
-        SetOutline(
-            hovered
-        );
+        RefreshMaterial();
 
         if (showDebugLogs)
         {
             Debug.Log(
                 gameObject.name +
-                " Hover = " +
+                " Plot Hover = " +
                 hovered
             );
         }
     }
 
     // =========================================================
-    // OUTLINE
+    // INSPECTED STATE
     // =========================================================
 
-    private void SetOutline(
-        bool enabled)
+    public void SetInspected(
+        bool inspected)
+    {
+        if (isInspected == inspected)
+        {
+            return;
+        }
+
+        isInspected =
+            inspected;
+
+        RefreshMaterial();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                gameObject.name +
+                " Plot Inspected = " +
+                inspected
+            );
+        }
+    }
+
+    // =========================================================
+    // REFRESH MATERIAL
+    // =========================================================
+
+    private void RefreshMaterial()
     {
         if (spriteRenderer == null)
         {
             return;
         }
 
-        if (outlineActive == enabled)
+        // =====================================================
+        // INSPECTED
+        //
+        // Highest priority.
+        // =====================================================
+
+        if (isInspected)
         {
+            if (inspectedOutlineMaterial != null)
+            {
+                spriteRenderer.material =
+                    inspectedOutlineMaterial;
+            }
+            else
+            {
+                spriteRenderer.material =
+                    normalMaterial;
+            }
+
             return;
         }
 
         // =====================================================
-        // OUTLINE ON
+        // HOVERED
         // =====================================================
 
-        if (enabled)
+        if (isHovered)
         {
-            if (outlineMaterial != null)
+            if (hoverOutlineMaterial != null)
             {
                 spriteRenderer.material =
-                    outlineMaterial;
+                    hoverOutlineMaterial;
             }
+            else
+            {
+                spriteRenderer.material =
+                    normalMaterial;
+            }
+
+            return;
         }
 
         // =====================================================
-        // OUTLINE OFF
+        // NORMAL
         // =====================================================
 
-        else
-        {
-            spriteRenderer.material =
-                normalMaterial;
-        }
-
-        outlineActive = enabled;
+        spriteRenderer.material =
+            normalMaterial;
     }
 
     // =========================================================
@@ -269,46 +410,92 @@ public class InspectablePlot : MonoBehaviour
 
     private void InspectPlot()
     {
-        Plot plot =
-            GetComponent<Plot>();
-
         if (plot == null)
         {
-            plot =
-                GetComponentInChildren<Plot>();
+            if (showDebugLogs)
+            {
+                Debug.LogWarning(
+                    gameObject.name +
+                    " has no Plot component."
+                );
+            }
+
+            return;
         }
 
-        // For now just confirm that
-        // the correct plot was selected.
-        if (showDebugLogs)
+        // =====================================================
+        // FIND UI AGAIN IF NECESSARY
+        // =====================================================
+
+        if (inspectionUI == null)
         {
-            Debug.Log(
-                "Inspecting plot: " +
-                gameObject.name
+            inspectionUI =
+                FindFirstObjectByType<PlotInspectionUI>();
+        }
+
+        // =====================================================
+        // OPEN UI
+        // =====================================================
+
+        if (inspectionUI != null)
+        {
+            inspectionUI.Open(
+                plot
+            );
+        }
+        else if (showDebugLogs)
+        {
+            Debug.LogWarning(
+                "No PlotInspectionUI found in the scene."
             );
         }
 
         // =====================================================
-        // THIS IS WHERE WE WILL OPEN
-        // THE PLOT INFORMATION UI NEXT
+        // DEBUG
         // =====================================================
 
-        if (plot != null)
+        if (showDebugLogs)
         {
             Debug.Log(
-                "Plot selected."
+                "Inspecting Plot | " +
+                "Occupied: " +
+                plot.occupied +
+                " | Planted: " +
+                plot.planted
             );
         }
     }
 
     // =========================================================
-    // RESET
+    // GETTERS
+    // =========================================================
+
+    public Plot GetPlot()
+    {
+        return plot;
+    }
+
+    public bool IsHovered()
+    {
+        return isHovered;
+    }
+
+    public bool IsInspected()
+    {
+        return isInspected;
+    }
+
+    // =========================================================
+    // DISABLE
     // =========================================================
 
     private void OnDisable()
     {
-        isHovered = false;
-        outlineActive = false;
+        isHovered =
+            false;
+
+        isInspected =
+            false;
 
         if (spriteRenderer != null)
         {

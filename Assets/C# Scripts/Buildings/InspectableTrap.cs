@@ -12,12 +12,20 @@ public class InspectableTrap : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Trap trap;
 
+    [Header("Inspection UI")]
+    [SerializeField] private TrapInspectionUI inspectionUI;
+
     // =========================================================
-    // OUTLINE
+    // OUTLINES
     // =========================================================
 
-    [Header("Outline")]
-    [SerializeField] private Material outlineMaterial;
+    [Header("Outline Materials")]
+
+    [Tooltip("Material used when hovering over the trap.")]
+    [SerializeField] private Material hoverOutlineMaterial;
+
+    [Tooltip("Material used while the trap inspection UI is open.")]
+    [SerializeField] private Material inspectedOutlineMaterial;
 
     // =========================================================
     // INTERACTION
@@ -25,6 +33,15 @@ public class InspectableTrap : MonoBehaviour
 
     [Header("Interaction")]
     [SerializeField] private bool allowClick = true;
+
+    [SerializeField] private float interactionDistance = 5f;
+
+    // =========================================================
+    // PLAYER
+    // =========================================================
+
+    [Header("Player")]
+    [SerializeField] private Transform player;
 
     // =========================================================
     // DEBUG
@@ -39,8 +56,9 @@ public class InspectableTrap : MonoBehaviour
 
     private Material normalMaterial;
 
-    private bool isHovered = false;
-    private bool outlineActive = false;
+    private bool isHovered;
+
+    private bool isInspected;
 
     // =========================================================
     // AWAKE
@@ -48,22 +66,15 @@ public class InspectableTrap : MonoBehaviour
 
     private void Awake()
     {
-        // =====================================================
-        // FIND CAMERA
-        // =====================================================
-
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
         }
 
-        // =====================================================
-        // FIND SPRITE RENDERER
-        // =====================================================
-
         if (spriteRenderer == null)
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            spriteRenderer =
+                GetComponent<SpriteRenderer>();
 
             if (spriteRenderer == null)
             {
@@ -72,23 +83,17 @@ public class InspectableTrap : MonoBehaviour
             }
         }
 
-        // =====================================================
-        // FIND TRAP
-        // =====================================================
-
         if (trap == null)
         {
-            trap = GetComponent<Trap>();
+            trap =
+                GetComponent<Trap>();
 
             if (trap == null)
             {
-                trap = GetComponentInChildren<Trap>();
+                trap =
+                    GetComponentInChildren<Trap>();
             }
         }
-
-        // =====================================================
-        // SAVE ORIGINAL MATERIAL
-        // =====================================================
 
         if (spriteRenderer != null)
         {
@@ -103,14 +108,33 @@ public class InspectableTrap : MonoBehaviour
 
     private void Start()
     {
-        // Automatically find SelectionWheel.
-        // Useful because traps are spawned as prefabs.
-
         if (selectionWheel == null)
         {
             selectionWheel =
                 FindFirstObjectByType<SelectionWheel>();
         }
+
+        if (inspectionUI == null)
+        {
+            inspectionUI =
+                FindFirstObjectByType<TrapInspectionUI>();
+        }
+
+        if (player == null)
+        {
+            GameObject playerObject =
+                GameObject.FindGameObjectWithTag(
+                    "Player"
+                );
+
+            if (playerObject != null)
+            {
+                player =
+                    playerObject.transform;
+            }
+        }
+
+        RefreshMaterial();
     }
 
     // =========================================================
@@ -120,7 +144,7 @@ public class InspectableTrap : MonoBehaviour
     private void Update()
     {
         // =====================================================
-        // ONLY WORK IN NORMAL MODE
+        // NORMAL MODE ONLY
         // =====================================================
 
         if (!IsNormalMode())
@@ -130,7 +154,7 @@ public class InspectableTrap : MonoBehaviour
         }
 
         // =====================================================
-        // DISABLE WHILE SELECTION WHEEL IS OPEN
+        // WHEEL OPEN
         // =====================================================
 
         if (selectionWheel != null &&
@@ -141,19 +165,25 @@ public class InspectableTrap : MonoBehaviour
         }
 
         // =====================================================
-        // CHECK CURSOR
+        // HOVER
         // =====================================================
 
         bool hovering =
             IsMouseOverTrap();
 
-        SetHovered(hovering);
+        bool withinRange =
+            IsPlayerWithinRange();
+
+        SetHovered(
+            hovering &&
+            withinRange
+        );
 
         // =====================================================
-        // LEFT CLICK
+        // CLICK
         // =====================================================
 
-        if (hovering &&
+        if (isHovered &&
             allowClick &&
             Input.GetMouseButtonDown(0))
         {
@@ -162,7 +192,7 @@ public class InspectableTrap : MonoBehaviour
     }
 
     // =========================================================
-    // NORMAL MODE CHECK
+    // NORMAL MODE
     // =========================================================
 
     private bool IsNormalMode()
@@ -172,11 +202,12 @@ public class InspectableTrap : MonoBehaviour
             return false;
         }
 
-        return selectionWheel.IsNormalMode();
+        return
+            selectionWheel.IsNormalMode();
     }
 
     // =========================================================
-    // MOUSE HOVER CHECK
+    // MOUSE OVER
     // =========================================================
 
     private bool IsMouseOverTrap()
@@ -187,29 +218,47 @@ public class InspectableTrap : MonoBehaviour
             return false;
         }
 
-        // Convert screen cursor position
-        // into world position.
-
         Vector3 mouseWorld =
             mainCamera.ScreenToWorldPoint(
                 Input.mousePosition
             );
 
-        // Get the actual visual bounds
-        // of the trap sprite.
-
         Bounds bounds =
             spriteRenderer.bounds;
 
-        // Match Z so Bounds.Contains works.
         mouseWorld.z =
             bounds.center.z;
 
-        return bounds.Contains(mouseWorld);
+        return
+            bounds.Contains(
+                mouseWorld
+            );
     }
 
     // =========================================================
-    // SET HOVER STATE
+    // RANGE
+    // =========================================================
+
+    private bool IsPlayerWithinRange()
+    {
+        if (player == null)
+        {
+            return true;
+        }
+
+        float distance =
+            Vector2.Distance(
+                player.position,
+                transform.position
+            );
+
+        return
+            distance <=
+            interactionDistance;
+    }
+
+    // =========================================================
+    // HOVER
     // =========================================================
 
     private void SetHovered(bool hovered)
@@ -219,171 +268,136 @@ public class InspectableTrap : MonoBehaviour
             return;
         }
 
-        isHovered = hovered;
+        isHovered =
+            hovered;
 
-        SetOutline(hovered);
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                gameObject.name +
-                " Trap Hover = " +
-                hovered
-            );
-        }
+        RefreshMaterial();
     }
 
     // =========================================================
-    // OUTLINE
+    // INSPECTED
     // =========================================================
 
-    private void SetOutline(bool enabled)
+    public void SetInspected(bool inspected)
+    {
+        if (isInspected == inspected)
+        {
+            return;
+        }
+
+        isInspected =
+            inspected;
+
+        RefreshMaterial();
+    }
+
+    // =========================================================
+    // MATERIAL
+    // =========================================================
+
+    private void RefreshMaterial()
     {
         if (spriteRenderer == null)
         {
             return;
         }
 
-        if (outlineActive == enabled)
+        // =====================================================
+        // INSPECTED HAS HIGHEST PRIORITY
+        // =====================================================
+
+        if (isInspected)
         {
+            if (inspectedOutlineMaterial != null)
+            {
+                spriteRenderer.material =
+                    inspectedOutlineMaterial;
+            }
+            else
+            {
+                spriteRenderer.material =
+                    normalMaterial;
+            }
+
             return;
         }
 
         // =====================================================
-        // TURN OUTLINE ON
+        // HOVER
         // =====================================================
 
-        if (enabled)
+        if (isHovered)
         {
-            if (outlineMaterial != null)
+            if (hoverOutlineMaterial != null)
             {
                 spriteRenderer.material =
-                    outlineMaterial;
+                    hoverOutlineMaterial;
             }
-            else if (showDebugLogs)
+            else
             {
-                Debug.LogWarning(
-                    gameObject.name +
-                    " has no Outline Material assigned."
-                );
+                spriteRenderer.material =
+                    normalMaterial;
             }
+
+            return;
         }
 
         // =====================================================
-        // TURN OUTLINE OFF
+        // NORMAL
         // =====================================================
 
-        else
-        {
-            spriteRenderer.material =
-                normalMaterial;
-        }
-
-        outlineActive = enabled;
+        spriteRenderer.material =
+            normalMaterial;
     }
 
     // =========================================================
-    // INSPECT TRAP
+    // INSPECT
     // =========================================================
 
     private void InspectTrap()
     {
         if (trap == null)
         {
-            if (showDebugLogs)
-            {
-                Debug.LogWarning(
-                    gameObject.name +
-                    " has no Trap component."
-                );
-            }
-
             return;
         }
 
-        // =====================================================
-        // READ CURRENT TRAP STATE
-        // =====================================================
-
-        Trap.TrapState state =
-            trap.GetState();
-
-        if (showDebugLogs)
+        if (inspectionUI == null)
         {
-            Debug.Log(
-                "Inspecting Trap: " +
-                gameObject.name +
-                " | State: " +
-                state
+            inspectionUI =
+                FindFirstObjectByType<TrapInspectionUI>();
+        }
+
+        if (inspectionUI != null)
+        {
+            inspectionUI.Open(
+                trap
             );
         }
-
-        // =====================================================
-        // STATE-SPECIFIC DEBUG
-        // =====================================================
-
-        switch (state)
+        else if (showDebugLogs)
         {
-            case Trap.TrapState.Empty:
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        "Trap is EMPTY."
-                    );
-                }
-
-                break;
-
-
-            case Trap.TrapState.Set:
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        "Trap is SET and waiting."
-                    );
-                }
-
-                break;
-
-
-            case Trap.TrapState.Caught:
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        "Trap has CAUGHT an animal."
-                    );
-                }
-
-                break;
+            Debug.LogWarning(
+                "No TrapInspectionUI found in the scene."
+            );
         }
-
-        // =====================================================
-        // LATER:
-        //
-        // Open your Trap Inspection UI here.
-        //
-        // Example:
-        //
-        // trapUI.OpenTrap(trap);
-        //
-        // =====================================================
     }
 
     // =========================================================
-    // PUBLIC INFORMATION
+    // GETTERS
     // =========================================================
+
+    public Trap GetTrap()
+    {
+        return trap;
+    }
 
     public bool IsHovered()
     {
         return isHovered;
     }
 
-    public Trap GetTrap()
+    public bool IsInspected()
     {
-        return trap;
+        return isInspected;
     }
 
     // =========================================================
@@ -393,23 +407,8 @@ public class InspectableTrap : MonoBehaviour
     private void OnDisable()
     {
         isHovered = false;
-        outlineActive = false;
 
-        if (spriteRenderer != null)
-        {
-            spriteRenderer.material =
-                normalMaterial;
-        }
-    }
-
-    // =========================================================
-    // DESTROY
-    // =========================================================
-
-    private void OnDestroy()
-    {
-        // Make sure we don't leave
-        // an instantiated outline material around.
+        isInspected = false;
 
         if (spriteRenderer != null)
         {

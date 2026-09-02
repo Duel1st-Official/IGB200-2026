@@ -232,7 +232,7 @@ public class WaterPlotPlacementSystem : MonoBehaviour
         UpdatePreview();
 
         // Right click to place
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(0))
         {
             TryPlaceWaterPlot();
         }

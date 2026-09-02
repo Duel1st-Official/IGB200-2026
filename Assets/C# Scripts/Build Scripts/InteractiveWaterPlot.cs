@@ -12,12 +12,20 @@ public class InteractiveWaterPlot : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private WaterPlot waterPlot;
 
+    [Header("Inspection UI")]
+    [SerializeField] private WaterPlotInspectionUI inspectionUI;
+
     // =========================================================
-    // OUTLINE
+    // MATERIALS
     // =========================================================
 
-    [Header("Outline")]
-    [SerializeField] private Material outlineMaterial;
+    [Header("Outline Materials")]
+
+    [Tooltip("Material used while simply hovering over the Water Plot.")]
+    [SerializeField] private Material hoverOutlineMaterial;
+
+    [Tooltip("Material used while this Water Plot is actively being inspected.")]
+    [SerializeField] private Material inspectedOutlineMaterial;
 
     // =========================================================
     // INTERACTION
@@ -26,7 +34,7 @@ public class InteractiveWaterPlot : MonoBehaviour
     [Header("Interaction")]
     [SerializeField] private bool allowClick = true;
 
-    [Tooltip("Maximum distance the player can interact with the water plot.")]
+    [Tooltip("Maximum distance the player can inspect the Water Plot from.")]
     [SerializeField] private float interactionDistance = 5f;
 
     // =========================================================
@@ -49,8 +57,8 @@ public class InteractiveWaterPlot : MonoBehaviour
 
     private Material normalMaterial;
 
-    private bool isHovered = false;
-    private bool outlineActive = false;
+    private bool isHovered;
+    private bool isInspected;
 
     // =========================================================
     // AWAKE
@@ -100,7 +108,7 @@ public class InteractiveWaterPlot : MonoBehaviour
         }
 
         // =====================================================
-        // SAVE ORIGINAL MATERIAL
+        // SAVE NORMAL MATERIAL
         // =====================================================
 
         if (spriteRenderer != null)
@@ -117,7 +125,7 @@ public class InteractiveWaterPlot : MonoBehaviour
     private void Start()
     {
         // =====================================================
-        // FIND SELECTION WHEEL
+        // SELECTION WHEEL
         // =====================================================
 
         if (selectionWheel == null)
@@ -127,7 +135,17 @@ public class InteractiveWaterPlot : MonoBehaviour
         }
 
         // =====================================================
-        // FIND PLAYER
+        // INSPECTION UI
+        // =====================================================
+
+        if (inspectionUI == null)
+        {
+            inspectionUI =
+                FindFirstObjectByType<WaterPlotInspectionUI>();
+        }
+
+        // =====================================================
+        // PLAYER
         // =====================================================
 
         if (player == null)
@@ -143,6 +161,8 @@ public class InteractiveWaterPlot : MonoBehaviour
                     playerObject.transform;
             }
         }
+
+        RefreshMaterial();
     }
 
     // =========================================================
@@ -152,7 +172,7 @@ public class InteractiveWaterPlot : MonoBehaviour
     private void Update()
     {
         // =====================================================
-        // ONLY ACTIVE IN NORMAL MODE
+        // ONLY INTERACT IN NORMAL MODE
         // =====================================================
 
         if (!IsNormalMode())
@@ -173,23 +193,14 @@ public class InteractiveWaterPlot : MonoBehaviour
         }
 
         // =====================================================
-        // CHECK CURSOR
+        // HOVER
         // =====================================================
 
         bool hovering =
             IsMouseOverWaterPlot();
 
-        // =====================================================
-        // CHECK PLAYER DISTANCE
-        // =====================================================
-
         bool withinRange =
             IsPlayerWithinRange();
-
-        // Only outline if:
-        //
-        // 1. Mouse is over water plot
-        // 2. Player is close enough
 
         SetHovered(
             hovering &&
@@ -197,7 +208,7 @@ public class InteractiveWaterPlot : MonoBehaviour
         );
 
         // =====================================================
-        // LEFT CLICK
+        // CLICK TO INSPECT
         // =====================================================
 
         if (isHovered &&
@@ -234,23 +245,14 @@ public class InteractiveWaterPlot : MonoBehaviour
             return false;
         }
 
-        // =====================================================
-        // SCREEN -> WORLD
-        // =====================================================
-
         Vector3 mouseWorld =
             mainCamera.ScreenToWorldPoint(
                 Input.mousePosition
             );
 
-        // =====================================================
-        // SPRITE BOUNDS
-        // =====================================================
-
         Bounds bounds =
             spriteRenderer.bounds;
 
-        // Bounds.Contains checks Z as well.
         mouseWorld.z =
             bounds.center.z;
 
@@ -295,69 +297,104 @@ public class InteractiveWaterPlot : MonoBehaviour
         isHovered =
             hovered;
 
-        SetOutline(
-            hovered
-        );
+        RefreshMaterial();
 
         if (showDebugLogs)
         {
             Debug.Log(
                 gameObject.name +
-                " Water Plot Hover = " +
-                hovered
+                " Hover = " +
+                isHovered
             );
         }
     }
 
     // =========================================================
-    // OUTLINE
+    // INSPECTED STATE
     // =========================================================
 
-    private void SetOutline(
-        bool enabled)
+    public void SetInspected(
+        bool inspected)
+    {
+        if (isInspected == inspected)
+        {
+            return;
+        }
+
+        isInspected =
+            inspected;
+
+        RefreshMaterial();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                gameObject.name +
+                " Inspected = " +
+                isInspected
+            );
+        }
+    }
+
+    // =========================================================
+    // REFRESH MATERIAL
+    // =========================================================
+
+    private void RefreshMaterial()
     {
         if (spriteRenderer == null)
         {
             return;
         }
 
-        if (outlineActive == enabled)
+        // =====================================================
+        // PRIORITY 1:
+        // BEING INSPECTED
+        // =====================================================
+
+        if (isInspected)
         {
+            if (inspectedOutlineMaterial != null)
+            {
+                spriteRenderer.material =
+                    inspectedOutlineMaterial;
+            }
+            else
+            {
+                spriteRenderer.material =
+                    normalMaterial;
+            }
+
             return;
         }
 
         // =====================================================
-        // OUTLINE ON
+        // PRIORITY 2:
+        // HOVER
         // =====================================================
 
-        if (enabled)
+        if (isHovered)
         {
-            if (outlineMaterial != null)
+            if (hoverOutlineMaterial != null)
             {
                 spriteRenderer.material =
-                    outlineMaterial;
+                    hoverOutlineMaterial;
             }
-            else if (showDebugLogs)
+            else
             {
-                Debug.LogWarning(
-                    gameObject.name +
-                    " has no Outline Material assigned."
-                );
+                spriteRenderer.material =
+                    normalMaterial;
             }
+
+            return;
         }
 
         // =====================================================
-        // OUTLINE OFF
+        // NORMAL
         // =====================================================
 
-        else
-        {
-            spriteRenderer.material =
-                normalMaterial;
-        }
-
-        outlineActive =
-            enabled;
+        spriteRenderer.material =
+            normalMaterial;
     }
 
     // =========================================================
@@ -368,23 +405,40 @@ public class InteractiveWaterPlot : MonoBehaviour
     {
         if (waterPlot == null)
         {
-            Debug.LogWarning(
-                gameObject.name +
-                " has no WaterPlot component."
-            );
-
             return;
         }
 
         // =====================================================
-        // GET WATER INFORMATION
+        // FIND UI AGAIN IF NEEDED
         // =====================================================
 
-        WaterPlot.WaterState state =
-            waterPlot.GetWaterState();
+        if (inspectionUI == null)
+        {
+            inspectionUI =
+                FindFirstObjectByType<WaterPlotInspectionUI>();
+        }
 
-        float quality =
-            waterPlot.GetWaterQuality();
+        // =====================================================
+        // OPEN UI
+        // =====================================================
+
+        if (inspectionUI != null)
+        {
+            inspectionUI.Open(
+                waterPlot
+            );
+        }
+        else
+        {
+            if (showDebugLogs)
+            {
+                Debug.LogWarning(
+                    "No WaterPlotInspectionUI found."
+                );
+            }
+
+            return;
+        }
 
         // =====================================================
         // DEBUG
@@ -393,83 +447,16 @@ public class InteractiveWaterPlot : MonoBehaviour
         if (showDebugLogs)
         {
             Debug.Log(
-                "Inspecting Water Plot: " +
-                gameObject.name +
-                " | State: " +
-                state +
+                "Inspecting Water Plot | State: " +
+                waterPlot.GetWaterState() +
                 " | Quality: " +
-                quality.ToString("0") +
-                "%"
+                waterPlot.GetWaterQuality()
             );
         }
-
-        // =====================================================
-        // STATE RESPONSE
-        // =====================================================
-
-        switch (state)
-        {
-            // =================================================
-            // CLEAN
-            // =================================================
-
-            case WaterPlot.WaterState.Clean:
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        "Water is CLEAN. " +
-                        "Good water source for the habitat."
-                    );
-                }
-
-                break;
-
-            // =================================================
-            // DIRTY
-            // =================================================
-
-            case WaterPlot.WaterState.Dirty:
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        "Water is DIRTY. " +
-                        "Water quality should be improved."
-                    );
-                }
-
-                break;
-
-            // =================================================
-            // POLLUTED
-            // =================================================
-
-            case WaterPlot.WaterState.Polluted:
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        "Water is POLLUTED. " +
-                        "The water source needs attention."
-                    );
-                }
-
-                break;
-        }
-
-        // =====================================================
-        // LATER:
-        //
-        // WaterPlotUI.Open(waterPlot);
-        //
-        // This is where your actual inspection
-        // panel can be opened.
-        // =====================================================
     }
 
     // =========================================================
-    // PUBLIC CLEANING INTERACTIONS
+    // CLEANING HELPERS
     // =========================================================
 
     public void CleanSmallAmount()
@@ -507,7 +494,7 @@ public class InteractiveWaterPlot : MonoBehaviour
     }
 
     // =========================================================
-    // PUBLIC POLLUTION INTERACTIONS
+    // POLLUTION HELPERS
     // =========================================================
 
     public void AddSmallPollution()
@@ -558,14 +545,22 @@ public class InteractiveWaterPlot : MonoBehaviour
         return isHovered;
     }
 
+    public bool IsInspected()
+    {
+        return isInspected;
+    }
+
     // =========================================================
     // DISABLE
     // =========================================================
 
     private void OnDisable()
     {
-        isHovered = false;
-        outlineActive = false;
+        isHovered =
+            false;
+
+        isInspected =
+            false;
 
         if (spriteRenderer != null)
         {
