@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class InteractiveWaterPlot : MonoBehaviour
 {
@@ -206,6 +207,17 @@ public class InteractiveWaterPlot : MonoBehaviour
             hovering &&
             withinRange
         );
+
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            if (isHovered)
+            {
+                isHovered = false;
+                RefreshMaterial();
+            }
+
+            return;
+        }
 
         // =====================================================
         // CLICK TO INSPECT

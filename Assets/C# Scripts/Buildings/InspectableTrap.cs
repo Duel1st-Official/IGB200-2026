@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class InspectableTrap : MonoBehaviour
 {
@@ -161,6 +162,17 @@ public class InspectableTrap : MonoBehaviour
             selectionWheel.IsWheelOpen())
         {
             SetHovered(false);
+            return;
+        }
+
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            if (isHovered)
+            {
+                isHovered = false;
+                RefreshMaterial();
+            }
+
             return;
         }
 

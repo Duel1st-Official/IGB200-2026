@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class InspectablePlot : MonoBehaviour
 {
@@ -190,6 +191,13 @@ public class InspectablePlot : MonoBehaviour
             selectionWheel.IsWheelOpen())
         {
             SetHovered(false);
+            return;
+        }
+
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            isHovered = false;
+            RefreshMaterial();
             return;
         }
 

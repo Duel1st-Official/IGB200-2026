@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-public class PlotInspectionUI : MonoBehaviour
+public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
 {
     // =========================================================
     // REFERENCES
@@ -73,23 +73,11 @@ public class PlotInspectionUI : MonoBehaviour
     // =========================================================
 
     [Header("Drag Visuals")]
-
-    [Tooltip("How small the panel becomes while dragging.")]
     [SerializeField] private float dragScale = 0.92f;
-
-    [Tooltip("How quickly the panel shrinks when grabbed.")]
     [SerializeField] private float dragScaleSpeed = 12f;
-
-    [Tooltip("Maximum amount the panel can tilt while dragging.")]
     [SerializeField] private float maxDragSwayAngle = 7f;
-
-    [Tooltip("How strongly mouse movement affects the tilt.")]
     [SerializeField] private float swayStrength = 0.3f;
-
-    [Tooltip("How smoothly the panel responds to sway.")]
     [SerializeField] private float swaySmoothSpeed = 10f;
-
-    [Tooltip("How quickly the panel returns to normal after release.")]
     [SerializeField] private float dropReturnSpeed = 10f;
 
     // =========================================================
@@ -107,7 +95,7 @@ public class PlotInspectionUI : MonoBehaviour
     [SerializeField] private float alphaSmoothSpeed = 10f;
 
     // =========================================================
-    // OPEN ANIMATION
+    // OPEN
     // =========================================================
 
     [Header("Open Animation")]
@@ -118,7 +106,7 @@ public class PlotInspectionUI : MonoBehaviour
     [SerializeField] private float settleDuration = 0.1f;
 
     // =========================================================
-    // CLOSE ANIMATION
+    // CLOSE
     // =========================================================
 
     [Header("Close Animation")]
@@ -127,14 +115,14 @@ public class PlotInspectionUI : MonoBehaviour
     [SerializeField] private bool fadeWhileClosing = true;
 
     // =========================================================
-    // OUTSIDE CLICK
+    // OUTSIDE
     // =========================================================
 
     [Header("Outside Click")]
     [SerializeField] private bool closeWhenClickingOutside = true;
 
     // =========================================================
-    // MODE BEHAVIOUR
+    // MODE
     // =========================================================
 
     [Header("Mode Behaviour")]
@@ -167,27 +155,17 @@ public class PlotInspectionUI : MonoBehaviour
 
     private void Start()
     {
-        // =====================================================
-        // CAMERA
-        // =====================================================
-
         if (mainCamera == null)
         {
-            mainCamera = Camera.main;
+            mainCamera =
+                Camera.main;
         }
-
-        // =====================================================
-        // CANVAS
-        // =====================================================
 
         if (canvas == null)
         {
-            canvas = GetComponentInParent<Canvas>();
+            canvas =
+                GetComponentInParent<Canvas>();
         }
-
-        // =====================================================
-        // SELECTION WHEEL
-        // =====================================================
 
         if (selectionWheel == null)
         {
@@ -195,18 +173,11 @@ public class PlotInspectionUI : MonoBehaviour
                 FindFirstObjectByType<SelectionWheel>();
         }
 
-        // =====================================================
-        // PANEL
-        // =====================================================
-
         if (panel == null)
         {
-            panel = transform as RectTransform;
+            panel =
+                transform as RectTransform;
         }
-
-        // =====================================================
-        // CANVAS GROUP
-        // =====================================================
 
         if (canvasGroup == null &&
             panel != null)
@@ -227,20 +198,12 @@ public class PlotInspectionUI : MonoBehaviour
                 normalAlpha;
         }
 
-        // =====================================================
-        // CLOSE BUTTON
-        // =====================================================
-
         if (closeButton != null)
         {
             closeButton.onClick.AddListener(
                 Close
             );
         }
-
-        // =====================================================
-        // START HIDDEN
-        // =====================================================
 
         if (panel != null)
         {
@@ -263,31 +226,15 @@ public class PlotInspectionUI : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // MODE CHANGE
-        // =====================================================
-
         if (ShouldCloseBecauseOfMode())
         {
             Close();
             return;
         }
 
-        // =====================================================
-        // DRAGGING
-        // =====================================================
-
         HandleDragging();
 
-        // =====================================================
-        // DRAG VISUALS
-        // =====================================================
-
         UpdateDragVisuals();
-
-        // =====================================================
-        // CLICK OUTSIDE
-        // =====================================================
 
         if (closeWhenClickingOutside &&
             Input.GetMouseButtonDown(0))
@@ -320,7 +267,7 @@ public class PlotInspectionUI : MonoBehaviour
     }
 
     // =========================================================
-    // MODE CHECK
+    // MODE
     // =========================================================
 
     private bool ShouldCloseBecauseOfMode()
@@ -330,14 +277,12 @@ public class PlotInspectionUI : MonoBehaviour
             return false;
         }
 
-        // Close when leaving Normal Mode.
         if (closeWhenChangingMode &&
             !selectionWheel.IsNormalMode())
         {
             return true;
         }
 
-        // Close when Tab / Selection Wheel opens.
         if (closeWhenSelectionWheelOpens &&
             selectionWheel.IsWheelOpen())
         {
@@ -360,7 +305,18 @@ public class PlotInspectionUI : MonoBehaviour
         }
 
         // =====================================================
-        // CLEAR PREVIOUS PLOT HIGHLIGHT
+        // REGISTER WITH MANAGER
+        // =====================================================
+
+        if (InspectionUIManager.Instance != null)
+        {
+            InspectionUIManager.Instance.OpenPanel(
+                this
+            );
+        }
+
+        // =====================================================
+        // CLEAR OLD PLOT
         // =====================================================
 
         ClearCurrentPlotHighlight();
@@ -375,18 +331,16 @@ public class PlotInspectionUI : MonoBehaviour
                 animationCoroutine
             );
 
-            animationCoroutine = null;
+            animationCoroutine =
+                null;
         }
 
         // =====================================================
         // CURRENT PLOT
         // =====================================================
 
-        currentPlot = plot;
-
-        // =====================================================
-        // FIND INSPECTABLE PLOT
-        // =====================================================
+        currentPlot =
+            plot;
 
         currentInspectablePlot =
             plot.GetComponent<InspectablePlot>();
@@ -404,7 +358,7 @@ public class PlotInspectionUI : MonoBehaviour
         }
 
         // =====================================================
-        // INSPECTED OUTLINE
+        // OUTLINE
         // =====================================================
 
         if (currentInspectablePlot != null)
@@ -415,19 +369,23 @@ public class PlotInspectionUI : MonoBehaviour
         }
 
         // =====================================================
-        // RESET STATE
+        // STATE
         // =====================================================
 
-        isOpen = true;
-        isClosing = false;
-        isDragging = false;
-        manuallyPositioned = false;
+        isOpen =
+            true;
 
-        currentSwayAngle = 0f;
+        isClosing =
+            false;
 
-        // =====================================================
-        // SHOW PANEL
-        // =====================================================
+        isDragging =
+            false;
+
+        manuallyPositioned =
+            false;
+
+        currentSwayAngle =
+            0f;
 
         panel.gameObject.SetActive(
             true
@@ -436,41 +394,22 @@ public class PlotInspectionUI : MonoBehaviour
         panel.localRotation =
             Quaternion.identity;
 
-        // =====================================================
-        // RESET ALPHA
-        // =====================================================
-
         if (canvasGroup != null)
         {
             canvasGroup.alpha =
                 normalAlpha;
         }
 
-        // =====================================================
-        // REFRESH CONTENT
-        // =====================================================
-
         RefreshUI();
-
-        // =====================================================
-        // POSITION BESIDE PLOT
-        // =====================================================
 
         SetPanelPositionImmediately();
 
-        // =====================================================
-        // PREVENT OPENING CLICK CLOSING PANEL
-        // =====================================================
-
-        ignoreOutsideClick = true;
+        ignoreOutsideClick =
+            true;
 
         StartCoroutine(
             ResetOutsideClickIgnore()
         );
-
-        // =====================================================
-        // OPEN ANIMATION
-        // =====================================================
 
         animationCoroutine =
             StartCoroutine(
@@ -479,7 +418,7 @@ public class PlotInspectionUI : MonoBehaviour
     }
 
     // =========================================================
-    // REFRESH UI
+    // UI CONTENT
     // =========================================================
 
     public void RefreshUI()
@@ -489,19 +428,11 @@ public class PlotInspectionUI : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // TITLE
-        // =====================================================
-
         if (titleText != null)
         {
             titleText.text =
                 "FARM PLOT";
         }
-
-        // =====================================================
-        // PLANTED
-        // =====================================================
 
         if (currentPlot.planted)
         {
@@ -516,24 +447,20 @@ public class PlotInspectionUI : MonoBehaviour
                 descriptionText.text =
                     "Something is growing in this plot.";
             }
-
-            return;
         }
-
-        // =====================================================
-        // EMPTY
-        // =====================================================
-
-        if (statusText != null)
+        else
         {
-            statusText.text =
-                "EMPTY";
-        }
+            if (statusText != null)
+            {
+                statusText.text =
+                    "EMPTY";
+            }
 
-        if (descriptionText != null)
-        {
-            descriptionText.text =
-                "Nothing is planted in this plot.";
+            if (descriptionText != null)
+            {
+                descriptionText.text =
+                    "Nothing is planted in this plot.";
+            }
         }
     }
 
@@ -574,20 +501,29 @@ public class PlotInspectionUI : MonoBehaviour
                 animationCoroutine
             );
 
-            animationCoroutine = null;
+            animationCoroutine =
+                null;
         }
 
-        // Remove inspected outline.
         ClearCurrentPlotHighlight();
 
-        isOpen = false;
-        isClosing = false;
-        isDragging = false;
-        manuallyPositioned = false;
+        isOpen =
+            false;
 
-        currentPlot = null;
+        isClosing =
+            false;
 
-        currentSwayAngle = 0f;
+        isDragging =
+            false;
+
+        manuallyPositioned =
+            false;
+
+        currentPlot =
+            null;
+
+        currentSwayAngle =
+            0f;
 
         if (panel != null)
         {
@@ -608,10 +544,21 @@ public class PlotInspectionUI : MonoBehaviour
             canvasGroup.alpha =
                 normalAlpha;
         }
+
+        // =====================================================
+        // CLEAR MANAGER
+        // =====================================================
+
+        if (InspectionUIManager.Instance != null)
+        {
+            InspectionUIManager.Instance.ClearPanel(
+                this
+            );
+        }
     }
 
     // =========================================================
-    // CLEAR INSPECTED OUTLINE
+    // HIGHLIGHT
     // =========================================================
 
     private void ClearCurrentPlotHighlight()
@@ -623,7 +570,8 @@ public class PlotInspectionUI : MonoBehaviour
             );
         }
 
-        currentInspectablePlot = null;
+        currentInspectablePlot =
+            null;
     }
 
     // =========================================================
@@ -637,7 +585,6 @@ public class PlotInspectionUI : MonoBehaviour
             return;
         }
 
-        // Clicking anywhere inside the panel is allowed.
         if (IsPointerOverInspectionUI())
         {
             return;
@@ -646,20 +593,12 @@ public class PlotInspectionUI : MonoBehaviour
         Close();
     }
 
-    // =========================================================
-    // POINTER OVER PANEL
-    // =========================================================
-
     private bool IsPointerOverInspectionUI()
     {
         if (panel == null)
         {
             return false;
         }
-
-        // =====================================================
-        // RECTANGLE CHECK
-        // =====================================================
 
         if (RectTransformUtility.RectangleContainsScreenPoint(
             panel,
@@ -668,10 +607,6 @@ public class PlotInspectionUI : MonoBehaviour
         {
             return true;
         }
-
-        // =====================================================
-        // EVENT SYSTEM CHECK
-        // =====================================================
 
         if (EventSystem.current == null)
         {
@@ -715,7 +650,7 @@ public class PlotInspectionUI : MonoBehaviour
     }
 
     // =========================================================
-    // DRAGGING
+    // DRAG
     // =========================================================
 
     private void HandleDragging()
@@ -730,38 +665,31 @@ public class PlotInspectionUI : MonoBehaviour
         Camera uiCamera =
             GetUICamera();
 
-        // =====================================================
-        // START DRAG
-        // =====================================================
-
         if (Input.GetMouseButtonDown(0))
         {
             bool overHandle =
-                RectTransformUtility
-                    .RectangleContainsScreenPoint(
-                        dragHandle,
-                        Input.mousePosition,
-                        uiCamera
-                    );
+                RectTransformUtility.RectangleContainsScreenPoint(
+                    dragHandle,
+                    Input.mousePosition,
+                    uiCamera
+                );
 
             if (overHandle)
             {
                 RectTransform canvasRect =
-                    canvas.transform
-                        as RectTransform;
+                    canvas.transform as RectTransform;
 
                 if (canvasRect == null)
                 {
                     return;
                 }
 
-                RectTransformUtility
-                    .ScreenPointToLocalPointInRectangle(
-                        canvasRect,
-                        Input.mousePosition,
-                        uiCamera,
-                        out Vector2 mousePosition
-                    );
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    canvasRect,
+                    Input.mousePosition,
+                    uiCamera,
+                    out Vector2 mousePosition
+                );
 
                 dragOffset =
                     panel.anchoredPosition -
@@ -778,29 +706,23 @@ public class PlotInspectionUI : MonoBehaviour
             }
         }
 
-        // =====================================================
-        // WHILE DRAGGING
-        // =====================================================
-
         if (isDragging &&
             Input.GetMouseButton(0))
         {
             RectTransform canvasRect =
-                canvas.transform
-                    as RectTransform;
+                canvas.transform as RectTransform;
 
             if (canvasRect == null)
             {
                 return;
             }
 
-            RectTransformUtility
-                .ScreenPointToLocalPointInRectangle(
-                    canvasRect,
-                    Input.mousePosition,
-                    uiCamera,
-                    out Vector2 mousePosition
-                );
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvasRect,
+                Input.mousePosition,
+                uiCamera,
+                out Vector2 mousePosition
+            );
 
             Vector2 newPosition =
                 mousePosition +
@@ -817,10 +739,6 @@ public class PlotInspectionUI : MonoBehaviour
             panel.anchoredPosition =
                 newPosition;
         }
-
-        // =====================================================
-        // RELEASE
-        // =====================================================
 
         if (isDragging &&
             Input.GetMouseButtonUp(0))
@@ -844,10 +762,6 @@ public class PlotInspectionUI : MonoBehaviour
         float delta =
             Time.unscaledDeltaTime;
 
-        // =====================================================
-        // TRANSPARENCY
-        // =====================================================
-
         float targetAlpha =
             isDragging
                 ? dragAlpha
@@ -870,16 +784,8 @@ public class PlotInspectionUI : MonoBehaviour
                 );
         }
 
-        // =====================================================
-        // WHILE DRAGGING
-        // =====================================================
-
         if (isDragging)
         {
-            // -------------------------------------------------
-            // SCALE
-            // -------------------------------------------------
-
             float scaleAmount =
                 1f -
                 Mathf.Exp(
@@ -894,10 +800,6 @@ public class PlotInspectionUI : MonoBehaviour
                     dragScale,
                     scaleAmount
                 );
-
-            // -------------------------------------------------
-            // SWAY
-            // -------------------------------------------------
 
             Vector2 currentMouse =
                 Input.mousePosition;
@@ -941,11 +843,6 @@ public class PlotInspectionUI : MonoBehaviour
                     currentSwayAngle
                 );
         }
-
-        // =====================================================
-        // AFTER RELEASE
-        // =====================================================
-
         else
         {
             float returnAmount =
@@ -955,10 +852,6 @@ public class PlotInspectionUI : MonoBehaviour
                     delta
                 );
 
-            // -------------------------------------------------
-            // SCALE BACK
-            // -------------------------------------------------
-
             panel.localScale =
                 Vector3.Lerp(
                     panel.localScale,
@@ -966,10 +859,6 @@ public class PlotInspectionUI : MonoBehaviour
                     normalScale,
                     returnAmount
                 );
-
-            // -------------------------------------------------
-            // ROTATION BACK
-            // -------------------------------------------------
 
             currentSwayAngle =
                 Mathf.Lerp(
@@ -988,7 +877,7 @@ public class PlotInspectionUI : MonoBehaviour
     }
 
     // =========================================================
-    // FOLLOW PLOT
+    // POSITION
     // =========================================================
 
     private void UpdatePanelPosition()
@@ -1011,17 +900,8 @@ public class PlotInspectionUI : MonoBehaviour
             );
     }
 
-    // =========================================================
-    // INITIAL POSITION
-    // =========================================================
-
     private void SetPanelPositionImmediately()
     {
-        if (panel == null)
-        {
-            return;
-        }
-
         Vector2 position =
             CalculatePanelPosition();
 
@@ -1037,10 +917,6 @@ public class PlotInspectionUI : MonoBehaviour
             position;
     }
 
-    // =========================================================
-    // CALCULATE POSITION
-    // =========================================================
-
     private Vector2 CalculatePanelPosition()
     {
         if (currentPlot == null ||
@@ -1053,18 +929,10 @@ public class PlotInspectionUI : MonoBehaviour
                 : Vector2.zero;
         }
 
-        // =====================================================
-        // WORLD -> SCREEN
-        // =====================================================
-
         Vector3 screenPosition =
             mainCamera.WorldToScreenPoint(
                 currentPlot.transform.position
             );
-
-        // =====================================================
-        // FLIP SIDE NEAR SCREEN EDGE
-        // =====================================================
 
         float direction =
             1f;
@@ -1085,26 +953,20 @@ public class PlotInspectionUI : MonoBehaviour
         screenPosition.y +=
             verticalOffset;
 
-        // =====================================================
-        // SCREEN -> CANVAS
-        // =====================================================
-
         RectTransform canvasRect =
-            canvas.transform
-                as RectTransform;
+            canvas.transform as RectTransform;
 
         if (canvasRect == null)
         {
             return panel.anchoredPosition;
         }
 
-        RectTransformUtility
-            .ScreenPointToLocalPointInRectangle(
-                canvasRect,
-                screenPosition,
-                GetUICamera(),
-                out Vector2 canvasPosition
-            );
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect,
+            screenPosition,
+            GetUICamera(),
+            out Vector2 canvasPosition
+        );
 
         if (clampToCanvas)
         {
@@ -1117,10 +979,6 @@ public class PlotInspectionUI : MonoBehaviour
         return canvasPosition;
     }
 
-    // =========================================================
-    // CLAMP TO CANVAS
-    // =========================================================
-
     private Vector2 ClampPanelToCanvas(
         Vector2 targetPosition)
     {
@@ -1131,8 +989,7 @@ public class PlotInspectionUI : MonoBehaviour
         }
 
         RectTransform canvasRect =
-            canvas.transform
-                as RectTransform;
+            canvas.transform as RectTransform;
 
         if (canvasRect == null)
         {
@@ -1190,7 +1047,7 @@ public class PlotInspectionUI : MonoBehaviour
     }
 
     // =========================================================
-    // UI CAMERA
+    // CAMERA
     // =========================================================
 
     private Camera GetUICamera()
@@ -1215,11 +1072,6 @@ public class PlotInspectionUI : MonoBehaviour
 
     private IEnumerator OpenAnimation()
     {
-        if (panel == null)
-        {
-            yield break;
-        }
-
         panel.localScale =
             Vector3.one *
             startingScale;
@@ -1227,7 +1079,6 @@ public class PlotInspectionUI : MonoBehaviour
         panel.localRotation =
             Quaternion.identity;
 
-        // Small -> pop.
         yield return ScalePanel(
             startingScale,
             popScale,
@@ -1235,7 +1086,6 @@ public class PlotInspectionUI : MonoBehaviour
             true
         );
 
-        // Pop -> normal.
         yield return ScalePanel(
             popScale,
             normalScale,
@@ -1257,18 +1107,12 @@ public class PlotInspectionUI : MonoBehaviour
 
     private IEnumerator CloseAnimation()
     {
-        if (panel == null)
-        {
-            yield break;
-        }
-
         isClosing =
             true;
 
         isDragging =
             false;
 
-        // Remove inspected outline immediately as panel closes.
         ClearCurrentPlotHighlight();
 
         Vector3 startScale =
@@ -1309,10 +1153,6 @@ public class PlotInspectionUI : MonoBehaviour
             float eased =
                 EaseInCubic(t);
 
-            // -------------------------------------------------
-            // SHRINK
-            // -------------------------------------------------
-
             panel.localScale =
                 Vector3.Lerp(
                     startScale,
@@ -1320,20 +1160,12 @@ public class PlotInspectionUI : MonoBehaviour
                     eased
                 );
 
-            // -------------------------------------------------
-            // STRAIGHTEN
-            // -------------------------------------------------
-
             panel.localRotation =
                 Quaternion.Lerp(
                     startRotation,
                     Quaternion.identity,
                     eased
                 );
-
-            // -------------------------------------------------
-            // FADE
-            // -------------------------------------------------
 
             if (canvasGroup != null &&
                 fadeWhileClosing)
@@ -1349,17 +1181,9 @@ public class PlotInspectionUI : MonoBehaviour
             yield return null;
         }
 
-        // =====================================================
-        // HIDE
-        // =====================================================
-
         panel.gameObject.SetActive(
             false
         );
-
-        // =====================================================
-        // RESET
-        // =====================================================
 
         panel.localScale =
             Vector3.one *
@@ -1394,10 +1218,21 @@ public class PlotInspectionUI : MonoBehaviour
 
         animationCoroutine =
             null;
+
+        // =====================================================
+        // CLEAR MANAGER
+        // =====================================================
+
+        if (InspectionUIManager.Instance != null)
+        {
+            InspectionUIManager.Instance.ClearPanel(
+                this
+            );
+        }
     }
 
     // =========================================================
-    // SCALE ANIMATION
+    // SCALE
     // =========================================================
 
     private IEnumerator ScalePanel(
@@ -1452,10 +1287,6 @@ public class PlotInspectionUI : MonoBehaviour
         panel.localScale =
             end;
     }
-
-    // =========================================================
-    // OPEN CLICK PROTECTION
-    // =========================================================
 
     private IEnumerator ResetOutsideClickIgnore()
     {

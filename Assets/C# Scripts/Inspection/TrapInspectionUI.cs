@@ -5,28 +5,15 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-public class TrapInspectionUI : MonoBehaviour
+public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
 {
-    // =========================================================
-    // REFERENCES
-    // =========================================================
-
     [Header("References")]
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Canvas canvas;
     [SerializeField] private SelectionWheel selectionWheel;
-
-    [Tooltip("The entire Trap inspection window.")]
     [SerializeField] private RectTransform panel;
-
-    [Tooltip("The top/header area used to drag the window.")]
     [SerializeField] private RectTransform dragHandle;
-
     [SerializeField] private CanvasGroup canvasGroup;
-
-    // =========================================================
-    // TEXT
-    // =========================================================
 
     [Header("Text")]
     [SerializeField] private TMP_Text titleText;
@@ -34,24 +21,12 @@ public class TrapInspectionUI : MonoBehaviour
     [SerializeField] private TMP_Text mammalText;
     [SerializeField] private TMP_Text descriptionText;
 
-    // =========================================================
-    // ICON
-    // =========================================================
-
     [Header("Icon")]
     [SerializeField] private Image trapIcon;
-
-    // =========================================================
-    // BUTTONS
-    // =========================================================
 
     [Header("Buttons")]
     [SerializeField] private Button collectButton;
     [SerializeField] private Button closeButton;
-
-    // =========================================================
-    // POSITION
-    // =========================================================
 
     [Header("Trap Position")]
     [SerializeField] private float horizontalOffset = 230f;
@@ -60,43 +35,19 @@ public class TrapInspectionUI : MonoBehaviour
     [SerializeField] private bool automaticallyFlipSide = true;
     [SerializeField] private float screenEdgePadding = 180f;
 
-    // =========================================================
-    // DRAGGING
-    // =========================================================
-
     [Header("Dragging")]
     [SerializeField] private bool allowDragging = true;
     [SerializeField] private bool stopFollowingAfterDrag = true;
     [SerializeField] private bool clampToCanvas = true;
     [SerializeField] private float canvasPadding = 10f;
 
-    // =========================================================
-    // DRAG VISUALS
-    // =========================================================
-
     [Header("Drag Visuals")]
-
-    [Tooltip("How small the panel becomes while dragging.")]
     [SerializeField] private float dragScale = 0.92f;
-
-    [Tooltip("How quickly the panel shrinks when grabbed.")]
     [SerializeField] private float dragScaleSpeed = 12f;
-
-    [Tooltip("Maximum amount the panel can tilt while dragging.")]
     [SerializeField] private float maxDragSwayAngle = 7f;
-
-    [Tooltip("How strongly mouse movement affects the tilt.")]
     [SerializeField] private float swayStrength = 0.3f;
-
-    [Tooltip("How smoothly the panel responds to sway.")]
     [SerializeField] private float swaySmoothSpeed = 10f;
-
-    [Tooltip("How quickly the panel returns to normal after release.")]
     [SerializeField] private float dropReturnSpeed = 10f;
-
-    // =========================================================
-    // TRANSPARENCY
-    // =========================================================
 
     [Header("Transparency")]
 
@@ -108,10 +59,6 @@ public class TrapInspectionUI : MonoBehaviour
 
     [SerializeField] private float alphaSmoothSpeed = 10f;
 
-    // =========================================================
-    // OPEN ANIMATION
-    // =========================================================
-
     [Header("Open Animation")]
     [SerializeField] private float startingScale = 0.65f;
     [SerializeField] private float popScale = 1.08f;
@@ -119,33 +66,17 @@ public class TrapInspectionUI : MonoBehaviour
     [SerializeField] private float popDuration = 0.1f;
     [SerializeField] private float settleDuration = 0.1f;
 
-    // =========================================================
-    // CLOSE ANIMATION
-    // =========================================================
-
     [Header("Close Animation")]
     [SerializeField] private float closingScale = 0.65f;
     [SerializeField] private float closeDuration = 0.14f;
     [SerializeField] private bool fadeWhileClosing = true;
 
-    // =========================================================
-    // OUTSIDE CLICK
-    // =========================================================
-
     [Header("Outside Click")]
     [SerializeField] private bool closeWhenClickingOutside = true;
-
-    // =========================================================
-    // MODE BEHAVIOUR
-    // =========================================================
 
     [Header("Mode Behaviour")]
     [SerializeField] private bool closeWhenChangingMode = true;
     [SerializeField] private bool closeWhenSelectionWheelOpens = true;
-
-    // =========================================================
-    // PRIVATE
-    // =========================================================
 
     private Trap currentTrap;
     private InspectableTrap currentInspectableTrap;
@@ -163,55 +94,21 @@ public class TrapInspectionUI : MonoBehaviour
 
     private float currentSwayAngle;
 
-    // =========================================================
-    // START
-    // =========================================================
-
     private void Start()
     {
-        // =====================================================
-        // CAMERA
-        // =====================================================
-
         if (mainCamera == null)
-        {
             mainCamera = Camera.main;
-        }
-
-        // =====================================================
-        // CANVAS
-        // =====================================================
 
         if (canvas == null)
-        {
             canvas = GetComponentInParent<Canvas>();
-        }
-
-        // =====================================================
-        // SELECTION WHEEL
-        // =====================================================
 
         if (selectionWheel == null)
-        {
-            selectionWheel =
-                FindFirstObjectByType<SelectionWheel>();
-        }
-
-        // =====================================================
-        // PANEL
-        // =====================================================
+            selectionWheel = FindFirstObjectByType<SelectionWheel>();
 
         if (panel == null)
-        {
             panel = transform as RectTransform;
-        }
 
-        // =====================================================
-        // CANVAS GROUP
-        // =====================================================
-
-        if (canvasGroup == null &&
-            panel != null)
+        if (canvasGroup == null && panel != null)
         {
             canvasGroup =
                 panel.GetComponent<CanvasGroup>();
@@ -224,61 +121,24 @@ public class TrapInspectionUI : MonoBehaviour
         }
 
         if (canvasGroup != null)
-        {
-            canvasGroup.alpha =
-                normalAlpha;
-        }
-
-        // =====================================================
-        // COLLECT BUTTON
-        // =====================================================
+            canvasGroup.alpha = normalAlpha;
 
         if (collectButton != null)
-        {
-            collectButton.onClick.AddListener(
-                CollectMammal
-            );
-        }
-
-        // =====================================================
-        // CLOSE BUTTON
-        // =====================================================
+            collectButton.onClick.AddListener(CollectMammal);
 
         if (closeButton != null)
-        {
-            closeButton.onClick.AddListener(
-                Close
-            );
-        }
-
-        // =====================================================
-        // START HIDDEN
-        // =====================================================
+            closeButton.onClick.AddListener(Close);
 
         if (panel != null)
-        {
-            panel.gameObject.SetActive(
-                false
-            );
-        }
+            panel.gameObject.SetActive(false);
     }
-
-    // =========================================================
-    // UPDATE
-    // =========================================================
 
     private void Update()
     {
         if (!isOpen ||
             isClosing ||
             panel == null)
-        {
             return;
-        }
-
-        // =====================================================
-        // CLOSE IF MODE CHANGES
-        // =====================================================
 
         if (ShouldCloseBecauseOfMode())
         {
@@ -286,21 +146,9 @@ public class TrapInspectionUI : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // DRAGGING
-        // =====================================================
-
         HandleDragging();
 
-        // =====================================================
-        // DRAG VISUALS
-        // =====================================================
-
         UpdateDragVisuals();
-
-        // =====================================================
-        // CLICK OUTSIDE
-        // =====================================================
 
         if (closeWhenClickingOutside &&
             Input.GetMouseButtonDown(0))
@@ -309,127 +157,77 @@ public class TrapInspectionUI : MonoBehaviour
         }
     }
 
-    // =========================================================
-    // LATE UPDATE
-    // =========================================================
-
     private void LateUpdate()
     {
         if (!isOpen ||
             isClosing ||
             currentTrap == null ||
             panel == null)
-        {
             return;
-        }
 
         if (manuallyPositioned &&
             stopFollowingAfterDrag)
-        {
             return;
-        }
 
         UpdatePanelPosition();
     }
 
-    // =========================================================
-    // MODE CHECK
-    // =========================================================
-
     private bool ShouldCloseBecauseOfMode()
     {
         if (selectionWheel == null)
-        {
             return false;
-        }
 
-        // Changed from Normal Mode.
         if (closeWhenChangingMode &&
             !selectionWheel.IsNormalMode())
-        {
             return true;
-        }
 
-        // Tab / Selection Wheel opened.
         if (closeWhenSelectionWheelOpens &&
             selectionWheel.IsWheelOpen())
-        {
             return true;
-        }
 
         return false;
     }
-
-    // =========================================================
-    // OPEN
-    // =========================================================
 
     public void Open(Trap trap)
     {
         if (trap == null ||
             panel == null)
-        {
             return;
-        }
 
         // =====================================================
-        // CLEAR PREVIOUS TRAP
+        // SINGLE INSPECTION PANEL
         // =====================================================
+
+        if (InspectionUIManager.Instance != null)
+        {
+            InspectionUIManager.Instance.OpenPanel(
+                this
+            );
+        }
 
         ClearCurrentTrapHighlight();
 
-        // =====================================================
-        // STOP OLD ANIMATION
-        // =====================================================
-
         if (animationCoroutine != null)
         {
-            StopCoroutine(
-                animationCoroutine
-            );
-
+            StopCoroutine(animationCoroutine);
             animationCoroutine = null;
         }
 
-        // =====================================================
-        // SET CURRENT TRAP
-        // =====================================================
-
         currentTrap = trap;
-
-        // =====================================================
-        // FIND INSPECTABLE TRAP
-        // =====================================================
 
         currentInspectableTrap =
             trap.GetComponent<InspectableTrap>();
 
         if (currentInspectableTrap == null)
-        {
             currentInspectableTrap =
                 trap.GetComponentInChildren<InspectableTrap>();
-        }
 
         if (currentInspectableTrap == null)
-        {
             currentInspectableTrap =
                 trap.GetComponentInParent<InspectableTrap>();
-        }
-
-        // =====================================================
-        // INSPECTED OUTLINE
-        // =====================================================
 
         if (currentInspectableTrap != null)
-        {
-            currentInspectableTrap.SetInspected(
-                true
-            );
-        }
-
-        // =====================================================
-        // RESET STATE
-        // =====================================================
+            currentInspectableTrap.SetInspected(true);
 
         isOpen = true;
         isClosing = false;
@@ -438,42 +236,15 @@ public class TrapInspectionUI : MonoBehaviour
 
         currentSwayAngle = 0f;
 
-        // =====================================================
-        // ENABLE PANEL
-        // =====================================================
-
-        panel.gameObject.SetActive(
-            true
-        );
-
-        panel.localRotation =
-            Quaternion.identity;
-
-        // =====================================================
-        // RESET ALPHA
-        // =====================================================
+        panel.gameObject.SetActive(true);
+        panel.localRotation = Quaternion.identity;
 
         if (canvasGroup != null)
-        {
-            canvasGroup.alpha =
-                normalAlpha;
-        }
-
-        // =====================================================
-        // UPDATE CONTENT
-        // =====================================================
+            canvasGroup.alpha = normalAlpha;
 
         RefreshUI();
 
-        // =====================================================
-        // POSITION BESIDE TRAP
-        // =====================================================
-
         SetPanelPositionImmediately();
-
-        // =====================================================
-        // DON'T CLOSE FROM OPENING CLICK
-        // =====================================================
 
         ignoreOutsideClick = true;
 
@@ -481,128 +252,68 @@ public class TrapInspectionUI : MonoBehaviour
             ResetOutsideClickIgnore()
         );
 
-        // =====================================================
-        // OPEN ANIMATION
-        // =====================================================
-
         animationCoroutine =
             StartCoroutine(
                 OpenAnimation()
             );
     }
 
-    // =========================================================
-    // REFRESH UI
-    // =========================================================
-
     public void RefreshUI()
     {
         if (currentTrap == null)
-        {
             return;
-        }
-
-        // =====================================================
-        // TITLE
-        // =====================================================
 
         if (titleText != null)
-        {
-            titleText.text =
-                "TRAP";
-        }
-
-        // =====================================================
-        // EMPTY
-        // =====================================================
+            titleText.text = "TRAP";
 
         if (currentTrap.IsEmpty())
         {
             if (statusText != null)
-            {
-                statusText.text =
-                    "EMPTY";
-            }
+                statusText.text = "EMPTY";
 
             if (mammalText != null)
-            {
-                mammalText.text =
-                    "";
-            }
+                mammalText.text = "";
 
             if (descriptionText != null)
-            {
                 descriptionText.text =
                     "The trap is empty.";
-            }
 
             if (collectButton != null)
-            {
-                collectButton.gameObject.SetActive(
-                    false
-                );
-            }
+                collectButton.gameObject.SetActive(false);
 
             return;
         }
-
-        // =====================================================
-        // SET
-        // =====================================================
 
         if (currentTrap.IsSet())
         {
             if (statusText != null)
-            {
-                statusText.text =
-                    "SET";
-            }
+                statusText.text = "SET";
 
             if (mammalText != null)
-            {
-                mammalText.text =
-                    "";
-            }
+                mammalText.text = "";
 
             if (descriptionText != null)
-            {
                 descriptionText.text =
                     "Nothing has been caught yet.";
-            }
 
             if (collectButton != null)
-            {
-                collectButton.gameObject.SetActive(
-                    false
-                );
-            }
+                collectButton.gameObject.SetActive(false);
 
             return;
         }
 
-        // =====================================================
-        // CAUGHT
-        // =====================================================
-
         if (currentTrap.IsCaught())
         {
             if (statusText != null)
-            {
-                statusText.text =
-                    "CAUGHT";
-            }
+                statusText.text = "CAUGHT";
 
             if (mammalText != null)
             {
                 string mammal =
                     currentTrap.GetCaughtMammalName();
 
-                if (string.IsNullOrWhiteSpace(
-                    mammal))
-                {
-                    mammal =
-                        "MAMMAL";
-                }
+                if (string.IsNullOrWhiteSpace(mammal))
+                    mammal = "MAMMAL";
 
                 mammalText.text =
                     mammal.ToUpper();
@@ -616,66 +327,33 @@ public class TrapInspectionUI : MonoBehaviour
 
             if (collectButton != null)
             {
-                collectButton.gameObject.SetActive(
-                    true
-                );
-
-                collectButton.interactable =
-                    true;
+                collectButton.gameObject.SetActive(true);
+                collectButton.interactable = true;
             }
         }
     }
 
-    // =========================================================
-    // COLLECT MAMMAL
-    // =========================================================
-
     private void CollectMammal()
     {
         if (currentTrap == null)
-        {
             return;
-        }
 
         if (!currentTrap.IsCaught())
-        {
             return;
-        }
-
-        // =====================================================
-        // FOR NOW:
-        //
-        // We do NOT store the mammal anywhere.
-        // It is simply removed from the trap.
-        // =====================================================
 
         currentTrap.CollectCaughtMammal();
 
-        // =====================================================
-        // UPDATE UI
-        // =====================================================
-
         RefreshUI();
     }
-
-    // =========================================================
-    // CLOSE
-    // =========================================================
 
     public void Close()
     {
         if (!isOpen ||
             isClosing)
-        {
             return;
-        }
 
         if (animationCoroutine != null)
-        {
-            StopCoroutine(
-                animationCoroutine
-            );
-        }
+            StopCoroutine(animationCoroutine);
 
         animationCoroutine =
             StartCoroutine(
@@ -683,22 +361,14 @@ public class TrapInspectionUI : MonoBehaviour
             );
     }
 
-    // =========================================================
-    // CLOSE IMMEDIATELY
-    // =========================================================
-
     public void CloseImmediately()
     {
         if (animationCoroutine != null)
         {
-            StopCoroutine(
-                animationCoroutine
-            );
-
+            StopCoroutine(animationCoroutine);
             animationCoroutine = null;
         }
 
-        // Remove inspected outline.
         ClearCurrentTrapHighlight();
 
         isOpen = false;
@@ -707,81 +377,53 @@ public class TrapInspectionUI : MonoBehaviour
         manuallyPositioned = false;
 
         currentTrap = null;
-
         currentSwayAngle = 0f;
 
         if (panel != null)
         {
             panel.localScale =
-                Vector3.one *
-                normalScale;
+                Vector3.one * normalScale;
 
             panel.localRotation =
                 Quaternion.identity;
 
-            panel.gameObject.SetActive(
-                false
-            );
+            panel.gameObject.SetActive(false);
         }
 
         if (canvasGroup != null)
+            canvasGroup.alpha = normalAlpha;
+
+        if (InspectionUIManager.Instance != null)
         {
-            canvasGroup.alpha =
-                normalAlpha;
+            InspectionUIManager.Instance.ClearPanel(
+                this
+            );
         }
     }
-
-    // =========================================================
-    // CLEAR INSPECTED OUTLINE
-    // =========================================================
 
     private void ClearCurrentTrapHighlight()
     {
         if (currentInspectableTrap != null)
-        {
-            currentInspectableTrap.SetInspected(
-                false
-            );
-        }
+            currentInspectableTrap.SetInspected(false);
 
         currentInspectableTrap = null;
     }
 
-    // =========================================================
-    // OUTSIDE CLICK
-    // =========================================================
-
     private void HandleOutsideClick()
     {
         if (ignoreOutsideClick)
-        {
             return;
-        }
 
-        // Clicking anything inside the panel
-        // should NOT close it.
         if (IsPointerOverInspectionUI())
-        {
             return;
-        }
 
         Close();
     }
 
-    // =========================================================
-    // IS POINTER OVER PANEL?
-    // =========================================================
-
     private bool IsPointerOverInspectionUI()
     {
         if (panel == null)
-        {
             return false;
-        }
-
-        // =====================================================
-        // RECTANGLE CHECK
-        // =====================================================
 
         if (RectTransformUtility.RectangleContainsScreenPoint(
             panel,
@@ -791,19 +433,11 @@ public class TrapInspectionUI : MonoBehaviour
             return true;
         }
 
-        // =====================================================
-        // EVENT SYSTEM CHECK
-        // =====================================================
-
         if (EventSystem.current == null)
-        {
             return false;
-        }
 
         PointerEventData pointerData =
-            new PointerEventData(
-                EventSystem.current
-            );
+            new PointerEventData(EventSystem.current);
 
         pointerData.position =
             Input.mousePosition;
@@ -819,9 +453,7 @@ public class TrapInspectionUI : MonoBehaviour
         foreach (RaycastResult result in results)
         {
             if (result.gameObject == null)
-            {
                 continue;
-            }
 
             Transform hitTransform =
                 result.gameObject.transform;
@@ -836,139 +468,90 @@ public class TrapInspectionUI : MonoBehaviour
         return false;
     }
 
-    // =========================================================
-    // DRAGGING
-    // =========================================================
-
     private void HandleDragging()
     {
         if (!allowDragging ||
             dragHandle == null ||
             canvas == null)
-        {
             return;
-        }
 
         Camera uiCamera =
             GetUICamera();
 
-        // =====================================================
-        // START DRAG
-        // =====================================================
-
         if (Input.GetMouseButtonDown(0))
         {
-            bool overHandle =
-                RectTransformUtility
-                    .RectangleContainsScreenPoint(
-                        dragHandle,
-                        Input.mousePosition,
-                        uiCamera
-                    );
-
-            if (overHandle)
+            if (RectTransformUtility.RectangleContainsScreenPoint(
+                dragHandle,
+                Input.mousePosition,
+                uiCamera))
             {
                 RectTransform canvasRect =
-                    canvas.transform
-                        as RectTransform;
+                    canvas.transform as RectTransform;
 
                 if (canvasRect == null)
-                {
                     return;
-                }
 
-                RectTransformUtility
-                    .ScreenPointToLocalPointInRectangle(
-                        canvasRect,
-                        Input.mousePosition,
-                        uiCamera,
-                        out Vector2 mousePosition
-                    );
-
-                dragOffset =
-                    panel.anchoredPosition -
-                    mousePosition;
-
-                isDragging =
-                    true;
-
-                manuallyPositioned =
-                    true;
-
-                previousMousePosition =
-                    Input.mousePosition;
-            }
-        }
-
-        // =====================================================
-        // WHILE DRAGGING
-        // =====================================================
-
-        if (isDragging &&
-            Input.GetMouseButton(0))
-        {
-            RectTransform canvasRect =
-                canvas.transform
-                    as RectTransform;
-
-            if (canvasRect == null)
-            {
-                return;
-            }
-
-            RectTransformUtility
-                .ScreenPointToLocalPointInRectangle(
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     canvasRect,
                     Input.mousePosition,
                     uiCamera,
                     out Vector2 mousePosition
                 );
 
+                dragOffset =
+                    panel.anchoredPosition -
+                    mousePosition;
+
+                isDragging = true;
+                manuallyPositioned = true;
+
+                previousMousePosition =
+                    Input.mousePosition;
+            }
+        }
+
+        if (isDragging &&
+            Input.GetMouseButton(0))
+        {
+            RectTransform canvasRect =
+                canvas.transform as RectTransform;
+
+            if (canvasRect == null)
+                return;
+
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvasRect,
+                Input.mousePosition,
+                uiCamera,
+                out Vector2 mousePosition
+            );
+
             Vector2 newPosition =
                 mousePosition +
                 dragOffset;
 
             if (clampToCanvas)
-            {
                 newPosition =
-                    ClampPanelToCanvas(
-                        newPosition
-                    );
-            }
+                    ClampPanelToCanvas(newPosition);
 
             panel.anchoredPosition =
                 newPosition;
         }
 
-        // =====================================================
-        // RELEASE
-        // =====================================================
-
         if (isDragging &&
             Input.GetMouseButtonUp(0))
         {
-            isDragging =
-                false;
+            isDragging = false;
         }
     }
-
-    // =========================================================
-    // DRAG VISUALS
-    // =========================================================
 
     private void UpdateDragVisuals()
     {
         if (panel == null)
-        {
             return;
-        }
 
         float delta =
             Time.unscaledDeltaTime;
-
-        // =====================================================
-        // TRANSPARENCY
-        // =====================================================
 
         float targetAlpha =
             isDragging
@@ -977,7 +560,7 @@ public class TrapInspectionUI : MonoBehaviour
 
         if (canvasGroup != null)
         {
-            float alphaAmount =
+            float amount =
                 1f -
                 Mathf.Exp(
                     -alphaSmoothSpeed *
@@ -988,20 +571,12 @@ public class TrapInspectionUI : MonoBehaviour
                 Mathf.Lerp(
                     canvasGroup.alpha,
                     targetAlpha,
-                    alphaAmount
+                    amount
                 );
         }
 
-        // =====================================================
-        // WHILE DRAGGING
-        // =====================================================
-
         if (isDragging)
         {
-            // -------------------------------------------------
-            // SHRINK
-            // -------------------------------------------------
-
             float scaleAmount =
                 1f -
                 Mathf.Exp(
@@ -1012,14 +587,9 @@ public class TrapInspectionUI : MonoBehaviour
             panel.localScale =
                 Vector3.Lerp(
                     panel.localScale,
-                    Vector3.one *
-                    dragScale,
+                    Vector3.one * dragScale,
                     scaleAmount
                 );
-
-            // -------------------------------------------------
-            // SWAY
-            // -------------------------------------------------
 
             Vector2 currentMouse =
                 Input.mousePosition;
@@ -1032,12 +602,9 @@ public class TrapInspectionUI : MonoBehaviour
                 currentMouse;
 
             float targetSway =
-                -mouseDelta.x *
-                swayStrength;
-
-            targetSway =
                 Mathf.Clamp(
-                    targetSway,
+                    -mouseDelta.x *
+                    swayStrength,
                     -maxDragSwayAngle,
                     maxDragSwayAngle
                 );
@@ -1063,41 +630,27 @@ public class TrapInspectionUI : MonoBehaviour
                     currentSwayAngle
                 );
         }
-
-        // =====================================================
-        // AFTER RELEASE
-        // =====================================================
-
         else
         {
-            float returnAmount =
+            float amount =
                 1f -
                 Mathf.Exp(
                     -dropReturnSpeed *
                     delta
                 );
 
-            // -------------------------------------------------
-            // SCALE BACK
-            // -------------------------------------------------
-
             panel.localScale =
                 Vector3.Lerp(
                     panel.localScale,
-                    Vector3.one *
-                    normalScale,
-                    returnAmount
+                    Vector3.one * normalScale,
+                    amount
                 );
-
-            // -------------------------------------------------
-            // ROTATION BACK
-            // -------------------------------------------------
 
             currentSwayAngle =
                 Mathf.Lerp(
                     currentSwayAngle,
                     0f,
-                    returnAmount
+                    amount
                 );
 
             panel.localRotation =
@@ -1109,16 +662,12 @@ public class TrapInspectionUI : MonoBehaviour
         }
     }
 
-    // =========================================================
-    // UPDATE PANEL POSITION
-    // =========================================================
-
     private void UpdatePanelPosition()
     {
-        Vector2 targetPosition =
+        Vector2 target =
             CalculatePanelPosition();
 
-        float smoothing =
+        float amount =
             1f -
             Mathf.Exp(
                 -followSpeed *
@@ -1128,76 +677,41 @@ public class TrapInspectionUI : MonoBehaviour
         panel.anchoredPosition =
             Vector2.Lerp(
                 panel.anchoredPosition,
-                targetPosition,
-                smoothing
+                target,
+                amount
             );
     }
 
-    // =========================================================
-    // POSITION IMMEDIATELY
-    // =========================================================
-
     private void SetPanelPositionImmediately()
     {
-        if (panel == null)
-        {
-            return;
-        }
-
-        Vector2 position =
-            CalculatePanelPosition();
-
-        if (clampToCanvas)
-        {
-            position =
-                ClampPanelToCanvas(
-                    position
-                );
-        }
-
         panel.anchoredPosition =
-            position;
+            ClampPanelToCanvas(
+                CalculatePanelPosition()
+            );
     }
-
-    // =========================================================
-    // CALCULATE POSITION
-    // =========================================================
 
     private Vector2 CalculatePanelPosition()
     {
         if (currentTrap == null ||
             mainCamera == null ||
-            canvas == null ||
-            panel == null)
+            canvas == null)
         {
-            return panel != null
-                ? panel.anchoredPosition
-                : Vector2.zero;
+            return panel.anchoredPosition;
         }
-
-        // =====================================================
-        // WORLD -> SCREEN
-        // =====================================================
 
         Vector3 screenPosition =
             mainCamera.WorldToScreenPoint(
                 currentTrap.transform.position
             );
 
-        // =====================================================
-        // WHICH SIDE OF TRAP?
-        // =====================================================
-
-        float direction =
-            1f;
+        float direction = 1f;
 
         if (automaticallyFlipSide &&
             screenPosition.x >
             Screen.width -
             screenEdgePadding)
         {
-            direction =
-                -1f;
+            direction = -1f;
         }
 
         screenPosition.x +=
@@ -1207,151 +721,87 @@ public class TrapInspectionUI : MonoBehaviour
         screenPosition.y +=
             verticalOffset;
 
-        // =====================================================
-        // SCREEN -> CANVAS
-        // =====================================================
-
         RectTransform canvasRect =
-            canvas.transform
-                as RectTransform;
+            canvas.transform as RectTransform;
 
-        if (canvasRect == null)
-        {
-            return panel.anchoredPosition;
-        }
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect,
+            screenPosition,
+            GetUICamera(),
+            out Vector2 result
+        );
 
-        RectTransformUtility
-            .ScreenPointToLocalPointInRectangle(
-                canvasRect,
-                screenPosition,
-                GetUICamera(),
-                out Vector2 canvasPosition
-            );
-
-        if (clampToCanvas)
-        {
-            canvasPosition =
-                ClampPanelToCanvas(
-                    canvasPosition
-                );
-        }
-
-        return canvasPosition;
+        return clampToCanvas
+            ? ClampPanelToCanvas(result)
+            : result;
     }
 
-    // =========================================================
-    // CLAMP PANEL TO CANVAS
-    // =========================================================
-
     private Vector2 ClampPanelToCanvas(
-        Vector2 targetPosition)
+        Vector2 position)
     {
         if (canvas == null ||
             panel == null)
-        {
-            return targetPosition;
-        }
+            return position;
 
         RectTransform canvasRect =
-            canvas.transform
-                as RectTransform;
+            canvas.transform as RectTransform;
 
         if (canvasRect == null)
-        {
-            return targetPosition;
-        }
+            return position;
 
-        Rect canvasBounds =
+        Rect bounds =
             canvasRect.rect;
 
-        Vector2 panelSize =
+        Vector2 size =
             panel.rect.size;
 
         Vector2 pivot =
             panel.pivot;
 
-        float minX =
-            canvasBounds.xMin +
-            panelSize.x *
-            pivot.x +
-            canvasPadding;
-
-        float maxX =
-            canvasBounds.xMax -
-            panelSize.x *
-            (1f - pivot.x) -
-            canvasPadding;
-
-        float minY =
-            canvasBounds.yMin +
-            panelSize.y *
-            pivot.y +
-            canvasPadding;
-
-        float maxY =
-            canvasBounds.yMax -
-            panelSize.y *
-            (1f - pivot.y) -
-            canvasPadding;
-
-        targetPosition.x =
+        position.x =
             Mathf.Clamp(
-                targetPosition.x,
-                minX,
-                maxX
+                position.x,
+                bounds.xMin +
+                size.x * pivot.x +
+                canvasPadding,
+                bounds.xMax -
+                size.x * (1f - pivot.x) -
+                canvasPadding
             );
 
-        targetPosition.y =
+        position.y =
             Mathf.Clamp(
-                targetPosition.y,
-                minY,
-                maxY
+                position.y,
+                bounds.yMin +
+                size.y * pivot.y +
+                canvasPadding,
+                bounds.yMax -
+                size.y * (1f - pivot.y) -
+                canvasPadding
             );
 
-        return targetPosition;
+        return position;
     }
-
-    // =========================================================
-    // UI CAMERA
-    // =========================================================
 
     private Camera GetUICamera()
     {
         if (canvas == null)
-        {
             return null;
-        }
 
         if (canvas.renderMode ==
             RenderMode.ScreenSpaceOverlay)
-        {
             return null;
-        }
 
         return canvas.worldCamera;
     }
 
-    // =========================================================
-    // OPEN ANIMATION
-    // =========================================================
-
     private IEnumerator OpenAnimation()
     {
-        if (panel == null)
-        {
-            yield break;
-        }
-
         panel.localScale =
-            Vector3.one *
-            startingScale;
+            Vector3.one * startingScale;
 
         panel.localRotation =
             Quaternion.identity;
-
-        // -----------------------------------------------------
-        // SMALL -> POP
-        // -----------------------------------------------------
 
         yield return ScalePanel(
             startingScale,
@@ -1359,10 +809,6 @@ public class TrapInspectionUI : MonoBehaviour
             popDuration,
             true
         );
-
-        // -----------------------------------------------------
-        // POP -> NORMAL
-        // -----------------------------------------------------
 
         yield return ScalePanel(
             popScale,
@@ -1372,31 +818,16 @@ public class TrapInspectionUI : MonoBehaviour
         );
 
         panel.localScale =
-            Vector3.one *
-            normalScale;
+            Vector3.one * normalScale;
 
-        animationCoroutine =
-            null;
+        animationCoroutine = null;
     }
-
-    // =========================================================
-    // CLOSE ANIMATION
-    // =========================================================
 
     private IEnumerator CloseAnimation()
     {
-        if (panel == null)
-        {
-            yield break;
-        }
+        isClosing = true;
+        isDragging = false;
 
-        isClosing =
-            true;
-
-        isDragging =
-            false;
-
-        // Remove inspected outline.
         ClearCurrentTrapHighlight();
 
         Vector3 startScale =
@@ -1410,18 +841,13 @@ public class TrapInspectionUI : MonoBehaviour
                 ? canvasGroup.alpha
                 : normalAlpha;
 
-        Vector3 targetScale =
-            Vector3.one *
-            closingScale;
+        float timer = 0f;
 
         float duration =
             Mathf.Max(
                 0.01f,
                 closeDuration
             );
-
-        float timer =
-            0f;
 
         while (timer < duration)
         {
@@ -1435,22 +861,14 @@ public class TrapInspectionUI : MonoBehaviour
                 );
 
             float eased =
-                EaseInCubic(t);
-
-            // -------------------------------------------------
-            // SHRINK
-            // -------------------------------------------------
+                t * t * t;
 
             panel.localScale =
                 Vector3.Lerp(
                     startScale,
-                    targetScale,
+                    Vector3.one * closingScale,
                     eased
                 );
-
-            // -------------------------------------------------
-            // STRAIGHTEN
-            // -------------------------------------------------
 
             panel.localRotation =
                 Quaternion.Lerp(
@@ -1458,10 +876,6 @@ public class TrapInspectionUI : MonoBehaviour
                     Quaternion.identity,
                     eased
                 );
-
-            // -------------------------------------------------
-            // FADE
-            // -------------------------------------------------
 
             if (canvasGroup != null &&
                 fadeWhileClosing)
@@ -1477,62 +891,41 @@ public class TrapInspectionUI : MonoBehaviour
             yield return null;
         }
 
-        // =====================================================
-        // HIDE
-        // =====================================================
-
-        panel.gameObject.SetActive(
-            false
-        );
-
-        // =====================================================
-        // RESET
-        // =====================================================
+        panel.gameObject.SetActive(false);
 
         panel.localScale =
-            Vector3.one *
-            normalScale;
+            Vector3.one * normalScale;
 
         panel.localRotation =
             Quaternion.identity;
 
         if (canvasGroup != null)
+            canvasGroup.alpha = normalAlpha;
+
+        currentTrap = null;
+
+        currentSwayAngle = 0f;
+
+        isOpen = false;
+        isClosing = false;
+        isDragging = false;
+        manuallyPositioned = false;
+
+        animationCoroutine = null;
+
+        if (InspectionUIManager.Instance != null)
         {
-            canvasGroup.alpha =
-                normalAlpha;
+            InspectionUIManager.Instance.ClearPanel(
+                this
+            );
         }
-
-        currentTrap =
-            null;
-
-        currentSwayAngle =
-            0f;
-
-        isOpen =
-            false;
-
-        isClosing =
-            false;
-
-        isDragging =
-            false;
-
-        manuallyPositioned =
-            false;
-
-        animationCoroutine =
-            null;
     }
-
-    // =========================================================
-    // SCALE ANIMATION
-    // =========================================================
 
     private IEnumerator ScalePanel(
         float from,
         float to,
         float duration,
-        bool useBackEase)
+        bool backEase)
     {
         duration =
             Mathf.Max(
@@ -1540,16 +933,7 @@ public class TrapInspectionUI : MonoBehaviour
                 0.01f
             );
 
-        float timer =
-            0f;
-
-        Vector3 start =
-            Vector3.one *
-            from;
-
-        Vector3 end =
-            Vector3.one *
-            to;
+        float timer = 0f;
 
         while (timer < duration)
         {
@@ -1563,14 +947,19 @@ public class TrapInspectionUI : MonoBehaviour
                 );
 
             float eased =
-                useBackEase
+                backEase
                     ? EaseOutBack(t)
-                    : EaseOutCubic(t);
+                    : 1f -
+                      Mathf.Pow(
+                          1f - t,
+                          3f
+                      );
 
             panel.localScale =
-                Vector3.LerpUnclamped(
-                    start,
-                    end,
+                Vector3.one *
+                Mathf.LerpUnclamped(
+                    from,
+                    to,
                     eased
                 );
 
@@ -1578,85 +967,27 @@ public class TrapInspectionUI : MonoBehaviour
         }
 
         panel.localScale =
-            end;
+            Vector3.one * to;
     }
-
-    // =========================================================
-    // OPENING CLICK PROTECTION
-    // =========================================================
 
     private IEnumerator ResetOutsideClickIgnore()
     {
         yield return
             new WaitForEndOfFrame();
 
-        ignoreOutsideClick =
-            false;
+        ignoreOutsideClick = false;
     }
 
-    // =========================================================
-    // GETTERS
-    // =========================================================
-
-    public Trap GetCurrentTrap()
+    private float EaseOutBack(float x)
     {
-        return currentTrap;
-    }
-
-    public bool IsOpen()
-    {
-        return isOpen;
-    }
-
-    public bool IsDragging()
-    {
-        return isDragging;
-    }
-
-    // =========================================================
-    // EASING
-    // =========================================================
-
-    private float EaseOutCubic(
-        float x)
-    {
-        return
-            1f -
-            Mathf.Pow(
-                1f - x,
-                3f
-            );
-    }
-
-    private float EaseInCubic(
-        float x)
-    {
-        return
-            x *
-            x *
-            x;
-    }
-
-    private float EaseOutBack(
-        float x)
-    {
-        const float c1 =
-            1.70158f;
-
-        const float c3 =
-            c1 + 1f;
+        const float c1 = 1.70158f;
+        const float c3 = c1 + 1f;
 
         return
             1f +
             c3 *
-            Mathf.Pow(
-                x - 1f,
-                3f
-            ) +
+            Mathf.Pow(x - 1f, 3f) +
             c1 *
-            Mathf.Pow(
-                x - 1f,
-                2f
-            );
+            Mathf.Pow(x - 1f, 2f);
     }
 }
