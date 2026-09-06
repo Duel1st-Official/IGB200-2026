@@ -1,10 +1,16 @@
 fileFormatVersion: 2
-guid: 7251ae2eb37ce8a4f9cf50e4309b0860
+guid: 2ff44e66cc8a35449b14c50afc0cfe1e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8740537495808715476
-    second: Ranger Station_0
+      213: 6069116039439565020
+    second: Tours Building_0
+  - first:
+      213: -883954686738159786
+    second: Tours Building_1
+  - first:
+      213: -7373285375993336348
+    second: Tours Building_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +106,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Ranger Station_0
+      name: Tours Building_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
-        width: 1228
-        height: 1236
+        y: 43
+        width: 1226
+        height: 1168
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +121,52 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c25d658f47f53b680800000000000000
-      internalID: -8740537495808715476
+      spriteID: cd0cb6fd1e4d93450800000000000000
+      internalID: 6069116039439565020
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Tours Building_1
+      rect:
+        serializedVersion: 2
+        x: 297
+        y: 1189
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6572e6355ef8bb3f0800000000000000
+      internalID: -883954686738159786
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Tours Building_2
+      rect:
+        serializedVersion: 2
+        x: 665
+        y: 1195
+        width: 11
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4eda5501404dca990800000000000000
+      internalID: -7373285375993336348
       vertices: []
       indices: 
       edges: []
@@ -135,7 +185,9 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Ranger Station_0: -8740537495808715476
+      Tours Building_0: 6069116039439565020
+      Tours Building_1: -883954686738159786
+      Tours Building_2: -7373285375993336348
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
