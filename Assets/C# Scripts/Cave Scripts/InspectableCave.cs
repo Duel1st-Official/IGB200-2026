@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class InspectableTrap : MonoBehaviour
+public class InspectableCave : MonoBehaviour
 {
     // =========================================================
     // REFERENCES
@@ -11,21 +11,21 @@ public class InspectableTrap : MonoBehaviour
     [SerializeField] private SelectionWheel selectionWheel;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private SpriteRenderer spriteRenderer;
-    [SerializeField] private Trap trap;
-
-    [Header("Inspection UI")]
-    [SerializeField] private TrapInspectionUI inspectionUI;
+    [SerializeField] private BatColony batColony;
 
     // =========================================================
-    // OUTLINES
+    // INSPECTION UI
+    // =========================================================
+
+    [Header("Inspection UI")]
+    [SerializeField] private CaveInspectionUI inspectionUI;
+
+    // =========================================================
+    // OUTLINE MATERIALS
     // =========================================================
 
     [Header("Outline Materials")]
-
-    [Tooltip("Material used when hovering over the trap.")]
     [SerializeField] private Material hoverOutlineMaterial;
-
-    [Tooltip("Material used while the trap inspection UI is open.")]
     [SerializeField] private Material inspectedOutlineMaterial;
 
     // =========================================================
@@ -34,7 +34,6 @@ public class InspectableTrap : MonoBehaviour
 
     [Header("Interaction")]
     [SerializeField] private bool allowClick = true;
-
     [SerializeField] private float interactionDistance = 5f;
 
     // =========================================================
@@ -58,7 +57,6 @@ public class InspectableTrap : MonoBehaviour
     private Material normalMaterial;
 
     private bool isHovered;
-
     private bool isInspected;
 
     // =========================================================
@@ -69,7 +67,8 @@ public class InspectableTrap : MonoBehaviour
     {
         if (mainCamera == null)
         {
-            mainCamera = Camera.main;
+            mainCamera =
+                Camera.main;
         }
 
         if (spriteRenderer == null)
@@ -84,15 +83,15 @@ public class InspectableTrap : MonoBehaviour
             }
         }
 
-        if (trap == null)
+        if (batColony == null)
         {
-            trap =
-                GetComponent<Trap>();
+            batColony =
+                GetComponent<BatColony>();
 
-            if (trap == null)
+            if (batColony == null)
             {
-                trap =
-                    GetComponentInChildren<Trap>();
+                batColony =
+                    GetComponentInChildren<BatColony>();
             }
         }
 
@@ -118,7 +117,7 @@ public class InspectableTrap : MonoBehaviour
         if (inspectionUI == null)
         {
             inspectionUI =
-                FindFirstObjectByType<TrapInspectionUI>();
+                FindFirstObjectByType<CaveInspectionUI>();
         }
 
         if (player == null)
@@ -134,8 +133,6 @@ public class InspectableTrap : MonoBehaviour
                     playerObject.transform;
             }
         }
-
-        RefreshMaterial();
     }
 
     // =========================================================
@@ -144,114 +141,147 @@ public class InspectableTrap : MonoBehaviour
 
     private void Update()
     {
+        if (selectionWheel == null ||
+            mainCamera == null ||
+            spriteRenderer == null)
+        {
+            return;
+        }
+
         // =====================================================
         // NORMAL MODE ONLY
         // =====================================================
 
-        if (!IsNormalMode())
+        if (!selectionWheel.IsNormalMode())
         {
-            SetHovered(false);
-            return;
-        }
-
-        // =====================================================
-        // WHEEL OPEN
-        // =====================================================
-
-        if (selectionWheel != null &&
-            selectionWheel.IsWheelOpen())
-        {
-            SetHovered(false);
-            return;
-        }
-
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-        {
-            if (isHovered)
-            {
-                isHovered = false;
-                RefreshMaterial();
-            }
+            SetHovered(
+                false
+            );
 
             return;
         }
 
         // =====================================================
-        // HOVER
+        // SELECTION WHEEL OPEN
         // =====================================================
 
-        bool hovering =
-            IsMouseOverTrap();
+        if (selectionWheel.IsWheelOpen())
+        {
+            SetHovered(
+                false
+            );
 
-        bool withinRange =
-            IsPlayerWithinRange();
-
-        SetHovered(
-            hovering &&
-            withinRange
-        );
+            return;
+        }
 
         // =====================================================
-        // CLICK
+        // BLOCK WORLD INTERACTION BEHIND UI
         // =====================================================
 
-        if (isHovered &&
-            allowClick &&
-            Input.GetMouseButtonDown(0))
+        if (EventSystem.current != null &&
+            EventSystem.current.IsPointerOverGameObject())
         {
-            InspectTrap();
-        }
-    }
+            SetHovered(
+                false
+            );
 
-    // =========================================================
-    // NORMAL MODE
-    // =========================================================
-
-    private bool IsNormalMode()
-    {
-        if (selectionWheel == null)
-        {
-            return false;
+            return;
         }
 
-        return
-            selectionWheel.IsNormalMode();
-    }
-
-    // =========================================================
-    // MOUSE OVER
-    // =========================================================
-
-    private bool IsMouseOverTrap()
-    {
-        if (mainCamera == null ||
-            spriteRenderer == null)
-        {
-            return false;
-        }
+        // =====================================================
+        // MOUSE POSITION
+        // =====================================================
 
         Vector3 mouseWorld =
             mainCamera.ScreenToWorldPoint(
                 Input.mousePosition
             );
 
-        Bounds bounds =
-            spriteRenderer.bounds;
-
         mouseWorld.z =
-            bounds.center.z;
+            transform.position.z;
 
-        return
-            bounds.Contains(
+        // =====================================================
+        // HOVER
+        // =====================================================
+
+        bool mouseOver =
+            spriteRenderer.bounds.Contains(
                 mouseWorld
             );
+
+        bool inRange =
+            IsWithinInteractionDistance();
+
+        SetHovered(
+            mouseOver &&
+            inRange
+        );
+
+        // =====================================================
+        // LEFT CLICK
+        // =====================================================
+
+        if (isHovered &&
+            allowClick &&
+            Input.GetMouseButtonDown(0))
+        {
+            InspectCave();
+        }
+    }
+
+    // =========================================================
+    // INSPECT
+    // =========================================================
+
+    private void InspectCave()
+    {
+        if (batColony == null)
+        {
+            if (showDebugLogs)
+            {
+                Debug.LogWarning(
+                    "InspectableCave has no BatColony assigned."
+                );
+            }
+
+            return;
+        }
+
+        if (inspectionUI == null)
+        {
+            inspectionUI =
+                FindFirstObjectByType<CaveInspectionUI>();
+        }
+
+        if (inspectionUI == null)
+        {
+            if (showDebugLogs)
+            {
+                Debug.LogWarning(
+                    "No CaveInspectionUI found."
+                );
+            }
+
+            return;
+        }
+
+        inspectionUI.Open(
+            batColony
+        );
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "Inspecting Bat Cave."
+            );
+        }
     }
 
     // =========================================================
     // RANGE
     // =========================================================
 
-    private bool IsPlayerWithinRange()
+    private bool IsWithinInteractionDistance()
     {
         if (player == null)
         {
@@ -273,9 +303,11 @@ public class InspectableTrap : MonoBehaviour
     // HOVER
     // =========================================================
 
-    private void SetHovered(bool hovered)
+    private void SetHovered(
+        bool hovered)
     {
-        if (isHovered == hovered)
+        if (isHovered ==
+            hovered)
         {
             return;
         }
@@ -290,13 +322,9 @@ public class InspectableTrap : MonoBehaviour
     // INSPECTED
     // =========================================================
 
-    public void SetInspected(bool inspected)
+    public void SetInspected(
+        bool inspected)
     {
-        if (isInspected == inspected)
-        {
-            return;
-        }
-
         isInspected =
             inspected;
 
@@ -314,92 +342,39 @@ public class InspectableTrap : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // INSPECTED HAS HIGHEST PRIORITY
-        // =====================================================
-
+        // Inspected has highest priority.
         if (isInspected)
         {
-            if (inspectedOutlineMaterial != null)
-            {
-                spriteRenderer.material =
-                    inspectedOutlineMaterial;
-            }
-            else
-            {
-                spriteRenderer.material =
-                    normalMaterial;
-            }
+            spriteRenderer.sharedMaterial =
+                inspectedOutlineMaterial != null
+                    ? inspectedOutlineMaterial
+                    : normalMaterial;
 
             return;
         }
 
-        // =====================================================
-        // HOVER
-        // =====================================================
-
+        // Hover second.
         if (isHovered)
         {
-            if (hoverOutlineMaterial != null)
-            {
-                spriteRenderer.material =
-                    hoverOutlineMaterial;
-            }
-            else
-            {
-                spriteRenderer.material =
-                    normalMaterial;
-            }
+            spriteRenderer.sharedMaterial =
+                hoverOutlineMaterial != null
+                    ? hoverOutlineMaterial
+                    : normalMaterial;
 
             return;
         }
 
-        // =====================================================
-        // NORMAL
-        // =====================================================
-
-        spriteRenderer.material =
+        spriteRenderer.sharedMaterial =
             normalMaterial;
-    }
-
-    // =========================================================
-    // INSPECT
-    // =========================================================
-
-    private void InspectTrap()
-    {
-        if (trap == null)
-        {
-            return;
-        }
-
-        if (inspectionUI == null)
-        {
-            inspectionUI =
-                FindFirstObjectByType<TrapInspectionUI>();
-        }
-
-        if (inspectionUI != null)
-        {
-            inspectionUI.Open(
-                trap
-            );
-        }
-        else if (showDebugLogs)
-        {
-            Debug.LogWarning(
-                "No TrapInspectionUI found in the scene."
-            );
-        }
     }
 
     // =========================================================
     // GETTERS
     // =========================================================
 
-    public Trap GetTrap()
+    public BatColony GetBatColony()
     {
-        return trap;
+        return batColony;
     }
 
     public bool IsHovered()
@@ -418,13 +393,15 @@ public class InspectableTrap : MonoBehaviour
 
     private void OnDisable()
     {
-        isHovered = false;
+        isHovered =
+            false;
 
-        isInspected = false;
+        isInspected =
+            false;
 
         if (spriteRenderer != null)
         {
-            spriteRenderer.material =
+            spriteRenderer.sharedMaterial =
                 normalMaterial;
         }
     }

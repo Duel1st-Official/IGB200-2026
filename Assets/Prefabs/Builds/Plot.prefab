@@ -125,8 +125,13 @@ MonoBehaviour:
   selectionWheel: {fileID: 0}
   mainCamera: {fileID: 0}
   spriteRenderer: {fileID: 0}
-  outlineMaterial: {fileID: 2100000, guid: 524a0744852071b4497737b1329c1152, type: 2}
+  plot: {fileID: 0}
+  inspectionUI: {fileID: 0}
+  hoverOutlineMaterial: {fileID: 2100000, guid: 524a0744852071b4497737b1329c1152, type: 2}
+  inspectedOutlineMaterial: {fileID: 2100000, guid: 5c384300163ef6a47ae2a417297810d1, type: 2}
   allowClick: 1
+  interactionDistance: 5
+  player: {fileID: 0}
   showDebugLogs: 0
 --- !u!1 &6519828910645659539
 GameObject:

@@ -14,25 +14,44 @@ public class Trap : MonoBehaviour
     }
 
     // =========================================================
-    // SETTINGS
+    // STATE
     // =========================================================
 
     [Header("Trap State")]
-    [SerializeField] private TrapState currentState = TrapState.Empty;
+    [SerializeField]
+    private TrapState currentState =
+        TrapState.Empty;
 
-    [Header("Trap Settings")]
     [SerializeField] private bool startsWithBait = false;
 
+    // =========================================================
+    // CAUGHT MAMMAL
+    // =========================================================
+
+    [Header("Caught Mammal")]
+
+    [Tooltip("Name of the mammal currently inside the trap.")]
+    [SerializeField] private string caughtMammalName = "";
+
+    // =========================================================
+    // DEBUG
+    // =========================================================
+
     [Header("Debug")]
-    [SerializeField] private bool showDebugLogs = false;
+
+    [Tooltip("Mammal name used by the Debug Catch Mammal option.")]
+    [SerializeField]
+    private string debugMammalName =
+        "Bandicoot";
+
+    [SerializeField] private bool showDebugLogs = true;
 
     // =========================================================
-    // RUNTIME DATA
+    // PRIVATE
     // =========================================================
 
-    [Header("Runtime")]
-    [SerializeField] private bool hasBait;
-    [SerializeField] private bool hasCaughtAnimal;
+    private bool hasBait;
+    private bool hasCaughtAnimal;
 
     // =========================================================
     // START
@@ -57,9 +76,13 @@ public class Trap : MonoBehaviour
     public void SetTrap()
     {
         hasBait = true;
+
         hasCaughtAnimal = false;
 
-        currentState = TrapState.Set;
+        caughtMammalName = "";
+
+        currentState =
+            TrapState.Set;
 
         if (showDebugLogs)
         {
@@ -74,24 +97,93 @@ public class Trap : MonoBehaviour
     // TRIGGER TRAP
     // =========================================================
 
-    public void TriggerTrap()
+    public void TriggerTrap(
+        string mammalName)
     {
-        // Only a set trap can catch something.
-        if (currentState != TrapState.Set)
+        if (currentState !=
+            TrapState.Set)
         {
             return;
         }
 
-        hasCaughtAnimal = true;
-        hasBait = false;
+        if (string.IsNullOrWhiteSpace(
+            mammalName))
+        {
+            mammalName =
+                "Unknown Mammal";
+        }
 
-        currentState = TrapState.Caught;
+        hasBait =
+            false;
+
+        hasCaughtAnimal =
+            true;
+
+        caughtMammalName =
+            mammalName;
+
+        currentState =
+            TrapState.Caught;
 
         if (showDebugLogs)
         {
             Debug.Log(
                 gameObject.name +
-                " has caught an animal."
+                " caught: " +
+                caughtMammalName
+            );
+        }
+    }
+
+    // =========================================================
+    // SIMPLE TRIGGER
+    // =========================================================
+
+    public void TriggerTrap()
+    {
+        TriggerTrap(
+            debugMammalName
+        );
+    }
+
+    // =========================================================
+    // COLLECT CAUGHT MAMMAL
+    // =========================================================
+
+    public void CollectCaughtMammal()
+    {
+        if (currentState !=
+            TrapState.Caught)
+        {
+            return;
+        }
+
+        string collectedMammal =
+            caughtMammalName;
+
+        // For now we DO NOT store it anywhere.
+        // We simply remove it from the trap.
+
+        hasCaughtAnimal =
+            false;
+
+        hasBait =
+            false;
+
+        caughtMammalName =
+            "";
+
+        currentState =
+            TrapState.Empty;
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "Collected " +
+                collectedMammal +
+                " from " +
+                gameObject.name +
+                "."
             );
         }
     }
@@ -102,10 +194,17 @@ public class Trap : MonoBehaviour
 
     public void ResetTrap()
     {
-        hasCaughtAnimal = false;
-        hasBait = true;
+        hasCaughtAnimal =
+            false;
 
-        currentState = TrapState.Set;
+        hasBait =
+            true;
+
+        caughtMammalName =
+            "";
+
+        currentState =
+            TrapState.Set;
 
         if (showDebugLogs)
         {
@@ -117,21 +216,28 @@ public class Trap : MonoBehaviour
     }
 
     // =========================================================
-    // EMPTY TRAP
+    // MAKE EMPTY
     // =========================================================
 
     public void MakeEmpty()
     {
-        hasCaughtAnimal = false;
-        hasBait = false;
+        hasCaughtAnimal =
+            false;
 
-        currentState = TrapState.Empty;
+        hasBait =
+            false;
+
+        caughtMammalName =
+            "";
+
+        currentState =
+            TrapState.Empty;
 
         if (showDebugLogs)
         {
             Debug.Log(
                 gameObject.name +
-                " is now empty."
+                " is empty."
             );
         }
     }
@@ -142,10 +248,17 @@ public class Trap : MonoBehaviour
 
     public void AddBait()
     {
-        hasBait = true;
-        hasCaughtAnimal = false;
+        hasCaughtAnimal =
+            false;
 
-        currentState = TrapState.Set;
+        hasBait =
+            true;
+
+        caughtMammalName =
+            "";
+
+        currentState =
+            TrapState.Set;
 
         if (showDebugLogs)
         {
@@ -157,28 +270,30 @@ public class Trap : MonoBehaviour
     }
 
     // =========================================================
-    // REMOVE CAUGHT ANIMAL
+    // CLEAR CAUGHT ANIMAL
     // =========================================================
 
     public void ClearCaughtAnimal()
     {
-        if (currentState != TrapState.Caught)
-        {
-            return;
-        }
+        CollectCaughtMammal();
+    }
 
-        hasCaughtAnimal = false;
-        hasBait = false;
+    // =========================================================
+    // DEBUG TEST
+    // =========================================================
 
-        currentState = TrapState.Empty;
+    [ContextMenu("Debug Catch Mammal")]
+    private void DebugCatchMammal()
+    {
+        currentState =
+            TrapState.Set;
 
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                gameObject.name +
-                " has been cleared."
-            );
-        }
+        hasBait =
+            true;
+
+        TriggerTrap(
+            debugMammalName
+        );
     }
 
     // =========================================================
@@ -188,6 +303,11 @@ public class Trap : MonoBehaviour
     public TrapState GetState()
     {
         return currentState;
+    }
+
+    public string GetCaughtMammalName()
+    {
+        return caughtMammalName;
     }
 
     public bool HasBait()
@@ -202,16 +322,19 @@ public class Trap : MonoBehaviour
 
     public bool IsEmpty()
     {
-        return currentState == TrapState.Empty;
+        return currentState ==
+               TrapState.Empty;
     }
 
     public bool IsSet()
     {
-        return currentState == TrapState.Set;
+        return currentState ==
+               TrapState.Set;
     }
 
     public bool IsCaught()
     {
-        return currentState == TrapState.Caught;
+        return currentState ==
+               TrapState.Caught;
     }
 }

@@ -177,7 +177,7 @@ public class PlotPlacementSystem : MonoBehaviour
         }
 
         // RIGHT CLICK
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(0))
         {
             TryPlacePlot();
         }

@@ -285,7 +285,7 @@ public class TrapPlacementSystem : MonoBehaviour
         // RIGHT CLICK PLACE
         // =====================================================
 
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(0))
         {
             TryPlaceTrap();
         }

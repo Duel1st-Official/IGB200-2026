@@ -96,9 +96,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentState: 0
   startsWithBait: 0
+  caughtMammalName: 
+  debugMammalName: Bandicoot
   showDebugLogs: 0
-  hasBait: 0
-  hasCaughtAnimal: 0
 --- !u!114 &3159476456595563887
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129,8 +129,12 @@ MonoBehaviour:
   mainCamera: {fileID: 0}
   spriteRenderer: {fileID: 0}
   trap: {fileID: 0}
-  outlineMaterial: {fileID: 2100000, guid: 524a0744852071b4497737b1329c1152, type: 2}
+  inspectionUI: {fileID: 0}
+  hoverOutlineMaterial: {fileID: 2100000, guid: 524a0744852071b4497737b1329c1152, type: 2}
+  inspectedOutlineMaterial: {fileID: 2100000, guid: 5c384300163ef6a47ae2a417297810d1, type: 2}
   allowClick: 1
+  interactionDistance: 5
+  player: {fileID: 0}
   showDebugLogs: 0
 --- !u!1 &5597605124376222003
 GameObject:

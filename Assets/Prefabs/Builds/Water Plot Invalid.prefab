@@ -97,9 +97,6 @@ GameObject:
   m_Component:
   - component: {fileID: 9029428795230577353}
   - component: {fileID: 7946060265711251578}
-  - component: {fileID: 2853592934474199351}
-  - component: {fileID: 8566792341276860920}
-  - component: {fileID: 3914922558652311847}
   m_Layer: 0
   m_Name: Water Plot Invalid
   m_TagString: Untagged
@@ -169,61 +166,3 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
---- !u!114 &2853592934474199351
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8806112268321870767}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 766db7d041dc5534bbae8215130475b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  spriteRenderer: {fileID: 6279215816327977525}
-  cleanSprite: {fileID: -5418871830010561904, guid: a7839b886a8c93e4d93c16608a02e08f, type: 3}
-  dirtySprite: {fileID: 7972089375667400012, guid: a7839b886a8c93e4d93c16608a02e08f, type: 3}
-  pollutedSprite: {fileID: -1997559865040036895, guid: a7839b886a8c93e4d93c16608a02e08f, type: 3}
-  currentState: 0
-  waterQuality: 100
-  dirtyThreshold: 65
-  pollutedThreshold: 30
-  degradeOverTime: 0
-  degradationRate: 0.25
-  showDebugLogs: 0
---- !u!114 &8566792341276860920
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8806112268321870767}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e41219cb14bce841866e13f6116b99a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  selectionWheel: {fileID: 0}
-  mainCamera: {fileID: 0}
-  spriteRenderer: {fileID: 6279215816327977525}
-  waterPlot: {fileID: 2853592934474199351}
-  outlineMaterial: {fileID: 2100000, guid: 524a0744852071b4497737b1329c1152, type: 2}
-  allowClick: 1
-  interactionDistance: 5
-  player: {fileID: 0}
-  showDebugLogs: 0
---- !u!114 &3914922558652311847
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8806112268321870767}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc6f1725729637d40b2704a0ed713c47, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gridCell: {x: 0, y: 0}
-  placementSystem: {fileID: 0}

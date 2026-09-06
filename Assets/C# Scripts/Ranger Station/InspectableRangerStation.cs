@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class InspectableTrap : MonoBehaviour
+public class InspectableRangerStation : MonoBehaviour
 {
     // =========================================================
     // REFERENCES
@@ -11,21 +11,21 @@ public class InspectableTrap : MonoBehaviour
     [SerializeField] private SelectionWheel selectionWheel;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private SpriteRenderer spriteRenderer;
-    [SerializeField] private Trap trap;
-
-    [Header("Inspection UI")]
-    [SerializeField] private TrapInspectionUI inspectionUI;
+    [SerializeField] private RangerStation rangerStation;
 
     // =========================================================
-    // OUTLINES
+    // INSPECTION UI
+    // =========================================================
+
+    [Header("Inspection UI")]
+    [SerializeField] private RangerStationInspectionUI inspectionUI;
+
+    // =========================================================
+    // OUTLINE MATERIALS
     // =========================================================
 
     [Header("Outline Materials")]
-
-    [Tooltip("Material used when hovering over the trap.")]
     [SerializeField] private Material hoverOutlineMaterial;
-
-    [Tooltip("Material used while the trap inspection UI is open.")]
     [SerializeField] private Material inspectedOutlineMaterial;
 
     // =========================================================
@@ -34,7 +34,6 @@ public class InspectableTrap : MonoBehaviour
 
     [Header("Interaction")]
     [SerializeField] private bool allowClick = true;
-
     [SerializeField] private float interactionDistance = 5f;
 
     // =========================================================
@@ -58,7 +57,6 @@ public class InspectableTrap : MonoBehaviour
     private Material normalMaterial;
 
     private bool isHovered;
-
     private bool isInspected;
 
     // =========================================================
@@ -69,7 +67,8 @@ public class InspectableTrap : MonoBehaviour
     {
         if (mainCamera == null)
         {
-            mainCamera = Camera.main;
+            mainCamera =
+                Camera.main;
         }
 
         if (spriteRenderer == null)
@@ -84,15 +83,15 @@ public class InspectableTrap : MonoBehaviour
             }
         }
 
-        if (trap == null)
+        if (rangerStation == null)
         {
-            trap =
-                GetComponent<Trap>();
+            rangerStation =
+                GetComponent<RangerStation>();
 
-            if (trap == null)
+            if (rangerStation == null)
             {
-                trap =
-                    GetComponentInChildren<Trap>();
+                rangerStation =
+                    GetComponentInChildren<RangerStation>();
             }
         }
 
@@ -118,7 +117,7 @@ public class InspectableTrap : MonoBehaviour
         if (inspectionUI == null)
         {
             inspectionUI =
-                FindFirstObjectByType<TrapInspectionUI>();
+                FindFirstObjectByType<RangerStationInspectionUI>();
         }
 
         if (player == null)
@@ -134,8 +133,6 @@ public class InspectableTrap : MonoBehaviour
                     playerObject.transform;
             }
         }
-
-        RefreshMaterial();
     }
 
     // =========================================================
@@ -144,90 +141,33 @@ public class InspectableTrap : MonoBehaviour
 
     private void Update()
     {
-        // =====================================================
-        // NORMAL MODE ONLY
-        // =====================================================
-
-        if (!IsNormalMode())
-        {
-            SetHovered(false);
-            return;
-        }
-
-        // =====================================================
-        // WHEEL OPEN
-        // =====================================================
-
-        if (selectionWheel != null &&
-            selectionWheel.IsWheelOpen())
-        {
-            SetHovered(false);
-            return;
-        }
-
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-        {
-            if (isHovered)
-            {
-                isHovered = false;
-                RefreshMaterial();
-            }
-
-            return;
-        }
-
-        // =====================================================
-        // HOVER
-        // =====================================================
-
-        bool hovering =
-            IsMouseOverTrap();
-
-        bool withinRange =
-            IsPlayerWithinRange();
-
-        SetHovered(
-            hovering &&
-            withinRange
-        );
-
-        // =====================================================
-        // CLICK
-        // =====================================================
-
-        if (isHovered &&
-            allowClick &&
-            Input.GetMouseButtonDown(0))
-        {
-            InspectTrap();
-        }
-    }
-
-    // =========================================================
-    // NORMAL MODE
-    // =========================================================
-
-    private bool IsNormalMode()
-    {
-        if (selectionWheel == null)
-        {
-            return false;
-        }
-
-        return
-            selectionWheel.IsNormalMode();
-    }
-
-    // =========================================================
-    // MOUSE OVER
-    // =========================================================
-
-    private bool IsMouseOverTrap()
-    {
-        if (mainCamera == null ||
+        if (selectionWheel == null ||
+            mainCamera == null ||
             spriteRenderer == null)
         {
-            return false;
+            return;
+        }
+
+        // Normal mode only.
+        if (!selectionWheel.IsNormalMode())
+        {
+            SetHovered(false);
+            return;
+        }
+
+        // Selection wheel open.
+        if (selectionWheel.IsWheelOpen())
+        {
+            SetHovered(false);
+            return;
+        }
+
+        // Block interaction through UI.
+        if (EventSystem.current != null &&
+            EventSystem.current.IsPointerOverGameObject())
+        {
+            SetHovered(false);
+            return;
         }
 
         Vector3 mouseWorld =
@@ -235,23 +175,76 @@ public class InspectableTrap : MonoBehaviour
                 Input.mousePosition
             );
 
-        Bounds bounds =
-            spriteRenderer.bounds;
-
         mouseWorld.z =
-            bounds.center.z;
+            transform.position.z;
 
-        return
-            bounds.Contains(
+        bool mouseOver =
+            spriteRenderer.bounds.Contains(
                 mouseWorld
             );
+
+        bool inRange =
+            IsWithinInteractionDistance();
+
+        SetHovered(
+            mouseOver &&
+            inRange
+        );
+
+        if (isHovered &&
+            allowClick &&
+            Input.GetMouseButtonDown(0))
+        {
+            InspectRangerStation();
+        }
+    }
+
+    // =========================================================
+    // INSPECT
+    // =========================================================
+
+    private void InspectRangerStation()
+    {
+        if (rangerStation == null)
+        {
+            return;
+        }
+
+        if (inspectionUI == null)
+        {
+            inspectionUI =
+                FindFirstObjectByType<RangerStationInspectionUI>();
+        }
+
+        if (inspectionUI == null)
+        {
+            if (showDebugLogs)
+            {
+                Debug.LogWarning(
+                    "No RangerStationInspectionUI found."
+                );
+            }
+
+            return;
+        }
+
+        inspectionUI.Open(
+            rangerStation
+        );
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "Inspecting Ranger Station."
+            );
+        }
     }
 
     // =========================================================
     // RANGE
     // =========================================================
 
-    private bool IsPlayerWithinRange()
+    private bool IsWithinInteractionDistance()
     {
         if (player == null)
         {
@@ -292,11 +285,6 @@ public class InspectableTrap : MonoBehaviour
 
     public void SetInspected(bool inspected)
     {
-        if (isInspected == inspected)
-        {
-            return;
-        }
-
         isInspected =
             inspected;
 
@@ -314,92 +302,37 @@ public class InspectableTrap : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // INSPECTED HAS HIGHEST PRIORITY
-        // =====================================================
-
         if (isInspected)
         {
-            if (inspectedOutlineMaterial != null)
-            {
-                spriteRenderer.material =
-                    inspectedOutlineMaterial;
-            }
-            else
-            {
-                spriteRenderer.material =
-                    normalMaterial;
-            }
+            spriteRenderer.sharedMaterial =
+                inspectedOutlineMaterial != null
+                    ? inspectedOutlineMaterial
+                    : normalMaterial;
 
             return;
         }
-
-        // =====================================================
-        // HOVER
-        // =====================================================
 
         if (isHovered)
         {
-            if (hoverOutlineMaterial != null)
-            {
-                spriteRenderer.material =
-                    hoverOutlineMaterial;
-            }
-            else
-            {
-                spriteRenderer.material =
-                    normalMaterial;
-            }
+            spriteRenderer.sharedMaterial =
+                hoverOutlineMaterial != null
+                    ? hoverOutlineMaterial
+                    : normalMaterial;
 
             return;
         }
 
-        // =====================================================
-        // NORMAL
-        // =====================================================
-
-        spriteRenderer.material =
+        spriteRenderer.sharedMaterial =
             normalMaterial;
-    }
-
-    // =========================================================
-    // INSPECT
-    // =========================================================
-
-    private void InspectTrap()
-    {
-        if (trap == null)
-        {
-            return;
-        }
-
-        if (inspectionUI == null)
-        {
-            inspectionUI =
-                FindFirstObjectByType<TrapInspectionUI>();
-        }
-
-        if (inspectionUI != null)
-        {
-            inspectionUI.Open(
-                trap
-            );
-        }
-        else if (showDebugLogs)
-        {
-            Debug.LogWarning(
-                "No TrapInspectionUI found in the scene."
-            );
-        }
     }
 
     // =========================================================
     // GETTERS
     // =========================================================
 
-    public Trap GetTrap()
+    public RangerStation GetRangerStation()
     {
-        return trap;
+        return rangerStation;
     }
 
     public bool IsHovered()
@@ -419,12 +352,11 @@ public class InspectableTrap : MonoBehaviour
     private void OnDisable()
     {
         isHovered = false;
-
         isInspected = false;
 
         if (spriteRenderer != null)
         {
-            spriteRenderer.material =
+            spriteRenderer.sharedMaterial =
                 normalMaterial;
         }
     }

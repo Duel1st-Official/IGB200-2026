@@ -30,36 +30,37 @@ public class WaterPlot : MonoBehaviour
     [SerializeField] private Sprite pollutedSprite;
 
     // =========================================================
-    // CURRENT STATE
+    // WATER STATE
     // =========================================================
 
-    [Header("Current Water State")]
-    [SerializeField]
-    private WaterState currentState =
-        WaterState.Clean;
+    [Header("Water State")]
+    [SerializeField] private WaterState currentState = WaterState.Clean;
 
-    // =========================================================
-    // WATER QUALITY
-    // =========================================================
-
-    [Header("Water Quality")]
     [Range(0f, 100f)]
-    [SerializeField] private float waterQuality = 100f;
+    [SerializeField] private float quality = 100f;
 
-    [Tooltip("Water at or below this value becomes Dirty.")]
+    // =========================================================
+    // THRESHOLDS
+    // =========================================================
+
+    [Header("Quality Thresholds")]
+
+    [Tooltip("Quality below this becomes Dirty.")]
+    [Range(0f, 100f)]
     [SerializeField] private float dirtyThreshold = 65f;
 
-    [Tooltip("Water at or below this value becomes Polluted.")]
+    [Tooltip("Quality below this becomes Polluted.")]
+    [Range(0f, 100f)]
     [SerializeField] private float pollutedThreshold = 30f;
 
     // =========================================================
-    // OPTIONAL NATURAL DEGRADATION
+    // DEGRADATION
     // =========================================================
 
-    [Header("Natural Degradation")]
+    [Header("Automatic Degradation")]
     [SerializeField] private bool degradeOverTime = false;
 
-    [Tooltip("How much water quality is lost per second.")]
+    [Tooltip("Water quality lost per second.")]
     [SerializeField] private float degradationRate = 0.25f;
 
     // =========================================================
@@ -75,9 +76,6 @@ public class WaterPlot : MonoBehaviour
 
     private void Awake()
     {
-        // Automatically find the SpriteRenderer
-        // if it was not assigned manually.
-
         if (spriteRenderer == null)
         {
             spriteRenderer =
@@ -89,6 +87,16 @@ public class WaterPlot : MonoBehaviour
                     GetComponentInChildren<SpriteRenderer>();
             }
         }
+
+        quality =
+            Mathf.Clamp(
+                quality,
+                0f,
+                100f
+            );
+
+        UpdateStateFromQuality();
+        RefreshSprite();
     }
 
     // =========================================================
@@ -97,14 +105,8 @@ public class WaterPlot : MonoBehaviour
 
     private void Start()
     {
-        waterQuality =
-            Mathf.Clamp(
-                waterQuality,
-                0f,
-                100f
-            );
-
-        UpdateWaterState();
+        UpdateStateFromQuality();
+        RefreshSprite();
     }
 
     // =========================================================
@@ -113,100 +115,230 @@ public class WaterPlot : MonoBehaviour
 
     private void Update()
     {
-        // =====================================================
-        // NATURAL WATER DEGRADATION
-        // =====================================================
-
-        if (degradeOverTime &&
-            waterQuality > 0f)
+        if (!degradeOverTime)
         {
-            waterQuality -=
-                degradationRate *
-                Time.deltaTime;
-
-            waterQuality =
-                Mathf.Clamp(
-                    waterQuality,
-                    0f,
-                    100f
-                );
-
-            UpdateWaterState();
-        }
-    }
-
-    // =========================================================
-    // UPDATE WATER STATE
-    // =========================================================
-
-    private void UpdateWaterState()
-    {
-        WaterState newState;
-
-        // =====================================================
-        // POLLUTED
-        // =====================================================
-
-        if (waterQuality <=
-            pollutedThreshold)
-        {
-            newState =
-                WaterState.Polluted;
-        }
-
-        // =====================================================
-        // DIRTY
-        // =====================================================
-
-        else if (waterQuality <=
-                 dirtyThreshold)
-        {
-            newState =
-                WaterState.Dirty;
-        }
-
-        // =====================================================
-        // CLEAN
-        // =====================================================
-
-        else
-        {
-            newState =
-                WaterState.Clean;
-        }
-
-        // If nothing changed,
-        // don't unnecessarily update the sprite.
-
-        if (newState ==
-            currentState)
-        {
-            UpdateSprite();
             return;
         }
 
-        currentState =
-            newState;
+        if (quality <= 0f)
+        {
+            return;
+        }
 
-        UpdateSprite();
+        PolluteWater(
+            degradationRate *
+            Time.deltaTime
+        );
+    }
+
+    // =========================================================
+    // POLLUTE WATER
+    // =========================================================
+
+    public void PolluteWater(float amount)
+    {
+        if (amount <= 0f)
+        {
+            return;
+        }
+
+        quality -= amount;
+
+        quality =
+            Mathf.Clamp(
+                quality,
+                0f,
+                100f
+            );
+
+        UpdateStateFromQuality();
+        RefreshSprite();
 
         if (showDebugLogs)
         {
             Debug.Log(
                 gameObject.name +
-                " Water State = " +
-                currentState +
-                " | Quality = " +
-                waterQuality
+                " water polluted by " +
+                amount +
+                ". Quality: " +
+                quality
             );
         }
     }
 
     // =========================================================
-    // UPDATE SPRITE
+    // CLEAN WATER
     // =========================================================
 
-    private void UpdateSprite()
+    public void CleanWater(float amount)
+    {
+        if (amount <= 0f)
+        {
+            return;
+        }
+
+        quality += amount;
+
+        quality =
+            Mathf.Clamp(
+                quality,
+                0f,
+                100f
+            );
+
+        UpdateStateFromQuality();
+        RefreshSprite();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                gameObject.name +
+                " water cleaned by " +
+                amount +
+                ". Quality: " +
+                quality
+            );
+        }
+    }
+
+    // =========================================================
+    // SET WATER QUALITY
+    // =========================================================
+
+    public void SetWaterQuality(float newQuality)
+    {
+        quality =
+            Mathf.Clamp(
+                newQuality,
+                0f,
+                100f
+            );
+
+        UpdateStateFromQuality();
+        RefreshSprite();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                gameObject.name +
+                " water quality set to " +
+                quality
+            );
+        }
+    }
+
+    // =========================================================
+    // MAKE CLEAN
+    // =========================================================
+
+    public void MakeClean()
+    {
+        quality = 100f;
+
+        currentState =
+            WaterState.Clean;
+
+        RefreshSprite();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                gameObject.name +
+                " water made CLEAN."
+            );
+        }
+    }
+
+    // =========================================================
+    // MAKE DIRTY
+    // =========================================================
+
+    public void MakeDirty()
+    {
+        // Put quality safely inside Dirty range.
+
+        float dirtyQuality =
+            Mathf.Max(
+                pollutedThreshold + 1f,
+                dirtyThreshold - 1f
+            );
+
+        quality =
+            Mathf.Clamp(
+                dirtyQuality,
+                0f,
+                100f
+            );
+
+        currentState =
+            WaterState.Dirty;
+
+        RefreshSprite();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                gameObject.name +
+                " water made DIRTY."
+            );
+        }
+    }
+
+    // =========================================================
+    // MAKE POLLUTED
+    // =========================================================
+
+    public void MakePolluted()
+    {
+        quality =
+            Mathf.Clamp(
+                pollutedThreshold - 1f,
+                0f,
+                100f
+            );
+
+        currentState =
+            WaterState.Polluted;
+
+        RefreshSprite();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                gameObject.name +
+                " water made POLLUTED."
+            );
+        }
+    }
+
+    // =========================================================
+    // UPDATE STATE FROM QUALITY
+    // =========================================================
+
+    private void UpdateStateFromQuality()
+    {
+        if (quality <= pollutedThreshold)
+        {
+            currentState =
+                WaterState.Polluted;
+        }
+        else if (quality <= dirtyThreshold)
+        {
+            currentState =
+                WaterState.Dirty;
+        }
+        else
+        {
+            currentState =
+                WaterState.Clean;
+        }
+    }
+
+    // =========================================================
+    // REFRESH SPRITE
+    // =========================================================
+
+    private void RefreshSprite()
     {
         if (spriteRenderer == null)
         {
@@ -215,10 +347,6 @@ public class WaterPlot : MonoBehaviour
 
         switch (currentState)
         {
-            // =================================================
-            // CLEAN
-            // =================================================
-
             case WaterState.Clean:
 
                 if (cleanSprite != null)
@@ -229,10 +357,6 @@ public class WaterPlot : MonoBehaviour
 
                 break;
 
-            // =================================================
-            // DIRTY
-            // =================================================
-
             case WaterState.Dirty:
 
                 if (dirtySprite != null)
@@ -242,10 +366,6 @@ public class WaterPlot : MonoBehaviour
                 }
 
                 break;
-
-            // =================================================
-            // POLLUTED
-            // =================================================
 
             case WaterState.Polluted:
 
@@ -260,117 +380,16 @@ public class WaterPlot : MonoBehaviour
     }
 
     // =========================================================
-    // DAMAGE WATER
+    // GET WATER QUALITY
     // =========================================================
 
-    public void PolluteWater(float amount)
+    public float GetWaterQuality()
     {
-        if (amount <= 0f)
-        {
-            return;
-        }
-
-        waterQuality -=
-            amount;
-
-        waterQuality =
-            Mathf.Clamp(
-                waterQuality,
-                0f,
-                100f
-            );
-
-        UpdateWaterState();
+        return quality;
     }
 
     // =========================================================
-    // CLEAN WATER
-    // =========================================================
-
-    public void CleanWater(float amount)
-    {
-        if (amount <= 0f)
-        {
-            return;
-        }
-
-        waterQuality +=
-            amount;
-
-        waterQuality =
-            Mathf.Clamp(
-                waterQuality,
-                0f,
-                100f
-            );
-
-        UpdateWaterState();
-    }
-
-    // =========================================================
-    // SET QUALITY DIRECTLY
-    // =========================================================
-
-    public void SetWaterQuality(float amount)
-    {
-        waterQuality =
-            Mathf.Clamp(
-                amount,
-                0f,
-                100f
-            );
-
-        UpdateWaterState();
-    }
-
-    // =========================================================
-    // MAKE CLEAN
-    // =========================================================
-
-    public void MakeClean()
-    {
-        waterQuality =
-            100f;
-
-        UpdateWaterState();
-    }
-
-    // =========================================================
-    // MAKE DIRTY
-    // =========================================================
-
-    public void MakeDirty()
-    {
-        // Put quality safely
-        // between the two thresholds.
-
-        waterQuality =
-            Mathf.Clamp(
-                dirtyThreshold - 1f,
-                pollutedThreshold + 1f,
-                100f
-            );
-
-        UpdateWaterState();
-    }
-
-    // =========================================================
-    // MAKE POLLUTED
-    // =========================================================
-
-    public void MakePolluted()
-    {
-        waterQuality =
-            Mathf.Max(
-                0f,
-                pollutedThreshold - 1f
-            );
-
-        UpdateWaterState();
-    }
-
-    // =========================================================
-    // GETTERS
+    // GET STATE
     // =========================================================
 
     public WaterState GetWaterState()
@@ -378,31 +397,33 @@ public class WaterPlot : MonoBehaviour
         return currentState;
     }
 
-    public float GetWaterQuality()
-    {
-        return waterQuality;
-    }
+    // =========================================================
+    // STATE CHECKS
+    // =========================================================
 
     public bool IsClean()
     {
-        return currentState ==
-               WaterState.Clean;
+        return
+            currentState ==
+            WaterState.Clean;
     }
 
     public bool IsDirty()
     {
-        return currentState ==
-               WaterState.Dirty;
+        return
+            currentState ==
+            WaterState.Dirty;
     }
 
     public bool IsPolluted()
     {
-        return currentState ==
-               WaterState.Polluted;
+        return
+            currentState ==
+            WaterState.Polluted;
     }
 
     // =========================================================
-    // BAT HABITAT VALUE
+    // BAT WATER VALUE
     // =========================================================
 
     public float GetBatWaterValue()
@@ -420,5 +441,39 @@ public class WaterPlot : MonoBehaviour
         }
 
         return 0f;
+    }
+
+    // =========================================================
+    // CONTEXT MENU DEBUG
+    // =========================================================
+
+    [ContextMenu("Debug - Make Clean")]
+    private void DebugMakeClean()
+    {
+        MakeClean();
+    }
+
+    [ContextMenu("Debug - Make Dirty")]
+    private void DebugMakeDirty()
+    {
+        MakeDirty();
+    }
+
+    [ContextMenu("Debug - Make Polluted")]
+    private void DebugMakePolluted()
+    {
+        MakePolluted();
+    }
+
+    [ContextMenu("Debug - Pollute 25")]
+    private void DebugPollute25()
+    {
+        PolluteWater(25f);
+    }
+
+    [ContextMenu("Debug - Clean 25")]
+    private void DebugClean25()
+    {
+        CleanWater(25f);
     }
 }
