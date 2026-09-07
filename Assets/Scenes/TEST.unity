@@ -2625,8 +2625,8 @@ MonoBehaviour:
   m_HandleRect: {fileID: 555337258}
   m_Direction: 0
   m_MinValue: 0
-  m_MaxValue: 1
-  m_WholeNumbers: 0
+  m_MaxValue: 800
+  m_WholeNumbers: 1
   m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -3593,6 +3593,58 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 481281032}
   m_CullTransparentMesh: 1
+--- !u!1 &492227861
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 492227862}
+  - component: {fileID: 492227863}
+  m_Layer: 0
+  m_Name: HUDManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &492227862
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 492227861}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1173481377}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &492227863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 492227861}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b9cd4309eea5a04cb8041fc5d978803, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dayText: {fileID: 712581070}
+  _hoursText: {fileID: 610809600}
+  _populationBar: {fileID: 376489579}
+  _floraPreyBar: {fileID: 1067006111}
+  _predatorPressureBar: {fileID: 117993960}
+  _fireRiskBar: {fileID: 1922595013}
+  _endDayButton: {fileID: 982354068}
+  _giveTourButton: {fileID: 592143285}
 --- !u!1 &497624237
 GameObject:
   m_ObjectHideFlags: 0
@@ -8461,7 +8513,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 64344441}
   m_Direction: 0
   m_MinValue: 0
-  m_MaxValue: 1
+  m_MaxValue: 100
   m_WholeNumbers: 0
   m_Value: 0
   m_OnValueChanged:
@@ -9041,6 +9093,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1173481377}
+  - component: {fileID: 1173481378}
   m_Layer: 0
   m_Name: Game Manager
   m_TagString: Untagged
@@ -9069,8 +9122,31 @@ Transform:
   - {fileID: 1781128019}
   - {fileID: 591680655}
   - {fileID: 1904944891}
+  - {fileID: 492227862}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1173481378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1173481376}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddbd5f2d32c77ba4da9d707190e96263, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _batPop: 10
+  _maxBatPop: 800
+  _floraPrey: 5
+  _predatorPressure: 0
+  _fireRisk: 0
+  _roostQuality: 100
+  _fenceCondition: 100
+  _fenceRepairThreshold: 30
+  _predatorPressureRisePerTick: 5
+  _fenceDecayPerDay: 5
 --- !u!1 &1206342861
 GameObject:
   m_ObjectHideFlags: 0

@@ -35,7 +35,7 @@ public class TimeManager : MonoBehaviour
     {
         hoursRemaining = _hoursPerDay;
         isNight = false;
-        onDayEnded?.Invoke();
+        onDayStarted?.Invoke();
         onHoursChanged?.Invoke();
     }
 
