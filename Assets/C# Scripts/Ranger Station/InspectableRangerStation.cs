@@ -8,9 +8,13 @@ public class InspectableRangerStation : MonoBehaviour
     // =========================================================
 
     [Header("References")]
+
     [SerializeField] private SelectionWheel selectionWheel;
+
     [SerializeField] private Camera mainCamera;
+
     [SerializeField] private SpriteRenderer spriteRenderer;
+
     [SerializeField] private RangerStation rangerStation;
 
     // =========================================================
@@ -18,6 +22,7 @@ public class InspectableRangerStation : MonoBehaviour
     // =========================================================
 
     [Header("Inspection UI")]
+
     [SerializeField] private RangerStationInspectionUI inspectionUI;
 
     // =========================================================
@@ -25,7 +30,9 @@ public class InspectableRangerStation : MonoBehaviour
     // =========================================================
 
     [Header("Outline Materials")]
+
     [SerializeField] private Material hoverOutlineMaterial;
+
     [SerializeField] private Material inspectedOutlineMaterial;
 
     // =========================================================
@@ -33,7 +40,9 @@ public class InspectableRangerStation : MonoBehaviour
     // =========================================================
 
     [Header("Interaction")]
+
     [SerializeField] private bool allowClick = true;
+
     [SerializeField] private float interactionDistance = 5f;
 
     // =========================================================
@@ -41,6 +50,7 @@ public class InspectableRangerStation : MonoBehaviour
     // =========================================================
 
     [Header("Player")]
+
     [SerializeField] private Transform player;
 
     // =========================================================
@@ -48,6 +58,7 @@ public class InspectableRangerStation : MonoBehaviour
     // =========================================================
 
     [Header("Debug")]
+
     [SerializeField] private bool showDebugLogs = false;
 
     // =========================================================
@@ -74,50 +85,25 @@ public class InspectableRangerStation : MonoBehaviour
         if (spriteRenderer == null)
         {
             spriteRenderer =
-                GetComponent<SpriteRenderer>();
-
-            if (spriteRenderer == null)
-            {
-                spriteRenderer =
-                    GetComponentInChildren<SpriteRenderer>();
-            }
+                GetComponentInChildren<SpriteRenderer>();
         }
 
         if (rangerStation == null)
         {
             rangerStation =
                 GetComponent<RangerStation>();
-
-            if (rangerStation == null)
-            {
-                rangerStation =
-                    GetComponentInChildren<RangerStation>();
-            }
         }
 
-        if (spriteRenderer != null)
+        if (rangerStation == null)
         {
-            normalMaterial =
-                spriteRenderer.sharedMaterial;
+            rangerStation =
+                GetComponentInChildren<RangerStation>();
         }
-    }
 
-    // =========================================================
-    // START
-    // =========================================================
-
-    private void Start()
-    {
         if (selectionWheel == null)
         {
             selectionWheel =
                 FindFirstObjectByType<SelectionWheel>();
-        }
-
-        if (inspectionUI == null)
-        {
-            inspectionUI =
-                FindFirstObjectByType<RangerStationInspectionUI>();
         }
 
         if (player == null)
@@ -133,6 +119,12 @@ public class InspectableRangerStation : MonoBehaviour
                     playerObject.transform;
             }
         }
+
+        if (spriteRenderer != null)
+        {
+            normalMaterial =
+                spriteRenderer.sharedMaterial;
+        }
     }
 
     // =========================================================
@@ -141,34 +133,60 @@ public class InspectableRangerStation : MonoBehaviour
 
     private void Update()
     {
-        if (selectionWheel == null ||
-            mainCamera == null ||
-            spriteRenderer == null)
+        // =====================================================
+        // WRONG MODE
+        // =====================================================
+
+        if (selectionWheel != null &&
+            !selectionWheel.IsNormalMode())
         {
+            ClearHover();
+
             return;
         }
 
-        // Normal mode only.
-        if (!selectionWheel.IsNormalMode())
+        // =====================================================
+        // SELECTION WHEEL OPEN
+        // =====================================================
+
+        if (selectionWheel != null &&
+            selectionWheel.IsWheelOpen())
         {
-            SetHovered(false);
+            ClearHover();
+
             return;
         }
 
-        // Selection wheel open.
-        if (selectionWheel.IsWheelOpen())
-        {
-            SetHovered(false);
-            return;
-        }
+        // =====================================================
+        // POINTER OVER UI
+        // =====================================================
 
-        // Block interaction through UI.
         if (EventSystem.current != null &&
             EventSystem.current.IsPointerOverGameObject())
         {
-            SetHovered(false);
+            ClearHover();
+
             return;
         }
+
+        // =====================================================
+        // CAMERA
+        // =====================================================
+
+        if (mainCamera == null)
+        {
+            mainCamera =
+                Camera.main;
+
+            if (mainCamera == null)
+            {
+                return;
+            }
+        }
+
+        // =====================================================
+        // MOUSE WORLD POSITION
+        // =====================================================
 
         Vector3 mouseWorld =
             mainCamera.ScreenToWorldPoint(
@@ -178,73 +196,74 @@ public class InspectableRangerStation : MonoBehaviour
         mouseWorld.z =
             transform.position.z;
 
+        // =====================================================
+        // HOVER CHECK
+        // =====================================================
+
         bool mouseOver =
-            spriteRenderer.bounds.Contains(
+            IsMouseOver(
                 mouseWorld
             );
 
         bool inRange =
-            IsWithinInteractionDistance();
+            IsPlayerInRange();
 
-        SetHovered(
+        bool shouldHover =
             mouseOver &&
-            inRange
-        );
+            inRange;
 
-        if (isHovered &&
-            allowClick &&
-            Input.GetMouseButtonDown(0))
+        if (shouldHover !=
+            isHovered)
         {
-            InspectRangerStation();
+            isHovered =
+                shouldHover;
+
+            RefreshMaterial();
+        }
+
+        // =====================================================
+        // CLICK
+        // =====================================================
+
+        if (!allowClick)
+        {
+            return;
+        }
+
+        if (!isHovered)
+        {
+            return;
+        }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            Inspect();
         }
     }
 
     // =========================================================
-    // INSPECT
+    // MOUSE OVER
     // =========================================================
 
-    private void InspectRangerStation()
+    private bool IsMouseOver(
+        Vector3 mouseWorld)
     {
-        if (rangerStation == null)
+        if (spriteRenderer == null)
         {
-            return;
+            return false;
         }
 
-        if (inspectionUI == null)
-        {
-            inspectionUI =
-                FindFirstObjectByType<RangerStationInspectionUI>();
-        }
-
-        if (inspectionUI == null)
-        {
-            if (showDebugLogs)
-            {
-                Debug.LogWarning(
-                    "No RangerStationInspectionUI found."
-                );
-            }
-
-            return;
-        }
-
-        inspectionUI.Open(
-            rangerStation
-        );
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                "Inspecting Ranger Station."
+        return
+            spriteRenderer.bounds.Contains(
+                mouseWorld
             );
-        }
     }
 
     // =========================================================
-    // RANGE
+    // PLAYER RANGE
     // =========================================================
 
-    private bool IsWithinInteractionDistance()
+    private bool IsPlayerInRange()
     {
         if (player == null)
         {
@@ -263,36 +282,67 @@ public class InspectableRangerStation : MonoBehaviour
     }
 
     // =========================================================
-    // HOVER
+    // INSPECT
     // =========================================================
 
-    private void SetHovered(bool hovered)
+    private void Inspect()
     {
-        if (isHovered == hovered)
+        if (rangerStation == null)
         {
+            if (showDebugLogs)
+            {
+                Debug.LogWarning(
+                    "InspectableRangerStation could not find RangerStation."
+                );
+            }
+
             return;
         }
 
-        isHovered =
-            hovered;
+        if (inspectionUI == null)
+        {
+            if (showDebugLogs)
+            {
+                Debug.LogWarning(
+                    "InspectableRangerStation has no RangerStationInspectionUI assigned."
+                );
+            }
 
-        RefreshMaterial();
+            return;
+        }
+
+        SetInspected(
+            true
+        );
+
+        inspectionUI.Open(
+            rangerStation,
+            transform
+        );
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "Ranger Station inspected."
+            );
+        }
     }
 
     // =========================================================
-    // INSPECTED
+    // SET INSPECTED
     // =========================================================
 
-    public void SetInspected(bool inspected)
+    public void SetInspected(
+        bool value)
     {
         isInspected =
-            inspected;
+            value;
 
         RefreshMaterial();
     }
 
     // =========================================================
-    // MATERIAL
+    // REFRESH MATERIAL
     // =========================================================
 
     private void RefreshMaterial()
@@ -302,22 +352,20 @@ public class InspectableRangerStation : MonoBehaviour
             return;
         }
 
-        if (isInspected)
+        if (isInspected &&
+            inspectedOutlineMaterial != null)
         {
             spriteRenderer.sharedMaterial =
-                inspectedOutlineMaterial != null
-                    ? inspectedOutlineMaterial
-                    : normalMaterial;
+                inspectedOutlineMaterial;
 
             return;
         }
 
-        if (isHovered)
+        if (isHovered &&
+            hoverOutlineMaterial != null)
         {
             spriteRenderer.sharedMaterial =
-                hoverOutlineMaterial != null
-                    ? hoverOutlineMaterial
-                    : normalMaterial;
+                hoverOutlineMaterial;
 
             return;
         }
@@ -327,17 +375,29 @@ public class InspectableRangerStation : MonoBehaviour
     }
 
     // =========================================================
+    // CLEAR HOVER
+    // =========================================================
+
+    private void ClearHover()
+    {
+        if (!isHovered)
+        {
+            return;
+        }
+
+        isHovered =
+            false;
+
+        RefreshMaterial();
+    }
+
+    // =========================================================
     // GETTERS
     // =========================================================
 
     public RangerStation GetRangerStation()
     {
         return rangerStation;
-    }
-
-    public bool IsHovered()
-    {
-        return isHovered;
     }
 
     public bool IsInspected()
@@ -351,8 +411,11 @@ public class InspectableRangerStation : MonoBehaviour
 
     private void OnDisable()
     {
-        isHovered = false;
-        isInspected = false;
+        isHovered =
+            false;
+
+        isInspected =
+            false;
 
         if (spriteRenderer != null)
         {

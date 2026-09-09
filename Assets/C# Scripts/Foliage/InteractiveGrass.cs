@@ -5,28 +5,109 @@ public class InteractiveGrass : MonoBehaviour
     [Header("Player")]
     [SerializeField] private string playerTag = "Player";
 
+    // =========================================================
+    // NORMAL WIND
+    // =========================================================
+
     [Header("Random Wind")]
     [SerializeField] private float maxWindAngle = 5f;
     [SerializeField] private float windSmoothness = 2.5f;
     [SerializeField] private float minWindChangeTime = 0.5f;
     [SerializeField] private float maxWindChangeTime = 2f;
 
+    // =========================================================
+    // RAIN WIND
+    // =========================================================
+
+    [Header("Rain Wind")]
+
+    [Tooltip("How much stronger the grass bends during Rain.")]
+    [SerializeField] private float rainSwayMultiplier = 3f;
+
+    [Tooltip("How much faster the grass reacts during Rain.")]
+    [SerializeField] private float rainSpeedMultiplier = 2.5f;
+
+    [Tooltip("How much faster wind direction changes during Rain.")]
+    [SerializeField] private float rainWindChangeMultiplier = 2.5f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float rainGustAmount = 0.35f;
+
+    [SerializeField] private float rainGustSpeed = 1.5f;
+
+    // =========================================================
+    // RAIN & THUNDER WIND
+    // =========================================================
+
+    [Header("Rain & Thunder Wind")]
+
+    [Tooltip(
+        "How much stronger the grass bends during Rain & Thunder."
+    )]
+    [SerializeField] private float stormSwayMultiplier = 7f;
+
+    [Tooltip(
+        "How much faster the grass reacts during Rain & Thunder."
+    )]
+    [SerializeField] private float stormSpeedMultiplier = 5f;
+
+    [Tooltip(
+        "How much faster wind direction changes during Rain & Thunder."
+    )]
+    [SerializeField] private float stormWindChangeMultiplier = 6f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float stormGustAmount = 0.7f;
+
+    [SerializeField] private float stormGustSpeed = 3f;
+
+    // =========================================================
+    // WEATHER TRANSITION
+    // =========================================================
+
+    [Header("Weather Transition")]
+
+    [Tooltip(
+        "How quickly grass transitions between weather wind strengths."
+    )]
+    [SerializeField] private float weatherTransitionSpeed = 4f;
+
+    // =========================================================
+    // PLAYER BEND
+    // =========================================================
+
     [Header("Player Bend")]
     [SerializeField] private float maxTiltAngle = 18f;
     [SerializeField] private float bendSpeed = 15f;
     [SerializeField] private float returnSpeed = 8f;
 
+    // =========================================================
+    // PLAYER SQUASH
+    // =========================================================
+
     [Header("Player Squash")]
     [SerializeField] private float squashAmount = 0.08f;
     [SerializeField] private float squashSpeed = 15f;
+
+    // =========================================================
+    // BUILD SHAKE
+    // =========================================================
 
     [Header("Build Shake")]
     [SerializeField] private float buildShakeAngle = 7f;
     [SerializeField] private float buildShakeSpeed = 35f;
 
+    // =========================================================
+    // BREAK EFFECT
+    // =========================================================
+
     [Header("Break Effect")]
     [SerializeField] private GameObject breakParticlePrefab;
     [SerializeField] private float particleLifetime = 2f;
+
+    // =========================================================
+    // PRIVATE
+    // =========================================================
 
     private Quaternion originalRotation;
     private Vector3 originalScale;
@@ -42,6 +123,17 @@ public class InteractiveGrass : MonoBehaviour
     private bool isBreaking;
 
     private float buildShakeOffset;
+    private float weatherNoiseOffset;
+
+    private float currentSwayMultiplier = 1f;
+    private float currentSpeedMultiplier = 1f;
+    private float currentWindChangeMultiplier = 1f;
+    private float currentGustAmount = 0f;
+    private float currentGustSpeed = 1f;
+
+    // =========================================================
+    // AWAKE
+    // =========================================================
 
     private void Awake()
     {
@@ -63,9 +155,13 @@ public class InteractiveGrass : MonoBehaviour
                 maxWindAngle
             );
 
-        // Makes nearby grass shake differently
-        // instead of moving perfectly together.
         buildShakeOffset =
+            Random.Range(
+                0f,
+                100f
+            );
+
+        weatherNoiseOffset =
             Random.Range(
                 0f,
                 100f
@@ -74,6 +170,10 @@ public class InteractiveGrass : MonoBehaviour
         ResetWindTimer();
     }
 
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
     private void Update()
     {
         if (isBreaking)
@@ -81,9 +181,103 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
+        UpdateWeatherWind();
         UpdateRandomWind();
         UpdateRotation();
         UpdateScale();
+    }
+
+    // =========================================================
+    // WEATHER WIND
+    // =========================================================
+
+    private void UpdateWeatherWind()
+    {
+        float targetSway = 1f;
+        float targetSpeed = 1f;
+        float targetWindChange = 1f;
+        float targetGustAmount = 0f;
+        float targetGustSpeed = 1f;
+
+        if (WeatherManager.Instance != null)
+        {
+            if (WeatherManager.Instance.IsRainAndThunder())
+            {
+                targetSway =
+                    stormSwayMultiplier;
+
+                targetSpeed =
+                    stormSpeedMultiplier;
+
+                targetWindChange =
+                    stormWindChangeMultiplier;
+
+                targetGustAmount =
+                    stormGustAmount;
+
+                targetGustSpeed =
+                    stormGustSpeed;
+            }
+            else if (WeatherManager.Instance.IsRaining())
+            {
+                targetSway =
+                    rainSwayMultiplier;
+
+                targetSpeed =
+                    rainSpeedMultiplier;
+
+                targetWindChange =
+                    rainWindChangeMultiplier;
+
+                targetGustAmount =
+                    rainGustAmount;
+
+                targetGustSpeed =
+                    rainGustSpeed;
+            }
+        }
+
+        float amount =
+            1f -
+            Mathf.Exp(
+                -weatherTransitionSpeed *
+                Time.deltaTime
+            );
+
+        currentSwayMultiplier =
+            Mathf.Lerp(
+                currentSwayMultiplier,
+                targetSway,
+                amount
+            );
+
+        currentSpeedMultiplier =
+            Mathf.Lerp(
+                currentSpeedMultiplier,
+                targetSpeed,
+                amount
+            );
+
+        currentWindChangeMultiplier =
+            Mathf.Lerp(
+                currentWindChangeMultiplier,
+                targetWindChange,
+                amount
+            );
+
+        currentGustAmount =
+            Mathf.Lerp(
+                currentGustAmount,
+                targetGustAmount,
+                amount
+            );
+
+        currentGustSpeed =
+            Mathf.Lerp(
+                currentGustSpeed,
+                targetGustSpeed,
+                amount
+            );
     }
 
     // =========================================================
@@ -92,29 +286,44 @@ public class InteractiveGrass : MonoBehaviour
 
     private void UpdateRandomWind()
     {
-        windTimer -= Time.deltaTime;
+        windTimer -=
+            Time.deltaTime *
+            currentWindChangeMultiplier;
 
         if (windTimer <= 0f)
         {
+            float angleLimit =
+                maxWindAngle *
+                currentSwayMultiplier;
+
             targetWindAngle =
                 Random.Range(
-                    -maxWindAngle,
-                    maxWindAngle
+                    -angleLimit,
+                    angleLimit
                 );
 
             ResetWindTimer();
         }
 
+        float smoothness =
+            windSmoothness *
+            currentSpeedMultiplier;
+
         currentWindAngle =
             Mathf.Lerp(
                 currentWindAngle,
                 targetWindAngle,
-                1f - Mathf.Exp(
-                    -windSmoothness *
+                1f -
+                Mathf.Exp(
+                    -smoothness *
                     Time.deltaTime
                 )
             );
     }
+
+    // =========================================================
+    // WIND TIMER
+    // =========================================================
 
     private void ResetWindTimer()
     {
@@ -122,6 +331,40 @@ public class InteractiveGrass : MonoBehaviour
             Random.Range(
                 minWindChangeTime,
                 maxWindChangeTime
+            );
+    }
+
+    // =========================================================
+    // GUST MULTIPLIER
+    // =========================================================
+
+    private float GetGustMultiplier()
+    {
+        if (currentGustAmount <= 0.001f)
+        {
+            return 1f;
+        }
+
+        float noise =
+            Mathf.PerlinNoise(
+                weatherNoiseOffset,
+                Time.time *
+                currentGustSpeed
+            );
+
+        float minimum =
+            1f -
+            currentGustAmount;
+
+        float maximum =
+            1f +
+            currentGustAmount;
+
+        return
+            Mathf.Lerp(
+                minimum,
+                maximum,
+                noise
             );
     }
 
@@ -146,7 +389,8 @@ public class InteractiveGrass : MonoBehaviour
                 ) *
                 buildShakeAngle;
 
-            targetAngle = shake;
+            targetAngle =
+                shake;
         }
 
         // =====================================================
@@ -162,29 +406,37 @@ public class InteractiveGrass : MonoBehaviour
         }
 
         // =====================================================
-        // NORMAL WIND
+        // WEATHER WIND
         // =====================================================
 
         else
         {
             targetAngle =
-                currentWindAngle;
+                currentWindAngle *
+                GetGustMultiplier();
         }
+
+        // =====================================================
+        // ROTATION SPEED
+        // =====================================================
 
         float speed;
 
         if (isBuildShaking)
         {
-            // Very responsive while building.
-            speed = buildShakeSpeed;
+            speed =
+                buildShakeSpeed;
         }
         else if (playerInside)
         {
-            speed = bendSpeed;
+            speed =
+                bendSpeed;
         }
         else
         {
-            speed = returnSpeed;
+            speed =
+                returnSpeed *
+                currentSpeedMultiplier;
         }
 
         float currentAngle =
@@ -198,7 +450,8 @@ public class InteractiveGrass : MonoBehaviour
             Mathf.Lerp(
                 currentAngle,
                 targetAngle,
-                1f - Mathf.Exp(
+                1f -
+                Mathf.Exp(
                     -speed *
                     Time.deltaTime
                 )
@@ -238,7 +491,8 @@ public class InteractiveGrass : MonoBehaviour
             Vector3.Lerp(
                 transform.localScale,
                 targetScale,
-                1f - Mathf.Exp(
+                1f -
+                Mathf.Exp(
                     -squashSpeed *
                     Time.deltaTime
                 )
@@ -256,7 +510,8 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        isBuildShaking = true;
+        isBuildShaking =
+            true;
     }
 
     // =========================================================
@@ -265,7 +520,8 @@ public class InteractiveGrass : MonoBehaviour
 
     public void StopBuildShake()
     {
-        isBuildShaking = false;
+        isBuildShaking =
+            false;
     }
 
     // =========================================================
@@ -280,7 +536,8 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        playerInside = true;
+        playerInside =
+            true;
 
         BendAwayFromPlayer(
             other.transform
@@ -299,7 +556,8 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        playerInside = true;
+        playerInside =
+            true;
 
         BendAwayFromPlayer(
             other.transform
@@ -318,13 +576,20 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        playerInside = false;
-        playerBendAngle = 0f;
+        playerInside =
+            false;
+
+        playerBendAngle =
+            0f;
+
+        float angleLimit =
+            maxWindAngle *
+            currentSwayMultiplier;
 
         targetWindAngle =
             Random.Range(
-                -maxWindAngle,
-                maxWindAngle
+                -angleLimit,
+                angleLimit
             );
 
         ResetWindTimer();
@@ -364,12 +629,11 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        isBreaking = true;
-        isBuildShaking = false;
+        isBreaking =
+            true;
 
-        // =====================================================
-        // PARTICLE
-        // =====================================================
+        isBuildShaking =
+            false;
 
         if (breakParticlePrefab != null)
         {
@@ -377,9 +641,6 @@ public class InteractiveGrass : MonoBehaviour
                 Instantiate(
                     breakParticlePrefab,
                     transform.position,
-
-                    // Particle does NOT inherit
-                    // grass rotation.
                     Quaternion.identity
                 );
 
@@ -389,11 +650,9 @@ public class InteractiveGrass : MonoBehaviour
             );
         }
 
-        // =====================================================
-        // DESTROY GRASS
-        // =====================================================
-
-        Destroy(gameObject);
+        Destroy(
+            gameObject
+        );
     }
 
     // =========================================================
