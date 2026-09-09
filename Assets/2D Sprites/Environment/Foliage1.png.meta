@@ -330,6 +330,28 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: Foliage1_3
+      rect:
+        serializedVersion: 2
+        x: 1206
+        y: 71
+        width: 146
+        height: 216
+      alignment: 9
+      pivot: {x: 0.51635075, y: 0.15183789}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: df2d78055f1bf5e418621c19d51c9b40
+      internalID: -4872500801636299956
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
