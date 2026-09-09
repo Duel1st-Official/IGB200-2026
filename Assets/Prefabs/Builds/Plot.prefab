@@ -96,6 +96,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   occupied: 0
   planted: 0
+  rangerStation: {fileID: 0}
+  showDebugLogs: 0
 --- !u!114 &6376127902706515472
 MonoBehaviour:
   m_ObjectHideFlags: 0

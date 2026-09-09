@@ -66,6 +66,51 @@ public class RemoveModeSystem : MonoBehaviour
         Vector3.zero;
 
     // =========================================================
+    // REMOVE AUDIO
+    // =========================================================
+
+    [Header("Remove Audio")]
+
+    [Tooltip(
+        "Audio Source used for remove and breaking sounds."
+    )]
+    [SerializeField] private AudioSource removeAudioSource;
+
+    [Tooltip(
+        "Random sound played when the player starts removing an object."
+    )]
+    [SerializeField]
+    private AudioClip[] removeSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float removeVolume = 1f;
+
+    [SerializeField] private float removePitchMin = 0.95f;
+
+    [SerializeField] private float removePitchMax = 1.05f;
+
+    // =========================================================
+    // BREAK AUDIO
+    // =========================================================
+
+    [Header("Breaking Audio")]
+
+    [Tooltip(
+        "Random sound played when the object actually breaks."
+    )]
+    [SerializeField]
+    private AudioClip[] breakingSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float breakingVolume = 1f;
+
+    [SerializeField] private float breakingPitchMin = 0.95f;
+
+    [SerializeField] private float breakingPitchMax = 1.05f;
+
+    // =========================================================
     // PRIVATE
     // =========================================================
 
@@ -87,6 +132,12 @@ public class RemoveModeSystem : MonoBehaviour
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
+        }
+
+        if (removeAudioSource == null)
+        {
+            removeAudioSource =
+                GetComponent<AudioSource>();
         }
 
         CreatePreviews();
@@ -138,7 +189,7 @@ public class RemoveModeSystem : MonoBehaviour
             return;
         }
 
-        // RIGHT CLICK
+        // LEFT CLICK
         if (Input.GetMouseButtonDown(0))
         {
             TryRemove();
@@ -415,6 +466,12 @@ public class RemoveModeSystem : MonoBehaviour
         }
 
         // =====================================================
+        // REMOVE SOUND
+        // =====================================================
+
+        PlayRemoveSound();
+
+        // =====================================================
         // START REMOVE
         // =====================================================
 
@@ -518,6 +575,12 @@ public class RemoveModeSystem : MonoBehaviour
         }
 
         // =====================================================
+        // BREAKING SOUND
+        // =====================================================
+
+        PlayBreakingSound();
+
+        // =====================================================
         // DESTROY PARTICLE
         // =====================================================
 
@@ -561,6 +624,126 @@ public class RemoveModeSystem : MonoBehaviour
 
         removing = false;
         removeCoroutine = null;
+    }
+
+    // =========================================================
+    // REMOVE SOUND
+    // =========================================================
+
+    private void PlayRemoveSound()
+    {
+        PlayRandomSound(
+            removeSounds,
+            removeVolume,
+            removePitchMin,
+            removePitchMax
+        );
+    }
+
+    // =========================================================
+    // BREAKING SOUND
+    // =========================================================
+
+    private void PlayBreakingSound()
+    {
+        PlayRandomSound(
+            breakingSounds,
+            breakingVolume,
+            breakingPitchMin,
+            breakingPitchMax
+        );
+    }
+
+    // =========================================================
+    // RANDOM SOUND
+    // =========================================================
+
+    private void PlayRandomSound(
+        AudioClip[] sounds,
+        float volume,
+        float pitchMin,
+        float pitchMax)
+    {
+        if (removeAudioSource == null)
+        {
+            return;
+        }
+
+        if (sounds == null ||
+            sounds.Length == 0)
+        {
+            return;
+        }
+
+        int validClipCount = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] != null)
+            {
+                validClipCount++;
+            }
+        }
+
+        if (validClipCount <= 0)
+        {
+            return;
+        }
+
+        int randomValidIndex =
+            Random.Range(
+                0,
+                validClipCount
+            );
+
+        AudioClip selectedClip = null;
+
+        int currentValidIndex = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentValidIndex ==
+                randomValidIndex)
+            {
+                selectedClip =
+                    sounds[i];
+
+                break;
+            }
+
+            currentValidIndex++;
+        }
+
+        if (selectedClip == null)
+        {
+            return;
+        }
+
+        float originalPitch =
+            removeAudioSource.pitch;
+
+        removeAudioSource.pitch =
+            Random.Range(
+                pitchMin,
+                pitchMax
+            );
+
+        removeAudioSource.PlayOneShot(
+            selectedClip,
+            volume
+        );
+
+        removeAudioSource.pitch =
+            originalPitch;
     }
 
     // =========================================================

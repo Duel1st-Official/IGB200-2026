@@ -13,6 +13,10 @@ public class SelectionWheel : MonoBehaviour
         Remove,
     }
 
+    // =========================================================
+    // REFERENCES
+    // =========================================================
+
     [Header("References")]
     public GameObject selectionWheel;
     public RectTransform wheelCenter;
@@ -20,35 +24,67 @@ public class SelectionWheel : MonoBehaviour
     public TMP_Text modeText;
     public Camera mainCamera;
 
+    // =========================================================
+    // WHEEL OPTIONS
+    // =========================================================
+
     [Header("Wheel Options")]
     public Image normalImage;
     public Image buildImage;
     public Image removeImage;
 
+    // =========================================================
+    // INPUT
+    // =========================================================
+
     [Header("Input")]
     public KeyCode wheelKey = KeyCode.Tab;
+
+    // =========================================================
+    // SELECTION
+    // =========================================================
 
     [Header("Selection")]
     public float deadZone = 60f;
 
+    // =========================================================
+    // ARROW
+    // =========================================================
+
     [Header("Arrow")]
     public float arrowDistance = 45f;
     public float arrowRotationOffset = 0f;
+
+    // =========================================================
+    // HIGHLIGHT
+    // =========================================================
 
     [Header("Highlight")]
     public float normalScale = 1f;
     public float selectedScale = 1.2f;
     public float highlightScaleSpeed = 15f;
 
+    // =========================================================
+    // HIGHLIGHT WIGGLE
+    // =========================================================
+
     [Header("Highlight Wiggle")]
     public float wiggleAmount = 8f;
     public float wiggleSpeed = 20f;
     public float wiggleDuration = 0.25f;
 
+    // =========================================================
+    // WHEEL MOVEMENT
+    // =========================================================
+
     [Header("Wheel Movement")]
     public float spreadSpeed = 12f;
     public float closeSpeed = 14f;
     public float closeDistanceThreshold = 1f;
+
+    // =========================================================
+    // WHEEL SCALE
+    // =========================================================
 
     [Header("Wheel Scale")]
     public float closedScale = 0.2f;
@@ -56,8 +92,91 @@ public class SelectionWheel : MonoBehaviour
     public float scaleInSpeed = 12f;
     public float scaleOutSpeed = 14f;
 
+    // =========================================================
+    // CURRENT MODE
+    // =========================================================
+
     [Header("Current Mode")]
     public PlayerMode currentMode = PlayerMode.Normal;
+
+    // =========================================================
+    // GENERAL SOUND EFFECTS
+    // =========================================================
+
+    [Header("Sound Effects")]
+
+    [Tooltip("Audio Source used by the selection wheel.")]
+    [SerializeField] private AudioSource audioSource;
+
+    [Tooltip("Played when the selection wheel opens.")]
+    [SerializeField] private AudioClip openSound;
+
+    [Tooltip("Played when the selection wheel closes.")]
+    [SerializeField] private AudioClip closeSound;
+
+    [Tooltip("Played whenever a new wheel option is highlighted.")]
+    [SerializeField] private AudioClip hoverSound;
+
+    // =========================================================
+    // MODE SELECTION SOUNDS
+    // =========================================================
+
+    [Header("Mode Selection Sounds")]
+
+    [Tooltip(
+        "Three random sounds for selecting Inspector / Normal mode."
+    )]
+    [SerializeField]
+    private AudioClip[] normalModeSounds =
+        new AudioClip[3];
+
+    [Tooltip(
+        "Three random sounds for selecting Build mode."
+    )]
+    [SerializeField]
+    private AudioClip[] buildModeSounds =
+        new AudioClip[3];
+
+    [Tooltip(
+        "Three random sounds for selecting Remove mode."
+    )]
+    [SerializeField]
+    private AudioClip[] removeModeSounds =
+        new AudioClip[3];
+
+    // =========================================================
+    // SOUND VOLUMES
+    // =========================================================
+
+    [Header("Sound Volumes")]
+
+    [Range(0f, 1f)]
+    [SerializeField] private float openVolume = 1f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float closeVolume = 1f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float hoverVolume = 0.6f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float selectVolume = 1f;
+
+    // =========================================================
+    // SOUND PITCH
+    // =========================================================
+
+    [Header("Sound Pitch Variation")]
+
+    [SerializeField] private float hoverPitchMin = 0.95f;
+    [SerializeField] private float hoverPitchMax = 1.05f;
+
+    [SerializeField] private float selectPitchMin = 0.95f;
+    [SerializeField] private float selectPitchMax = 1.05f;
+
+    // =========================================================
+    // PRIVATE
+    // =========================================================
 
     private bool wheelOpen;
     private bool wheelClosing;
@@ -80,6 +199,12 @@ public class SelectionWheel : MonoBehaviour
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
+        }
+
+        if (audioSource == null)
+        {
+            audioSource =
+                GetComponent<AudioSource>();
         }
 
         // Save open positions from the Inspector
@@ -158,6 +283,8 @@ public class SelectionWheel : MonoBehaviour
         {
             ConfirmSelection();
 
+            PlayCloseSound();
+
             // Return mouse to wheel centre
             MoveCursorToWheelCenter();
 
@@ -204,6 +331,8 @@ public class SelectionWheel : MonoBehaviour
             selectionWheel.SetActive(true);
         }
 
+        PlayOpenSound();
+
         // Start mouse in middle
         MoveCursorToWheelCenter();
 
@@ -226,7 +355,8 @@ public class SelectionWheel : MonoBehaviour
 
     private void MoveCursorToWheelCenter()
     {
-        if (wheelCenter == null || mainCamera == null)
+        if (wheelCenter == null ||
+            mainCamera == null)
         {
             return;
         }
@@ -462,7 +592,8 @@ public class SelectionWheel : MonoBehaviour
             );
 
         Vector2 direction =
-            mousePosition - centerPosition;
+            mousePosition -
+            centerPosition;
 
         // Cursor is in centre
         if (direction.sqrMagnitude <= 0.01f)
@@ -513,7 +644,8 @@ public class SelectionWheel : MonoBehaviour
             );
 
         Vector2 direction =
-            mousePosition - centerPosition;
+            mousePosition -
+            centerPosition;
 
         // =========================
         // DEAD ZONE
@@ -546,17 +678,19 @@ public class SelectionWheel : MonoBehaviour
                            |
                            |
 
-          REMOVE 180° ◀────●────▶ 0° INSPECT
+           REMOVE 180° ◀────●────▶ 0° INSPECT
         */
 
         // BUILD - TOP
-        if (angle >= 45f && angle < 135f)
+        if (angle >= 45f &&
+            angle < 135f)
         {
             highlightedOption = 1;
         }
 
         // REMOVE - LEFT
-        else if (angle >= 135f && angle < 270f)
+        else if (angle >= 135f &&
+                 angle < 270f)
         {
             highlightedOption = 2;
         }
@@ -577,18 +711,20 @@ public class SelectionWheel : MonoBehaviour
     private void UpdateVisuals()
     {
         // =========================
-        // NEW OPTION SELECTED
+        // NEW OPTION HIGHLIGHTED
         // =========================
 
-        if (highlightedOption != previousHighlightedOption)
+        if (highlightedOption !=
+            previousHighlightedOption)
         {
-            // Reset previous option
             ResetOptionRotations();
 
             if (highlightedOption != -1)
             {
-                // Start new wiggle
-                wiggleTimer = wiggleDuration;
+                wiggleTimer =
+                    wiggleDuration;
+
+                PlayHoverSound();
             }
             else
             {
@@ -625,16 +761,19 @@ public class SelectionWheel : MonoBehaviour
         if (wiggleTimer > 0f &&
             highlightedOption != -1)
         {
-            wiggleTimer -= Time.deltaTime;
+            wiggleTimer -=
+                Time.deltaTime;
 
             float progress =
                 Mathf.Clamp01(
-                    wiggleTimer / wiggleDuration
+                    wiggleTimer /
+                    wiggleDuration
                 );
 
             float rotation =
                 Mathf.Sin(
-                    Time.time * wiggleSpeed
+                    Time.time *
+                    wiggleSpeed
                 )
                 * wiggleAmount
                 * progress;
@@ -667,14 +806,15 @@ public class SelectionWheel : MonoBehaviour
 
         float targetScale =
             selected
-            ? selectedScale
-            : normalScale;
+                ? selectedScale
+                : normalScale;
 
         image.rectTransform.localScale =
             Vector3.Lerp(
                 image.rectTransform.localScale,
                 Vector3.one * targetScale,
-                Time.deltaTime * highlightScaleSpeed
+                Time.deltaTime *
+                highlightScaleSpeed
             );
     }
 
@@ -690,7 +830,8 @@ public class SelectionWheel : MonoBehaviour
                 Vector3.Lerp(
                     normalImage.rectTransform.localScale,
                     Vector3.one * normalScale,
-                    Time.deltaTime * highlightScaleSpeed
+                    Time.deltaTime *
+                    highlightScaleSpeed
                 );
         }
 
@@ -700,7 +841,8 @@ public class SelectionWheel : MonoBehaviour
                 Vector3.Lerp(
                     buildImage.rectTransform.localScale,
                     Vector3.one * normalScale,
-                    Time.deltaTime * highlightScaleSpeed
+                    Time.deltaTime *
+                    highlightScaleSpeed
                 );
         }
 
@@ -710,7 +852,8 @@ public class SelectionWheel : MonoBehaviour
                 Vector3.Lerp(
                     removeImage.rectTransform.localScale,
                     Vector3.one * normalScale,
-                    Time.deltaTime * highlightScaleSpeed
+                    Time.deltaTime *
+                    highlightScaleSpeed
                 );
         }
     }
@@ -838,6 +981,10 @@ public class SelectionWheel : MonoBehaviour
                 break;
         }
 
+        // Play one of the 3 sounds belonging
+        // to the mode we just selected.
+        PlayModeSelectionSound();
+
         UpdateModeText();
 
         Debug.Log(
@@ -925,6 +1072,209 @@ public class SelectionWheel : MonoBehaviour
     }
 
     // =========================================================
+    // OPEN SOUND
+    // =========================================================
+
+    private void PlayOpenSound()
+    {
+        PlaySound(
+            openSound,
+            openVolume
+        );
+    }
+
+    // =========================================================
+    // CLOSE SOUND
+    // =========================================================
+
+    private void PlayCloseSound()
+    {
+        PlaySound(
+            closeSound,
+            closeVolume
+        );
+    }
+
+    // =========================================================
+    // HOVER SOUND
+    // =========================================================
+
+    private void PlayHoverSound()
+    {
+        if (audioSource == null ||
+            hoverSound == null)
+        {
+            return;
+        }
+
+        float originalPitch =
+            audioSource.pitch;
+
+        audioSource.pitch =
+            Random.Range(
+                hoverPitchMin,
+                hoverPitchMax
+            );
+
+        audioSource.PlayOneShot(
+            hoverSound,
+            hoverVolume
+        );
+
+        audioSource.pitch =
+            originalPitch;
+    }
+
+    // =========================================================
+    // MODE SELECTION SOUND
+    // =========================================================
+
+    private void PlayModeSelectionSound()
+    {
+        AudioClip[] sounds = null;
+
+        switch (currentMode)
+        {
+            case PlayerMode.Normal:
+
+                sounds =
+                    normalModeSounds;
+
+                break;
+
+            case PlayerMode.Build:
+
+                sounds =
+                    buildModeSounds;
+
+                break;
+
+            case PlayerMode.Remove:
+
+                sounds =
+                    removeModeSounds;
+
+                break;
+        }
+
+        PlayRandomModeSound(
+            sounds
+        );
+    }
+
+    // =========================================================
+    // RANDOM MODE SOUND
+    // =========================================================
+
+    private void PlayRandomModeSound(
+        AudioClip[] sounds)
+    {
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        if (sounds == null ||
+            sounds.Length == 0)
+        {
+            return;
+        }
+
+        // Build a count of valid sounds.
+        int validSoundCount = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] != null)
+            {
+                validSoundCount++;
+            }
+        }
+
+        if (validSoundCount == 0)
+        {
+            return;
+        }
+
+        // Choose from only the valid sounds.
+        int randomValidIndex =
+            Random.Range(
+                0,
+                validSoundCount
+            );
+
+        AudioClip selectedClip =
+            null;
+
+        int currentValidIndex = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentValidIndex ==
+                randomValidIndex)
+            {
+                selectedClip =
+                    sounds[i];
+
+                break;
+            }
+
+            currentValidIndex++;
+        }
+
+        if (selectedClip == null)
+        {
+            return;
+        }
+
+        float originalPitch =
+            audioSource.pitch;
+
+        audioSource.pitch =
+            Random.Range(
+                selectPitchMin,
+                selectPitchMax
+            );
+
+        audioSource.PlayOneShot(
+            selectedClip,
+            selectVolume
+        );
+
+        audioSource.pitch =
+            originalPitch;
+    }
+
+    // =========================================================
+    // GENERIC SOUND
+    // =========================================================
+
+    private void PlaySound(
+        AudioClip clip,
+        float volume)
+    {
+        if (audioSource == null ||
+            clip == null)
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(
+            clip,
+            volume
+        );
+    }
+
+    // =========================================================
     // PUBLIC MODE CHECKS
     // =========================================================
 
@@ -954,14 +1304,16 @@ public class SelectionWheel : MonoBehaviour
     public void SetMode(
         PlayerMode newMode)
     {
-        currentMode = newMode;
+        currentMode =
+            newMode;
 
         UpdateModeText();
     }
 
     public bool IsInspectorMode()
     {
-        return currentMode == PlayerMode.Normal;
+        return currentMode ==
+               PlayerMode.Normal;
     }
 
     // =========================================================
@@ -973,5 +1325,10 @@ public class SelectionWheel : MonoBehaviour
         Cursor.visible = true;
 
         ResetOptionRotations();
+
+        if (audioSource != null)
+        {
+            audioSource.pitch = 1f;
+        }
     }
 }

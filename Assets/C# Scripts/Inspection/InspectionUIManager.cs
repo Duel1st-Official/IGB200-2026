@@ -19,6 +19,64 @@ public class InspectionUIManager : MonoBehaviour
     private IInspectionPanel currentPanel;
 
     // =========================================================
+    // AUDIO SOURCE
+    // =========================================================
+
+    [Header("Inspection Sounds")]
+
+    [Tooltip(
+        "Audio Source used for inspection hover and click sounds."
+    )]
+    [SerializeField] private AudioSource audioSource;
+
+    // =========================================================
+    // HOVER AUDIO
+    // =========================================================
+
+    [Header("Hover Sounds")]
+
+    [Tooltip(
+        "Random sound played when hovering over an inspectable object."
+    )]
+    [SerializeField]
+    private AudioClip[] hoverSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float hoverVolume = 0.65f;
+
+    [SerializeField] private float hoverPitchMin = 0.95f;
+
+    [SerializeField] private float hoverPitchMax = 1.05f;
+
+    // =========================================================
+    // CLICK AUDIO
+    // =========================================================
+
+    [Header("Inspect / Click Sounds")]
+
+    [Tooltip(
+        "Random sound played when an inspection panel is opened."
+    )]
+    [SerializeField]
+    private AudioClip[] clickSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float clickVolume = 1f;
+
+    [SerializeField] private float clickPitchMin = 0.95f;
+
+    [SerializeField] private float clickPitchMax = 1.05f;
+
+    // =========================================================
+    // DEBUG
+    // =========================================================
+
+    [Header("Debug")]
+    [SerializeField] private bool showDebugLogs = false;
+
+    // =========================================================
     // AWAKE
     // =========================================================
 
@@ -35,6 +93,16 @@ public class InspectionUIManager : MonoBehaviour
         }
 
         Instance = this;
+
+        // Automatically find the AudioSource
+        // on this GameObject if one has not
+        // been manually assigned.
+
+        if (audioSource == null)
+        {
+            audioSource =
+                GetComponent<AudioSource>();
+        }
     }
 
     // =========================================================
@@ -54,7 +122,7 @@ public class InspectionUIManager : MonoBehaviour
         // =====================================================
 
         // If this is already the current panel,
-        // we don't need to close it.
+        // we don't need to close or reopen it.
 
         if (currentPanel == newPanel)
         {
@@ -76,6 +144,12 @@ public class InspectionUIManager : MonoBehaviour
 
         currentPanel =
             newPanel;
+
+        // =====================================================
+        // INSPECTION CLICK SOUND
+        // =====================================================
+
+        PlayClickSound();
     }
 
     // =========================================================
@@ -121,6 +195,156 @@ public class InspectionUIManager : MonoBehaviour
     {
         return
             currentPanel != null;
+    }
+
+    // =========================================================
+    // HOVER SOUND
+    // =========================================================
+
+    public void PlayHoverSound()
+    {
+        PlayRandomSound(
+            hoverSounds,
+            hoverVolume,
+            hoverPitchMin,
+            hoverPitchMax,
+            "Inspection Hover"
+        );
+    }
+
+    // =========================================================
+    // CLICK SOUND
+    // =========================================================
+
+    public void PlayClickSound()
+    {
+        PlayRandomSound(
+            clickSounds,
+            clickVolume,
+            clickPitchMin,
+            clickPitchMax,
+            "Inspection Click"
+        );
+    }
+
+    // =========================================================
+    // RANDOM SOUND
+    // =========================================================
+
+    private void PlayRandomSound(
+        AudioClip[] sounds,
+        float volume,
+        float pitchMin,
+        float pitchMax,
+        string soundType)
+    {
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        if (sounds == null ||
+            sounds.Length == 0)
+        {
+            return;
+        }
+
+        // Count only valid clips.
+        int validClipCount = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] != null)
+            {
+                validClipCount++;
+            }
+        }
+
+        if (validClipCount <= 0)
+        {
+            return;
+        }
+
+        // Pick one of the valid clips.
+        int randomValidIndex =
+            Random.Range(
+                0,
+                validClipCount
+            );
+
+        AudioClip selectedClip = null;
+
+        int currentValidIndex = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentValidIndex ==
+                randomValidIndex)
+            {
+                selectedClip =
+                    sounds[i];
+
+                break;
+            }
+
+            currentValidIndex++;
+        }
+
+        if (selectedClip == null)
+        {
+            return;
+        }
+
+        float originalPitch =
+            audioSource.pitch;
+
+        audioSource.pitch =
+            Random.Range(
+                pitchMin,
+                pitchMax
+            );
+
+        audioSource.PlayOneShot(
+            selectedClip,
+            volume
+        );
+
+        audioSource.pitch =
+            originalPitch;
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                soundType +
+                " Sound: " +
+                selectedClip.name
+            );
+        }
+    }
+
+    // =========================================================
+    // DEBUG SOUND TESTS
+    // =========================================================
+
+    [ContextMenu("Sound - Test Inspection Hover")]
+    private void DebugHoverSound()
+    {
+        PlayHoverSound();
+    }
+
+    [ContextMenu("Sound - Test Inspection Click")]
+    private void DebugClickSound()
+    {
+        PlayClickSound();
     }
 
     // =========================================================
