@@ -106,6 +106,26 @@ public class WaterPlotPlacementSystem : MonoBehaviour
     [SerializeField] private Vector3 buildParticleOffset = Vector3.zero;
 
     // =========================================================
+    // WATER PLOT BUILD AUDIO
+    // =========================================================
+
+    [Header("Water Plot Build Audio")]
+
+    [Tooltip("AudioSource used for Water Plot placement sounds.")]
+    [SerializeField] private AudioSource buildAudioSource;
+
+    [Tooltip("Random Water Plot build sound played when placement finishes.")]
+    [SerializeField]
+    private AudioClip[] waterPlotBuildSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float waterPlotBuildVolume = 1f;
+
+    [SerializeField] private float waterPlotBuildPitchMin = 0.95f;
+    [SerializeField] private float waterPlotBuildPitchMax = 1.05f;
+
+    // =========================================================
     // SORTING
     // =========================================================
 
@@ -131,16 +151,28 @@ public class WaterPlotPlacementSystem : MonoBehaviour
 
     private void Start()
     {
+        // =====================================================
+        // CAMERA
+        // =====================================================
+
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
         }
+
+        // =====================================================
+        // SELECTION WHEEL
+        // =====================================================
 
         if (selectionWheel == null)
         {
             selectionWheel =
                 FindFirstObjectByType<SelectionWheel>();
         }
+
+        // =====================================================
+        // PLAYER
+        // =====================================================
 
         if (player == null)
         {
@@ -166,11 +198,29 @@ public class WaterPlotPlacementSystem : MonoBehaviour
             }
         }
 
+        // =====================================================
+        // CAMERA SHAKE
+        // =====================================================
+
         if (cameraShake == null)
         {
             cameraShake =
                 FindFirstObjectByType<CameraShake2D>();
         }
+
+        // =====================================================
+        // AUDIO SOURCE
+        // =====================================================
+
+        if (buildAudioSource == null)
+        {
+            buildAudioSource =
+                GetComponent<AudioSource>();
+        }
+
+        // =====================================================
+        // VALID PREVIEW
+        // =====================================================
 
         if (validPreviewPrefab != null)
         {
@@ -179,6 +229,10 @@ public class WaterPlotPlacementSystem : MonoBehaviour
 
             validPreview.SetActive(false);
         }
+
+        // =====================================================
+        // INVALID PREVIEW
+        // =====================================================
 
         if (invalidPreviewPrefab != null)
         {
@@ -231,7 +285,7 @@ public class WaterPlotPlacementSystem : MonoBehaviour
 
         UpdatePreview();
 
-        // Right click to place
+        // Left click to place
         if (Input.GetMouseButtonDown(0))
         {
             TryPlaceWaterPlot();
@@ -618,6 +672,12 @@ public class WaterPlotPlacementSystem : MonoBehaviour
         );
 
         // =====================================================
+        // BUILD SOUND
+        // =====================================================
+
+        PlayWaterPlotBuildSound();
+
+        // =====================================================
         // BREAK GRASS
         // =====================================================
 
@@ -936,6 +996,89 @@ public class WaterPlotPlacementSystem : MonoBehaviour
 
         sortingGroup.sortingOrder =
             calculatedOrder;
+    }
+
+    // =========================================================
+    // WATER PLOT BUILD SOUND
+    // =========================================================
+
+    private void PlayWaterPlotBuildSound()
+    {
+        if (buildAudioSource == null)
+        {
+            return;
+        }
+
+        if (waterPlotBuildSounds == null ||
+            waterPlotBuildSounds.Length == 0)
+        {
+            return;
+        }
+
+        int validClipCount = 0;
+
+        // Count non-null sounds.
+        for (int i = 0;
+             i < waterPlotBuildSounds.Length;
+             i++)
+        {
+            if (waterPlotBuildSounds[i] != null)
+            {
+                validClipCount++;
+            }
+        }
+
+        if (validClipCount <= 0)
+        {
+            return;
+        }
+
+        // Pick one of the valid sounds.
+        int randomValidIndex =
+            Random.Range(
+                0,
+                validClipCount
+            );
+
+        AudioClip selectedClip = null;
+        int currentValidIndex = 0;
+
+        for (int i = 0;
+             i < waterPlotBuildSounds.Length;
+             i++)
+        {
+            if (waterPlotBuildSounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentValidIndex ==
+                randomValidIndex)
+            {
+                selectedClip =
+                    waterPlotBuildSounds[i];
+
+                break;
+            }
+
+            currentValidIndex++;
+        }
+
+        if (selectedClip == null)
+        {
+            return;
+        }
+
+        buildAudioSource.pitch =
+            Random.Range(
+                waterPlotBuildPitchMin,
+                waterPlotBuildPitchMax
+            );
+
+        buildAudioSource.PlayOneShot(
+            selectedClip,
+            waterPlotBuildVolume
+        );
     }
 
     // =========================================================

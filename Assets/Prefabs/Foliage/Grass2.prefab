@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4424539023862197729}
   - component: {fileID: 5465606789088921286}
   - component: {fileID: 3210851337785023442}
+  - component: {fileID: -883803756478053178}
   m_Layer: 6
   m_Name: Grass2
   m_TagString: Untagged
@@ -152,10 +153,131 @@ MonoBehaviour:
   windSmoothness: 2.5
   minWindChangeTime: 0.5
   maxWindChangeTime: 2
+  rainSwayMultiplier: 3
+  rainSpeedMultiplier: 2.5
+  rainWindChangeMultiplier: 2.5
+  rainGustAmount: 0.35
+  rainGustSpeed: 1.5
+  stormSwayMultiplier: 7
+  stormSpeedMultiplier: 5
+  stormWindChangeMultiplier: 6
+  stormGustAmount: 0.7
+  stormGustSpeed: 3
+  weatherTransitionSpeed: 4
   maxTiltAngle: 8
   bendSpeed: 15
   returnSpeed: 8
   squashAmount: 0.08
   squashSpeed: 15
+  buildShakeAngle: 7
+  buildShakeSpeed: 35
   breakParticlePrefab: {fileID: 260475628421899166, guid: 5b912c7e2f9a97d45adf914dda634dd5, type: 3}
   particleLifetime: 2
+  audioSource: {fileID: -883803756478053178}
+  touchSounds:
+  - {fileID: 8300000, guid: 873d4722c39db28449dacdc997c11dd8, type: 3}
+  touchVolume: 0.5
+  touchPitchMin: 0.9
+  touchPitchMax: 1.1
+  breakSounds:
+  - {fileID: 8300000, guid: ccb62997cf4613e4998c01887c8cac4d, type: 3}
+  breakVolume: 0.7
+  breakPitchMin: 0.9
+  breakPitchMax: 1.1
+--- !u!82 &-883803756478053178
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4057750346949984859}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 0.97486675
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4

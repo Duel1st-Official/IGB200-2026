@@ -5,6 +5,16 @@ using UnityEngine.Rendering.Universal;
 public class WeatherManager : MonoBehaviour
 {
     // =========================================================
+    // SINGLETON
+    // =========================================================
+
+    public static WeatherManager Instance
+    {
+        get;
+        private set;
+    }
+
+    // =========================================================
     // WEATHER TYPE
     // =========================================================
 
@@ -16,20 +26,10 @@ public class WeatherManager : MonoBehaviour
     }
 
     // =========================================================
-    // SINGLETON
+    // CURRENT WEATHER
     // =========================================================
 
-    public static WeatherManager Instance
-    {
-        get;
-        private set;
-    }
-
-    // =========================================================
-    // WEATHER
-    // =========================================================
-
-    [Header("Weather")]
+    [Header("Current Weather")]
     [SerializeField]
     private WeatherType currentWeather =
         WeatherType.Sunny;
@@ -39,67 +39,63 @@ public class WeatherManager : MonoBehaviour
     // =========================================================
 
     [Header("Rain")]
-
-    [Tooltip("Main looping rain particle system.")]
     [SerializeField] private ParticleSystem rainParticles;
 
-    [Tooltip("How quickly rain fades in and out.")]
-    [SerializeField] private float rainFadeSpeed = 8f;
+    [SerializeField] private float rainTransitionSpeed = 2.5f;
+
+    [SerializeField] private float rainEmissionMultiplier = 1f;
 
     // =========================================================
     // GLOBAL LIGHT
     // =========================================================
 
     [Header("Global Light")]
-
     [SerializeField] private Light2D globalLight;
 
-    [Header("Sunny Light")]
+    [SerializeField] private float lightTransitionSpeed = 3f;
 
+    // =========================================================
+    // SUNNY LIGHT
+    // =========================================================
+
+    [Header("Sunny Lighting")]
     [SerializeField]
     private Color sunnyLightColor =
         Color.white;
 
-    [SerializeField]
-    private float sunnyLightIntensity =
-        1f;
+    [SerializeField] private float sunnyLightIntensity = 1f;
 
-    [Header("Rain Light")]
+    // =========================================================
+    // RAIN LIGHT
+    // =========================================================
 
+    [Header("Rain Lighting")]
     [SerializeField]
     private Color rainLightColor =
         new Color(
             0.72f,
             0.78f,
-            0.86f,
+            0.85f,
             1f
         );
 
-    [SerializeField]
-    private float rainLightIntensity =
-        0.75f;
+    [SerializeField] private float rainLightIntensity = 0.8f;
 
-    [Header("Storm Light")]
+    // =========================================================
+    // STORM LIGHT
+    // =========================================================
 
+    [Header("Storm Lighting")]
     [SerializeField]
     private Color stormLightColor =
         new Color(
-            0.6f,
-            0.68f,
-            0.8f,
+            0.55f,
+            0.62f,
+            0.72f,
             1f
         );
 
-    [SerializeField]
-    private float stormLightIntensity =
-        0.6f;
-
-    [Header("Light Transition")]
-
-    [Tooltip("How quickly the light smoothly changes between weather.")]
-    [SerializeField]
-    private float lightTransitionSpeed =
-        1.5f;
+    [SerializeField] private float stormLightIntensity = 0.65f;
 
     // =========================================================
     // LIGHTNING
@@ -107,93 +103,134 @@ public class WeatherManager : MonoBehaviour
 
     [Header("Lightning")]
 
-    [SerializeField]
-    private bool enableLightning =
-        true;
+    [SerializeField] private float minimumLightningInterval = 4f;
 
-    [SerializeField]
-    private float minimumLightningDelay =
-        4f;
-
-    [SerializeField]
-    private float maximumLightningDelay =
-        10f;
+    [SerializeField] private float maximumLightningInterval = 12f;
 
     [SerializeField]
     private Color lightningColor =
         Color.white;
 
-    [SerializeField]
-    private float lightningIntensity =
-        1.6f;
+    [SerializeField] private float lightningIntensity = 1.5f;
 
-    [SerializeField]
-    private float lightningFlashDuration =
-        0.08f;
+    [SerializeField] private float lightningFlashDuration = 0.08f;
 
-    [Header("Double Flash")]
-
-    [SerializeField]
-    private bool allowDoubleFlash =
-        true;
+    [SerializeField] private float lightningSecondFlashDelay = 0.08f;
 
     [Range(0f, 1f)]
-    [SerializeField]
-    private float doubleFlashChance =
-        0.45f;
-
-    [SerializeField]
-    private float doubleFlashDelay =
-        0.08f;
+    [SerializeField] private float secondFlashChance = 0.65f;
 
     // =========================================================
-    // THUNDER PARTICLES
+    // WEATHER AUDIO SOURCES
     // =========================================================
 
-    [Header("Thunder / Lightning Burst")]
+    [Header("Weather Audio Sources")]
 
     [Tooltip(
-        "Non-looping particle system played during lightning."
+        "First looping ambience source."
     )]
-    [SerializeField] private ParticleSystem thunderBurstParticles;
+    [SerializeField] private AudioSource weatherAudioSourceA;
+
+    [Tooltip(
+        "Second looping ambience source used for crossfading."
+    )]
+    [SerializeField] private AudioSource weatherAudioSourceB;
+
+    [Tooltip(
+        "Separate source used for thunder."
+    )]
+    [SerializeField] private AudioSource thunderAudioSource;
+
+    // =========================================================
+    // SUNNY AUDIO
+    // =========================================================
+
+    [Header("Sunny Ambience")]
+
+    [SerializeField] private AudioClip sunnyAmbience;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float sunnyVolume = 0.45f;
+
+    // =========================================================
+    // RAIN AUDIO
+    // =========================================================
+
+    [Header("Rain Ambience")]
+
+    [SerializeField] private AudioClip rainAmbience;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float rainVolume = 0.7f;
+
+    // =========================================================
+    // STORM AUDIO
+    // =========================================================
+
+    [Header("Rain + Thunder Ambience")]
+
+    [SerializeField] private AudioClip stormAmbience;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float stormVolume = 0.85f;
+
+    // =========================================================
+    // THUNDER AUDIO
+    // =========================================================
+
+    [Header("Thunder Sounds")]
+
+    [SerializeField]
+    private AudioClip[] thunderSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float thunderVolume = 1f;
+
+    [SerializeField] private float thunderPitchMin = 0.95f;
+
+    [SerializeField] private float thunderPitchMax = 1.05f;
+
+    [SerializeField] private float thunderDelay = 0.15f;
+
+    // =========================================================
+    // AUDIO TRANSITION
+    // =========================================================
+
+    [Header("Audio Transition")]
+
+    [SerializeField] private float audioFadeSpeed = 2f;
 
     // =========================================================
     // DEBUG
     // =========================================================
 
     [Header("Debug")]
-
-    [SerializeField] private bool debugSunny;
-
-    [SerializeField] private bool debugRain;
-
-    [SerializeField] private bool debugRainAndThunder;
-
-    [SerializeField] private bool debugLightning;
-
-    [SerializeField]
-    private bool showDebugLogs =
-        false;
+    [SerializeField] private bool showDebugLogs = false;
 
     // =========================================================
     // PRIVATE
     // =========================================================
 
-    private float normalRainEmissionRate;
+    private float targetRainAmount = 0f;
+    private float currentRainAmount = 0f;
 
-    private float currentRainEmissionRate;
-
-    private float targetRainEmissionRate;
+    private float originalRainEmissionRate = 0f;
 
     private Color targetLightColor;
-
     private float targetLightIntensity;
 
     private Coroutine lightningRoutine;
-
     private Coroutine lightningFlashRoutine;
+    private Coroutine thunderRoutine;
 
-    private bool lightningActive;
+    private bool lightningActive = false;
+
+    private AudioSource activeWeatherSource;
+    private AudioSource inactiveWeatherSource;
+
+    private AudioClip targetWeatherClip;
+    private float targetWeatherVolume;
 
     // =========================================================
     // AWAKE
@@ -212,8 +249,7 @@ public class WeatherManager : MonoBehaviour
             return;
         }
 
-        Instance =
-            this;
+        Instance = this;
 
         // =====================================================
         // RAIN SETUP
@@ -224,38 +260,27 @@ public class WeatherManager : MonoBehaviour
             ParticleSystem.EmissionModule emission =
                 rainParticles.emission;
 
-            normalRainEmissionRate =
-                GetEmissionRate(
-                    emission
-                );
+            originalRainEmissionRate =
+                emission.rateOverTime.constant;
 
-            currentRainEmissionRate =
+            emission.rateOverTime =
                 0f;
 
-            targetRainEmissionRate =
+            currentRainAmount =
                 0f;
-
-            SetRainEmission(
-                0f
-            );
-
-            rainParticles.Stop(
-                true,
-                ParticleSystemStopBehavior.StopEmittingAndClear
-            );
         }
 
         // =====================================================
-        // THUNDER SETUP
+        // AUDIO SETUP
         // =====================================================
 
-        if (thunderBurstParticles != null)
-        {
-            thunderBurstParticles.Stop(
-                true,
-                ParticleSystemStopBehavior.StopEmittingAndClear
-            );
-        }
+        SetupAudioSources();
+
+        activeWeatherSource =
+            weatherAudioSourceA;
+
+        inactiveWeatherSource =
+            weatherAudioSourceB;
     }
 
     // =========================================================
@@ -264,8 +289,6 @@ public class WeatherManager : MonoBehaviour
 
     private void Start()
     {
-        // Random weather every time the game starts.
-
         WeatherType randomWeather =
             (WeatherType)Random.Range(
                 0,
@@ -287,7 +310,65 @@ public class WeatherManager : MonoBehaviour
 
         UpdateGlobalLight();
 
-        HandleDebugControls();
+        UpdateWeatherAudio();
+    }
+
+    // =========================================================
+    // AUDIO SOURCE SETUP
+    // =========================================================
+
+    private void SetupAudioSources()
+    {
+        if (weatherAudioSourceA == null)
+        {
+            weatherAudioSourceA =
+                gameObject.AddComponent<AudioSource>();
+        }
+
+        weatherAudioSourceA.playOnAwake =
+            false;
+
+        weatherAudioSourceA.loop =
+            true;
+
+        weatherAudioSourceA.spatialBlend =
+            0f;
+
+        if (weatherAudioSourceB == null)
+        {
+            weatherAudioSourceB =
+                gameObject.AddComponent<AudioSource>();
+        }
+
+        weatherAudioSourceB.playOnAwake =
+            false;
+
+        weatherAudioSourceB.loop =
+            true;
+
+        weatherAudioSourceB.spatialBlend =
+            0f;
+
+        if (thunderAudioSource == null)
+        {
+            thunderAudioSource =
+                gameObject.AddComponent<AudioSource>();
+        }
+
+        thunderAudioSource.playOnAwake =
+            false;
+
+        thunderAudioSource.loop =
+            false;
+
+        thunderAudioSource.spatialBlend =
+            0f;
+
+        weatherAudioSourceA.volume =
+            0f;
+
+        weatherAudioSourceB.volume =
+            0f;
     }
 
     // =========================================================
@@ -300,83 +381,71 @@ public class WeatherManager : MonoBehaviour
         currentWeather =
             newWeather;
 
-        // =====================================================
-        // SUNNY
-        // =====================================================
-
-        if (currentWeather ==
-            WeatherType.Sunny)
+        switch (currentWeather)
         {
-            targetRainEmissionRate =
-                0f;
+            case WeatherType.Sunny:
 
-            targetLightColor =
-                sunnyLightColor;
+                targetRainAmount =
+                    0f;
 
-            targetLightIntensity =
-                sunnyLightIntensity;
+                targetLightColor =
+                    sunnyLightColor;
 
-            // Stop absolutely all storm behaviour.
-            StopLightningRoutine();
+                targetLightIntensity =
+                    sunnyLightIntensity;
 
-            if (thunderBurstParticles != null)
-            {
-                thunderBurstParticles.Stop(
-                    true,
-                    ParticleSystemStopBehavior.StopEmittingAndClear
+                StopLightningRoutine();
+
+                SetWeatherAmbience(
+                    sunnyAmbience,
+                    sunnyVolume
                 );
-            }
-        }
 
-        // =====================================================
-        // RAIN
-        // =====================================================
+                break;
 
-        else if (currentWeather ==
-                 WeatherType.Rain)
-        {
-            targetRainEmissionRate =
-                normalRainEmissionRate;
+            case WeatherType.Rain:
 
-            targetLightColor =
-                rainLightColor;
+                targetRainAmount =
+                    1f;
 
-            targetLightIntensity =
-                rainLightIntensity;
+                targetLightColor =
+                    rainLightColor;
 
-            // Rain has NO lightning.
-            StopLightningRoutine();
+                targetLightIntensity =
+                    rainLightIntensity;
 
-            if (thunderBurstParticles != null)
-            {
-                thunderBurstParticles.Stop(
-                    true,
-                    ParticleSystemStopBehavior.StopEmittingAndClear
+                StartRainParticles();
+
+                StopLightningRoutine();
+
+                SetWeatherAmbience(
+                    rainAmbience,
+                    rainVolume
                 );
-            }
 
-            StartRainIfNeeded();
-        }
+                break;
 
-        // =====================================================
-        // RAIN & THUNDER
-        // =====================================================
+            case WeatherType.RainAndThunder:
 
-        else if (currentWeather ==
-                 WeatherType.RainAndThunder)
-        {
-            targetRainEmissionRate =
-                normalRainEmissionRate;
+                targetRainAmount =
+                    1f;
 
-            targetLightColor =
-                stormLightColor;
+                targetLightColor =
+                    stormLightColor;
 
-            targetLightIntensity =
-                stormLightIntensity;
+                targetLightIntensity =
+                    stormLightIntensity;
 
-            StartRainIfNeeded();
+                StartRainParticles();
 
-            StartLightningRoutine();
+                StartLightningRoutine();
+
+                SetWeatherAmbience(
+                    stormAmbience,
+                    stormVolume
+                );
+
+                break;
         }
 
         if (showDebugLogs)
@@ -389,10 +458,63 @@ public class WeatherManager : MonoBehaviour
     }
 
     // =========================================================
+    // RAIN UPDATE
+    // =========================================================
+
+    private void UpdateRain()
+    {
+        if (rainParticles == null)
+        {
+            return;
+        }
+
+        float smoothAmount =
+            1f -
+            Mathf.Exp(
+                -rainTransitionSpeed *
+                Time.deltaTime
+            );
+
+        currentRainAmount =
+            Mathf.Lerp(
+                currentRainAmount,
+                targetRainAmount,
+                smoothAmount
+            );
+
+        ParticleSystem.EmissionModule emission =
+            rainParticles.emission;
+
+        emission.rateOverTime =
+            originalRainEmissionRate *
+            rainEmissionMultiplier *
+            currentRainAmount;
+
+        if (targetRainAmount <= 0f &&
+            currentRainAmount <= 0.01f)
+        {
+            currentRainAmount =
+                0f;
+
+            emission.rateOverTime =
+                0f;
+
+            if (rainParticles.isPlaying)
+            {
+                rainParticles.Stop(
+                    true,
+                    ParticleSystemStopBehavior
+                        .StopEmittingAndClear
+                );
+            }
+        }
+    }
+
+    // =========================================================
     // START RAIN
     // =========================================================
 
-    private void StartRainIfNeeded()
+    private void StartRainParticles()
     {
         if (rainParticles == null)
         {
@@ -406,143 +528,7 @@ public class WeatherManager : MonoBehaviour
     }
 
     // =========================================================
-    // UPDATE RAIN
-    // =========================================================
-
-    private void UpdateRain()
-    {
-        if (rainParticles == null)
-        {
-            return;
-        }
-
-        // =====================================================
-        // FADE EMISSION
-        // =====================================================
-
-        float amount =
-            1f -
-            Mathf.Exp(
-                -rainFadeSpeed *
-                Time.deltaTime
-            );
-
-        currentRainEmissionRate =
-            Mathf.Lerp(
-                currentRainEmissionRate,
-                targetRainEmissionRate,
-                amount
-            );
-
-        if (Mathf.Abs(
-                currentRainEmissionRate -
-                targetRainEmissionRate) <
-            0.01f)
-        {
-            currentRainEmissionRate =
-                targetRainEmissionRate;
-        }
-
-        SetRainEmission(
-            currentRainEmissionRate
-        );
-
-        // =====================================================
-        // SUNNY = FULLY STOP RAIN
-        // =====================================================
-
-        if (currentWeather ==
-            WeatherType.Sunny)
-        {
-            if (currentRainEmissionRate <=
-                0.01f)
-            {
-                currentRainEmissionRate =
-                    0f;
-
-                SetRainEmission(
-                    0f
-                );
-
-                if (rainParticles.isPlaying)
-                {
-                    rainParticles.Stop(
-                        true,
-                        ParticleSystemStopBehavior.StopEmittingAndClear
-                    );
-                }
-            }
-        }
-
-        // =====================================================
-        // RAIN WEATHER SHOULD BE PLAYING
-        // =====================================================
-
-        else
-        {
-            StartRainIfNeeded();
-        }
-    }
-
-    // =========================================================
-    // SET RAIN EMISSION
-    // =========================================================
-
-    private void SetRainEmission(
-        float rate)
-    {
-        if (rainParticles == null)
-        {
-            return;
-        }
-
-        ParticleSystem.EmissionModule emission =
-            rainParticles.emission;
-
-        emission.rateOverTime =
-            new ParticleSystem.MinMaxCurve(
-                Mathf.Max(
-                    0f,
-                    rate
-                )
-            );
-    }
-
-    // =========================================================
-    // GET ORIGINAL EMISSION RATE
-    // =========================================================
-
-    private float GetEmissionRate(
-        ParticleSystem.EmissionModule emission)
-    {
-        ParticleSystem.MinMaxCurve rate =
-            emission.rateOverTime;
-
-        switch (rate.mode)
-        {
-            case ParticleSystemCurveMode.Constant:
-
-                return
-                    rate.constant;
-
-            case ParticleSystemCurveMode.TwoConstants:
-
-                return
-                    (
-                        rate.constantMin +
-                        rate.constantMax
-                    ) *
-                    0.5f;
-
-            default:
-
-                return
-                    rate.constantMax;
-        }
-    }
-
-    // =========================================================
-    // UPDATE GLOBAL LIGHT
+    // GLOBAL LIGHT
     // =========================================================
 
     private void UpdateGlobalLight()
@@ -552,26 +538,17 @@ public class WeatherManager : MonoBehaviour
             return;
         }
 
-        // Lightning controls the light while flashing.
         if (lightningActive)
         {
             return;
         }
 
-        float delta =
-            Time.deltaTime;
-
-        // Smooth exponential transition.
         float smoothAmount =
             1f -
             Mathf.Exp(
                 -lightTransitionSpeed *
-                delta
+                Time.deltaTime
             );
-
-        // =====================================================
-        // SMOOTH COLOR
-        // =====================================================
 
         globalLight.color =
             Color.Lerp(
@@ -579,10 +556,6 @@ public class WeatherManager : MonoBehaviour
                 targetLightColor,
                 smoothAmount
             );
-
-        // =====================================================
-        // SMOOTH INTENSITY
-        // =====================================================
 
         globalLight.intensity =
             Mathf.Lerp(
@@ -593,22 +566,148 @@ public class WeatherManager : MonoBehaviour
     }
 
     // =========================================================
-    // START LIGHTNING ROUTINE
+    // SET WEATHER AMBIENCE
+    // =========================================================
+
+    private void SetWeatherAmbience(
+        AudioClip clip,
+        float volume)
+    {
+        targetWeatherClip =
+            clip;
+
+        targetWeatherVolume =
+            volume;
+
+        if (clip == null)
+        {
+            return;
+        }
+
+        if (activeWeatherSource != null &&
+            activeWeatherSource.clip == clip &&
+            activeWeatherSource.isPlaying)
+        {
+            return;
+        }
+
+        AudioSource oldSource =
+            activeWeatherSource;
+
+        activeWeatherSource =
+            inactiveWeatherSource;
+
+        inactiveWeatherSource =
+            oldSource;
+
+        if (activeWeatherSource == null)
+        {
+            return;
+        }
+
+        activeWeatherSource.clip =
+            clip;
+
+        activeWeatherSource.volume =
+            0f;
+
+        activeWeatherSource.loop =
+            true;
+
+        activeWeatherSource.Play();
+    }
+
+    // =========================================================
+    // UPDATE WEATHER AUDIO
+    // =========================================================
+
+    private void UpdateWeatherAudio()
+    {
+        float fadeAmount =
+            audioFadeSpeed *
+            Time.deltaTime;
+
+        // =====================================================
+        // ACTIVE AUDIO
+        // =====================================================
+
+        if (activeWeatherSource != null)
+        {
+            float wantedVolume =
+                0f;
+
+            if (targetWeatherClip != null &&
+                activeWeatherSource.clip ==
+                targetWeatherClip)
+            {
+                wantedVolume =
+                    targetWeatherVolume;
+            }
+
+            activeWeatherSource.volume =
+                Mathf.MoveTowards(
+                    activeWeatherSource.volume,
+                    wantedVolume,
+                    fadeAmount
+                );
+        }
+
+        // =====================================================
+        // OLD AUDIO
+        // =====================================================
+
+        if (inactiveWeatherSource != null)
+        {
+            inactiveWeatherSource.volume =
+                Mathf.MoveTowards(
+                    inactiveWeatherSource.volume,
+                    0f,
+                    fadeAmount
+                );
+
+            if (inactiveWeatherSource.volume <=
+                    0.001f &&
+                inactiveWeatherSource.isPlaying)
+            {
+                inactiveWeatherSource.Stop();
+
+                inactiveWeatherSource.clip =
+                    null;
+            }
+        }
+
+        // =====================================================
+        // NO AUDIO CLIP
+        // =====================================================
+
+        if (targetWeatherClip == null &&
+            activeWeatherSource != null)
+        {
+            activeWeatherSource.volume =
+                Mathf.MoveTowards(
+                    activeWeatherSource.volume,
+                    0f,
+                    fadeAmount
+                );
+
+            if (activeWeatherSource.volume <=
+                    0.001f &&
+                activeWeatherSource.isPlaying)
+            {
+                activeWeatherSource.Stop();
+
+                activeWeatherSource.clip =
+                    null;
+            }
+        }
+    }
+
+    // =========================================================
+    // START LIGHTNING
     // =========================================================
 
     private void StartLightningRoutine()
     {
-        if (!enableLightning)
-        {
-            return;
-        }
-
-        if (currentWeather !=
-            WeatherType.RainAndThunder)
-        {
-            return;
-        }
-
         if (lightningRoutine != null)
         {
             return;
@@ -621,7 +720,7 @@ public class WeatherManager : MonoBehaviour
     }
 
     // =========================================================
-    // STOP LIGHTNING ROUTINE
+    // STOP LIGHTNING
     // =========================================================
 
     private void StopLightningRoutine()
@@ -646,12 +745,22 @@ public class WeatherManager : MonoBehaviour
                 null;
         }
 
+        if (thunderRoutine != null)
+        {
+            StopCoroutine(
+                thunderRoutine
+            );
+
+            thunderRoutine =
+                null;
+        }
+
         lightningActive =
             false;
     }
 
     // =========================================================
-    // LIGHTNING ROUTINE
+    // LIGHTNING LOOP
     // =========================================================
 
     private IEnumerator LightningRoutine()
@@ -659,15 +768,15 @@ public class WeatherManager : MonoBehaviour
         while (currentWeather ==
                WeatherType.RainAndThunder)
         {
-            float delay =
+            float waitTime =
                 Random.Range(
-                    minimumLightningDelay,
-                    maximumLightningDelay
+                    minimumLightningInterval,
+                    maximumLightningInterval
                 );
 
             yield return
                 new WaitForSeconds(
-                    delay
+                    waitTime
                 );
 
             if (currentWeather !=
@@ -689,40 +798,31 @@ public class WeatherManager : MonoBehaviour
 
     public void TriggerLightning()
     {
-        // Do NOT allow weather lightning while
-        // Sunny or normal Rain.
-        if (currentWeather !=
-            WeatherType.RainAndThunder)
+        if (globalLight != null)
         {
-            return;
+            if (lightningFlashRoutine != null)
+            {
+                StopCoroutine(
+                    lightningFlashRoutine
+                );
+            }
+
+            lightningFlashRoutine =
+                StartCoroutine(
+                    LightningFlashRoutine()
+                );
         }
 
-        if (!enableLightning)
-        {
-            return;
-        }
-
-        if (lightningFlashRoutine != null)
-        {
-            StopCoroutine(
-                lightningFlashRoutine
-            );
-        }
-
-        lightningFlashRoutine =
-            StartCoroutine(
-                LightningFlashRoutine()
-            );
+        PlayThunderWithDelay();
     }
 
     // =========================================================
-    // LIGHTNING FLASH ROUTINE
+    // LIGHTNING FLASH
     // =========================================================
 
     private IEnumerator LightningFlashRoutine()
     {
-        if (currentWeather !=
-            WeatherType.RainAndThunder)
+        if (globalLight == null)
         {
             yield break;
         }
@@ -730,98 +830,47 @@ public class WeatherManager : MonoBehaviour
         lightningActive =
             true;
 
-        // =====================================================
-        // FIRST FLASH
-        // =====================================================
+        globalLight.color =
+            lightningColor;
 
-        if (globalLight != null)
-        {
-            globalLight.color =
-                lightningColor;
-
-            globalLight.intensity =
-                lightningIntensity;
-        }
-
-        PlayThunderBurst();
+        globalLight.intensity =
+            lightningIntensity;
 
         yield return
             new WaitForSeconds(
                 lightningFlashDuration
             );
 
-        if (currentWeather !=
-            WeatherType.RainAndThunder)
+        globalLight.color =
+            targetLightColor;
+
+        globalLight.intensity =
+            targetLightIntensity;
+
+        if (Random.value <=
+            secondFlashChance)
         {
-            lightningActive =
-                false;
+            yield return
+                new WaitForSeconds(
+                    lightningSecondFlashDelay
+                );
 
-            lightningFlashRoutine =
-                null;
+            globalLight.color =
+                lightningColor;
 
-            yield break;
-        }
+            globalLight.intensity =
+                lightningIntensity;
 
-        if (globalLight != null)
-        {
+            yield return
+                new WaitForSeconds(
+                    lightningFlashDuration
+                );
+
             globalLight.color =
                 targetLightColor;
 
             globalLight.intensity =
                 targetLightIntensity;
-        }
-
-        // =====================================================
-        // POSSIBLE SECOND FLASH
-        // =====================================================
-
-        bool doDoubleFlash =
-            allowDoubleFlash &&
-            Random.value <=
-            doubleFlashChance;
-
-        if (doDoubleFlash)
-        {
-            yield return
-                new WaitForSeconds(
-                    doubleFlashDelay
-                );
-
-            if (currentWeather !=
-                WeatherType.RainAndThunder)
-            {
-                lightningActive =
-                    false;
-
-                lightningFlashRoutine =
-                    null;
-
-                yield break;
-            }
-
-            if (globalLight != null)
-            {
-                globalLight.color =
-                    lightningColor;
-
-                globalLight.intensity =
-                    lightningIntensity;
-            }
-
-            yield return
-                new WaitForSeconds(
-                    lightningFlashDuration *
-                    0.65f
-                );
-
-            if (globalLight != null)
-            {
-                globalLight.color =
-                    targetLightColor;
-
-                globalLight.intensity =
-                    targetLightIntensity;
-            }
         }
 
         lightningActive =
@@ -832,28 +881,137 @@ public class WeatherManager : MonoBehaviour
     }
 
     // =========================================================
-    // PLAY THUNDER BURST
+    // THUNDER DELAY
     // =========================================================
 
-    private void PlayThunderBurst()
+    private void PlayThunderWithDelay()
     {
-        if (currentWeather !=
-            WeatherType.RainAndThunder)
+        if (thunderRoutine != null)
+        {
+            StopCoroutine(
+                thunderRoutine
+            );
+        }
+
+        thunderRoutine =
+            StartCoroutine(
+                ThunderDelayRoutine()
+            );
+    }
+
+    private IEnumerator ThunderDelayRoutine()
+    {
+        if (thunderDelay > 0f)
+        {
+            yield return
+                new WaitForSeconds(
+                    thunderDelay
+                );
+        }
+
+        PlayThunderSound();
+
+        thunderRoutine =
+            null;
+    }
+
+    // =========================================================
+    // THUNDER SOUND
+    // =========================================================
+
+    private void PlayThunderSound()
+    {
+        if (thunderAudioSource == null)
         {
             return;
         }
 
-        if (thunderBurstParticles == null)
+        if (thunderSounds == null ||
+            thunderSounds.Length == 0)
         {
             return;
         }
 
-        thunderBurstParticles.Stop(
-            true,
-            ParticleSystemStopBehavior.StopEmittingAndClear
+        int validClipCount =
+            0;
+
+        for (int i = 0;
+             i < thunderSounds.Length;
+             i++)
+        {
+            if (thunderSounds[i] != null)
+            {
+                validClipCount++;
+            }
+        }
+
+        if (validClipCount <= 0)
+        {
+            return;
+        }
+
+        int randomValidIndex =
+            Random.Range(
+                0,
+                validClipCount
+            );
+
+        AudioClip selectedClip =
+            null;
+
+        int currentValidIndex =
+            0;
+
+        for (int i = 0;
+             i < thunderSounds.Length;
+             i++)
+        {
+            if (thunderSounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentValidIndex ==
+                randomValidIndex)
+            {
+                selectedClip =
+                    thunderSounds[i];
+
+                break;
+            }
+
+            currentValidIndex++;
+        }
+
+        if (selectedClip == null)
+        {
+            return;
+        }
+
+        float originalPitch =
+            thunderAudioSource.pitch;
+
+        thunderAudioSource.pitch =
+            Random.Range(
+                thunderPitchMin,
+                thunderPitchMax
+            );
+
+        thunderAudioSource.PlayOneShot(
+            selectedClip,
+            thunderVolume
         );
 
-        thunderBurstParticles.Play();
+        thunderAudioSource.pitch =
+            originalPitch;
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "Thunder: " +
+                selectedClip.name
+            );
+        }
     }
 
     // =========================================================
@@ -862,8 +1020,7 @@ public class WeatherManager : MonoBehaviour
 
     public WeatherType GetCurrentWeather()
     {
-        return
-            currentWeather;
+        return currentWeather;
     }
 
     // =========================================================
@@ -881,9 +1038,9 @@ public class WeatherManager : MonoBehaviour
     {
         return
             currentWeather ==
-            WeatherType.Rain ||
+                WeatherType.Rain ||
             currentWeather ==
-            WeatherType.RainAndThunder;
+                WeatherType.RainAndThunder;
     }
 
     public bool IsRainOnly()
@@ -900,11 +1057,11 @@ public class WeatherManager : MonoBehaviour
             WeatherType.RainAndThunder;
     }
 
-    // Compatibility with your older scripts.
     public bool IsThunder()
     {
         return
-            IsRainAndThunder();
+            currentWeather ==
+            WeatherType.RainAndThunder;
     }
 
     // =========================================================
@@ -932,93 +1089,54 @@ public class WeatherManager : MonoBehaviour
         );
     }
 
-    // Compatibility with older scripts.
+    // Compatibility with anything already
+    // calling MakeThunder().
     public void MakeThunder()
     {
         MakeRainAndThunder();
     }
 
     // =========================================================
-    // DEBUG CHECKBOXES
-    // =========================================================
-
-    private void HandleDebugControls()
-    {
-        if (debugSunny)
-        {
-            debugSunny =
-                false;
-
-            MakeSunny();
-        }
-
-        if (debugRain)
-        {
-            debugRain =
-                false;
-
-            MakeRain();
-        }
-
-        if (debugRainAndThunder)
-        {
-            debugRainAndThunder =
-                false;
-
-            MakeRainAndThunder();
-        }
-
-        if (debugLightning)
-        {
-            debugLightning =
-                false;
-
-            // This will only trigger during
-            // Rain & Thunder.
-            TriggerLightning();
-        }
-    }
-
-    // =========================================================
-    // CONTEXT MENU DEBUG
+    // DEBUG
     // =========================================================
 
     [ContextMenu("Weather - Sunny")]
-    private void DebugMakeSunny()
+    private void DebugSunny()
     {
         MakeSunny();
     }
 
     [ContextMenu("Weather - Rain")]
-    private void DebugMakeRain()
+    private void DebugRain()
     {
         MakeRain();
     }
 
-    [ContextMenu("Weather - Rain & Thunder")]
-    private void DebugMakeRainAndThunder()
+    [ContextMenu("Weather - Rain + Thunder")]
+    private void DebugStorm()
     {
         MakeRainAndThunder();
     }
 
-    [ContextMenu("Weather - Random")]
-    private void DebugRandomWeather()
-    {
-        WeatherType randomWeather =
-            (WeatherType)Random.Range(
-                0,
-                3
-            );
-
-        SetWeather(
-            randomWeather
-        );
-    }
-
-    [ContextMenu("Weather - Test Lightning")]
-    private void DebugTestLightning()
+    [ContextMenu("Weather - Lightning Strike")]
+    private void DebugLightning()
     {
         TriggerLightning();
+    }
+
+    [ContextMenu("Audio - Test Thunder")]
+    private void DebugThunder()
+    {
+        PlayThunderSound();
+    }
+
+    // =========================================================
+    // DISABLE
+    // =========================================================
+
+    private void OnDisable()
+    {
+        StopLightningRoutine();
     }
 
     // =========================================================

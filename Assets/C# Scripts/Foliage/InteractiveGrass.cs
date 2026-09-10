@@ -106,6 +106,56 @@ public class InteractiveGrass : MonoBehaviour
     [SerializeField] private float particleLifetime = 2f;
 
     // =========================================================
+    // GRASS AUDIO SOURCE
+    // =========================================================
+
+    [Header("Grass Audio")]
+
+    [Tooltip(
+        "AudioSource used for player grass-touch sounds. " +
+        "If left empty, one will be found or created automatically."
+    )]
+    [SerializeField] private AudioSource audioSource;
+
+    // =========================================================
+    // PLAYER TOUCH AUDIO
+    // =========================================================
+
+    [Header("Player Touch Sounds")]
+
+    [Tooltip(
+        "Random grass rustle played when the player enters this grass."
+    )]
+    [SerializeField]
+    private AudioClip[] touchSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float touchVolume = 0.5f;
+
+    [SerializeField] private float touchPitchMin = 0.9f;
+    [SerializeField] private float touchPitchMax = 1.1f;
+
+    // =========================================================
+    // GRASS BREAK AUDIO
+    // =========================================================
+
+    [Header("Grass Break Sounds")]
+
+    [Tooltip(
+        "Random sound played when this grass is destroyed."
+    )]
+    [SerializeField]
+    private AudioClip[] breakSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float breakVolume = 0.7f;
+
+    [SerializeField] private float breakPitchMin = 0.9f;
+    [SerializeField] private float breakPitchMax = 1.1f;
+
+    // =========================================================
     // PRIVATE
     // =========================================================
 
@@ -168,6 +218,26 @@ public class InteractiveGrass : MonoBehaviour
             );
 
         ResetWindTimer();
+
+        // =====================================================
+        // AUDIO SOURCE
+        // =====================================================
+
+        if (audioSource == null)
+        {
+            audioSource =
+                GetComponent<AudioSource>();
+        }
+
+        if (audioSource == null)
+        {
+            audioSource =
+                gameObject.AddComponent<AudioSource>();
+        }
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
     }
 
     // =========================================================
@@ -536,6 +606,14 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
+        // Only play once when the player
+        // first enters this grass.
+
+        if (!playerInside)
+        {
+            PlayTouchSound();
+        }
+
         playerInside =
             true;
 
@@ -619,6 +697,164 @@ public class InteractiveGrass : MonoBehaviour
     }
 
     // =========================================================
+    // PLAYER TOUCH SOUND
+    // =========================================================
+
+    private void PlayTouchSound()
+    {
+        AudioClip clip =
+            GetRandomClip(
+                touchSounds
+            );
+
+        if (clip == null ||
+            audioSource == null)
+        {
+            return;
+        }
+
+        audioSource.pitch =
+            Random.Range(
+                touchPitchMin,
+                touchPitchMax
+            );
+
+        audioSource.PlayOneShot(
+            clip,
+            touchVolume
+        );
+    }
+
+    // =========================================================
+    // BREAK SOUND
+    // =========================================================
+
+    private void PlayBreakSound()
+    {
+        AudioClip clip =
+            GetRandomClip(
+                breakSounds
+            );
+
+        if (clip == null)
+        {
+            return;
+        }
+
+        float pitch =
+            Random.Range(
+                breakPitchMin,
+                breakPitchMax
+            );
+
+        // Create a temporary AudioSource so the
+        // sound continues after the grass itself
+        // has been destroyed.
+
+        GameObject soundObject =
+            new GameObject(
+                "Grass Break Sound"
+            );
+
+        soundObject.transform.position =
+            transform.position;
+
+        AudioSource temporarySource =
+            soundObject.AddComponent<AudioSource>();
+
+        temporarySource.playOnAwake =
+            false;
+
+        temporarySource.loop =
+            false;
+
+        temporarySource.spatialBlend =
+            0f;
+
+        temporarySource.pitch =
+            pitch;
+
+        temporarySource.volume =
+            breakVolume;
+
+        temporarySource.clip =
+            clip;
+
+        temporarySource.Play();
+
+        float lifetime =
+            clip.length /
+            Mathf.Max(
+                0.01f,
+                Mathf.Abs(pitch)
+            );
+
+        Destroy(
+            soundObject,
+            lifetime + 0.1f
+        );
+    }
+
+    // =========================================================
+    // RANDOM AUDIO CLIP
+    // =========================================================
+
+    private AudioClip GetRandomClip(
+        AudioClip[] sounds)
+    {
+        if (sounds == null ||
+            sounds.Length == 0)
+        {
+            return null;
+        }
+
+        int validCount = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] != null)
+            {
+                validCount++;
+            }
+        }
+
+        if (validCount <= 0)
+        {
+            return null;
+        }
+
+        int targetIndex =
+            Random.Range(
+                0,
+                validCount
+            );
+
+        int currentIndex = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentIndex ==
+                targetIndex)
+            {
+                return sounds[i];
+            }
+
+            currentIndex++;
+        }
+
+        return null;
+    }
+
+    // =========================================================
     // BREAK GRASS
     // =========================================================
 
@@ -635,6 +871,16 @@ public class InteractiveGrass : MonoBehaviour
         isBuildShaking =
             false;
 
+        // =====================================================
+        // BREAK SOUND
+        // =====================================================
+
+        PlayBreakSound();
+
+        // =====================================================
+        // PARTICLES
+        // =====================================================
+
         if (breakParticlePrefab != null)
         {
             GameObject particles =
@@ -649,6 +895,10 @@ public class InteractiveGrass : MonoBehaviour
                 particleLifetime
             );
         }
+
+        // =====================================================
+        // DESTROY GRASS
+        // =====================================================
 
         Destroy(
             gameObject
