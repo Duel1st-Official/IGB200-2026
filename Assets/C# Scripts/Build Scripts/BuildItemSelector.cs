@@ -32,11 +32,40 @@ public class BuildItemSelector : MonoBehaviour
     // =========================================================
 
     [Header("Scroll Wheel")]
-    [Tooltip("Prevents extremely sensitive mouse wheels from cycling multiple times instantly.")]
+
+    [Tooltip(
+        "Prevents extremely sensitive mouse wheels from cycling multiple times instantly."
+    )]
     [SerializeField] private float scrollCooldown = 0.12f;
 
-    [Tooltip("Reverse the mouse wheel direction if desired.")]
+    [Tooltip(
+        "Reverse the mouse wheel direction if desired."
+    )]
     [SerializeField] private bool invertScroll = false;
+
+    // =========================================================
+    // BUILD ITEM SWITCH AUDIO
+    // =========================================================
+
+    [Header("Build Item Switch Audio")]
+
+    [Tooltip(
+        "AudioSource used when switching between Plot, Trap and Water Plot."
+    )]
+    [SerializeField] private AudioSource switchAudioSource;
+
+    [Tooltip(
+        "Random sound played whenever the selected build item changes."
+    )]
+    [SerializeField]
+    private AudioClip[] switchSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float switchVolume = 0.7f;
+
+    [SerializeField] private float switchPitchMin = 0.95f;
+    [SerializeField] private float switchPitchMax = 1.05f;
 
     // =========================================================
     // DEBUG
@@ -90,7 +119,30 @@ public class BuildItemSelector : MonoBehaviour
                 FindFirstObjectByType<WaterPlotPlacementSystem>();
         }
 
+        // -----------------------------------------------------
+        // AUTO FIND AUDIO SOURCE
+        // -----------------------------------------------------
+
+        if (switchAudioSource == null)
+        {
+            switchAudioSource =
+                GetComponent<AudioSource>();
+        }
+
+        if (switchAudioSource != null)
+        {
+            switchAudioSource.playOnAwake =
+                false;
+
+            switchAudioSource.loop =
+                false;
+
+            switchAudioSource.spatialBlend =
+                0f;
+        }
+
         // Start with everything inactive.
+
         DisableAllPlacementSystems();
     }
 
@@ -108,17 +160,24 @@ public class BuildItemSelector : MonoBehaviour
         // JUST ENTERED BUILD MODE
         // =====================================================
 
-        if (isBuildMode && !wasInBuildMode)
+        if (isBuildMode &&
+            !wasInBuildMode)
         {
             // Start on Plot whenever Build Mode begins.
-            SelectBuildItem(BuildItem.Plot);
+            // Do not play a switch sound for this automatic reset.
+
+            SelectBuildItem(
+                BuildItem.Plot,
+                false
+            );
         }
 
         // =====================================================
         // JUST LEFT BUILD MODE
         // =====================================================
 
-        if (!isBuildMode && wasInBuildMode)
+        if (!isBuildMode &&
+            wasInBuildMode)
         {
             DisableAllPlacementSystems();
         }
@@ -205,21 +264,27 @@ public class BuildItemSelector : MonoBehaviour
         switch (currentBuildItem)
         {
             case BuildItem.Plot:
+
                 SelectBuildItem(
                     BuildItem.Trap
                 );
+
                 break;
 
             case BuildItem.Trap:
+
                 SelectBuildItem(
                     BuildItem.WaterPlot
                 );
+
                 break;
 
             case BuildItem.WaterPlot:
+
                 SelectBuildItem(
                     BuildItem.Plot
                 );
+
                 break;
         }
     }
@@ -233,21 +298,27 @@ public class BuildItemSelector : MonoBehaviour
         switch (currentBuildItem)
         {
             case BuildItem.Plot:
+
                 SelectBuildItem(
                     BuildItem.WaterPlot
                 );
+
                 break;
 
             case BuildItem.Trap:
+
                 SelectBuildItem(
                     BuildItem.Plot
                 );
+
                 break;
 
             case BuildItem.WaterPlot:
+
                 SelectBuildItem(
                     BuildItem.Trap
                 );
+
                 break;
         }
     }
@@ -259,10 +330,42 @@ public class BuildItemSelector : MonoBehaviour
     public void SelectBuildItem(
         BuildItem item)
     {
+        SelectBuildItem(
+            item,
+            true
+        );
+    }
+
+    // =========================================================
+    // SELECT BUILD ITEM INTERNAL
+    // =========================================================
+
+    private void SelectBuildItem(
+        BuildItem item,
+        bool playSound)
+    {
+        // =====================================================
+        // CHECK WHETHER ITEM ACTUALLY CHANGED
+        // =====================================================
+
+        bool itemChanged =
+            currentBuildItem != item;
+
         currentBuildItem =
             item;
 
+        // =====================================================
+        // SWITCH SOUND
+        // =====================================================
+
+        if (playSound &&
+            itemChanged)
+        {
+            PlaySwitchSound();
+        }
+
         // First turn everything off.
+
         DisableAllPlacementSystems();
 
         // =====================================================
@@ -318,6 +421,100 @@ public class BuildItemSelector : MonoBehaviour
                 currentBuildItem
             );
         }
+    }
+
+    // =========================================================
+    // SWITCH SOUND
+    // =========================================================
+
+    private void PlaySwitchSound()
+    {
+        if (switchAudioSource == null)
+        {
+            return;
+        }
+
+        AudioClip selectedClip =
+            GetRandomValidClip(
+                switchSounds
+            );
+
+        if (selectedClip == null)
+        {
+            return;
+        }
+
+        switchAudioSource.pitch =
+            Random.Range(
+                switchPitchMin,
+                switchPitchMax
+            );
+
+        switchAudioSource.PlayOneShot(
+            selectedClip,
+            switchVolume
+        );
+    }
+
+    // =========================================================
+    // RANDOM VALID AUDIO CLIP
+    // =========================================================
+
+    private AudioClip GetRandomValidClip(
+        AudioClip[] sounds)
+    {
+        if (sounds == null ||
+            sounds.Length == 0)
+        {
+            return null;
+        }
+
+        int validSoundCount = 0;
+
+        // Count assigned clips only.
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] != null)
+            {
+                validSoundCount++;
+            }
+        }
+
+        if (validSoundCount <= 0)
+        {
+            return null;
+        }
+
+        int randomValidIndex =
+            Random.Range(
+                0,
+                validSoundCount
+            );
+
+        int currentValidIndex = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentValidIndex ==
+                randomValidIndex)
+            {
+                return sounds[i];
+            }
+
+            currentValidIndex++;
+        }
+
+        return null;
     }
 
     // =========================================================
@@ -395,5 +592,15 @@ public class BuildItemSelector : MonoBehaviour
     {
         return currentBuildItem ==
                BuildItem.WaterPlot;
+    }
+
+    // =========================================================
+    // DEBUG SOUND
+    // =========================================================
+
+    [ContextMenu("Sound - Test Build Item Switch")]
+    private void DebugSwitchSound()
+    {
+        PlaySwitchSound();
     }
 }

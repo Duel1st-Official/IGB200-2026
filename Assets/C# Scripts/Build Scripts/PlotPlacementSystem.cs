@@ -109,6 +109,37 @@ public class PlotPlacementSystem : MonoBehaviour
         Vector3.zero;
 
     // =========================================================
+    // FARM PLOT BUILD AUDIO
+    // =========================================================
+
+    [Header("Farm Plot Build Audio")]
+
+    [Tooltip(
+        "Audio Source used to play farm plot placement sounds."
+    )]
+    [SerializeField] private AudioSource buildAudioSource;
+
+    [Tooltip(
+        "Randomly chooses one of these sounds when a farm plot finishes building."
+    )]
+    [SerializeField]
+    private AudioClip[] farmPlotBuildSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float farmPlotBuildVolume = 1f;
+
+    [Tooltip(
+        "Random minimum pitch used for the placement sound."
+    )]
+    [SerializeField] private float farmPlotBuildPitchMin = 0.95f;
+
+    [Tooltip(
+        "Random maximum pitch used for the placement sound."
+    )]
+    [SerializeField] private float farmPlotBuildPitchMax = 1.05f;
+
+    // =========================================================
     // PRIVATE
     // =========================================================
 
@@ -131,6 +162,14 @@ public class PlotPlacementSystem : MonoBehaviour
         if (mainCamera == null)
         {
             mainCamera = Camera.main;
+        }
+
+        // Automatically find an AudioSource on this object
+        // if one was not manually assigned.
+        if (buildAudioSource == null)
+        {
+            buildAudioSource =
+                GetComponent<AudioSource>();
         }
 
         CreatePreviews();
@@ -176,7 +215,7 @@ public class PlotPlacementSystem : MonoBehaviour
             return;
         }
 
-        // RIGHT CLICK
+        // LEFT CLICK
         if (Input.GetMouseButtonDown(0))
         {
             TryPlacePlot();
@@ -808,6 +847,12 @@ public class PlotPlacementSystem : MonoBehaviour
         }
 
         // =====================================================
+        // FARM PLOT BUILD SOUND
+        // =====================================================
+
+        PlayFarmPlotBuildSound();
+
+        // =====================================================
         // BREAK GRASS
         // =====================================================
 
@@ -853,6 +898,96 @@ public class PlotPlacementSystem : MonoBehaviour
         {
             cameraShake.Shake();
         }
+    }
+
+    // =========================================================
+    // FARM PLOT BUILD SOUND
+    // =========================================================
+
+    private void PlayFarmPlotBuildSound()
+    {
+        if (buildAudioSource == null)
+        {
+            return;
+        }
+
+        if (farmPlotBuildSounds == null ||
+            farmPlotBuildSounds.Length == 0)
+        {
+            return;
+        }
+
+        // Count valid clips so empty array
+        // elements are ignored.
+        int validClipCount = 0;
+
+        for (int i = 0;
+             i < farmPlotBuildSounds.Length;
+             i++)
+        {
+            if (farmPlotBuildSounds[i] != null)
+            {
+                validClipCount++;
+            }
+        }
+
+        if (validClipCount <= 0)
+        {
+            return;
+        }
+
+        int randomValidIndex =
+            Random.Range(
+                0,
+                validClipCount
+            );
+
+        AudioClip selectedClip = null;
+
+        int currentValidIndex = 0;
+
+        for (int i = 0;
+             i < farmPlotBuildSounds.Length;
+             i++)
+        {
+            if (farmPlotBuildSounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentValidIndex ==
+                randomValidIndex)
+            {
+                selectedClip =
+                    farmPlotBuildSounds[i];
+
+                break;
+            }
+
+            currentValidIndex++;
+        }
+
+        if (selectedClip == null)
+        {
+            return;
+        }
+
+        float originalPitch =
+            buildAudioSource.pitch;
+
+        buildAudioSource.pitch =
+            Random.Range(
+                farmPlotBuildPitchMin,
+                farmPlotBuildPitchMax
+            );
+
+        buildAudioSource.PlayOneShot(
+            selectedClip,
+            farmPlotBuildVolume
+        );
+
+        buildAudioSource.pitch =
+            originalPitch;
     }
 
     // =========================================================

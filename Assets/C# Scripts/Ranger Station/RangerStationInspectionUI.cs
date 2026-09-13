@@ -5,15 +5,20 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
+public class RangerStationInspectionUI :
+    MonoBehaviour,
+    IInspectionPanel
 {
     // =========================================================
     // REFERENCES
     // =========================================================
 
     [Header("References")]
+
     [SerializeField] private Camera mainCamera;
+
     [SerializeField] private Canvas canvas;
+
     [SerializeField] private SelectionWheel selectionWheel;
 
     [Tooltip("The entire Ranger Station inspection window.")]
@@ -29,29 +34,45 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     [Header("Text")]
+
     [SerializeField] private TMP_Text titleText;
+
+    [SerializeField] private TMP_Text preyValueText;
+
+    [SerializeField] private TMP_Text predatorValueText;
+
+    [SerializeField] private TMP_Text fireRiskValueText;
+
+    [SerializeField] private TMP_Text soilHealthValueText;
 
     // =========================================================
     // ICON
     // =========================================================
 
     [Header("Icon")]
+
     [SerializeField] private Image rangerStationIcon;
 
     // =========================================================
-    // CONDITION SLIDERS
+    // ENVIRONMENT SLIDERS
     // =========================================================
 
-    [Header("Condition Sliders")]
-    [SerializeField] private Slider preyAvailabilitySlider;
-    [SerializeField] private Slider predatorPressureSlider;
+    [Header("Environment Sliders")]
+
+    [SerializeField] private Slider preySlider;
+
+    [SerializeField] private Slider predatorSlider;
+
     [SerializeField] private Slider fireRiskSlider;
+
+    [SerializeField] private Slider soilHealthSlider;
 
     // =========================================================
     // BUTTONS
     // =========================================================
 
     [Header("Buttons")]
+
     [SerializeField] private Button closeButton;
 
     // =========================================================
@@ -59,10 +80,15 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     [Header("Ranger Station Position")]
+
     [SerializeField] private float horizontalOffset = 230f;
+
     [SerializeField] private float verticalOffset = 30f;
+
     [SerializeField] private float followSpeed = 15f;
+
     [SerializeField] private bool automaticallyFlipSide = true;
+
     [SerializeField] private float screenEdgePadding = 180f;
 
     // =========================================================
@@ -70,9 +96,13 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     [Header("Dragging")]
+
     [SerializeField] private bool allowDragging = true;
+
     [SerializeField] private bool stopFollowingAfterDrag = true;
+
     [SerializeField] private bool clampToCanvas = true;
+
     [SerializeField] private float canvasPadding = 10f;
 
     // =========================================================
@@ -80,11 +110,17 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     [Header("Drag Visuals")]
+
     [SerializeField] private float dragScale = 0.92f;
+
     [SerializeField] private float dragScaleSpeed = 12f;
+
     [SerializeField] private float maxDragSwayAngle = 7f;
+
     [SerializeField] private float swayStrength = 0.3f;
+
     [SerializeField] private float swaySmoothSpeed = 10f;
+
     [SerializeField] private float dropReturnSpeed = 10f;
 
     // =========================================================
@@ -106,10 +142,15 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     [Header("Open Animation")]
+
     [SerializeField] private float startingScale = 0.65f;
+
     [SerializeField] private float popScale = 1.08f;
+
     [SerializeField] private float normalScale = 1f;
+
     [SerializeField] private float popDuration = 0.1f;
+
     [SerializeField] private float settleDuration = 0.1f;
 
     // =========================================================
@@ -117,8 +158,11 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     [Header("Close Animation")]
+
     [SerializeField] private float closingScale = 0.65f;
+
     [SerializeField] private float closeDuration = 0.14f;
+
     [SerializeField] private bool fadeWhileClosing = true;
 
     // =========================================================
@@ -126,6 +170,7 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     [Header("Outside Click")]
+
     [SerializeField] private bool closeWhenClickingOutside = true;
 
     // =========================================================
@@ -133,25 +178,43 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     [Header("Mode Behaviour")]
+
     [SerializeField] private bool closeWhenChangingMode = true;
+
     [SerializeField] private bool closeWhenSelectionWheelOpens = true;
+
+    // =========================================================
+    // DEBUG
+    // =========================================================
+
+    [Header("Debug")]
+
+    [SerializeField] private bool showDebugLogs = false;
 
     // =========================================================
     // PRIVATE
     // =========================================================
 
-    private RangerStation currentRangerStation;
+    private RangerStation currentStation;
+
     private InspectableRangerStation currentInspectableRangerStation;
+
+    private Transform followTarget;
 
     private Coroutine animationCoroutine;
 
     private bool isOpen;
+
     private bool isClosing;
+
     private bool isDragging;
+
     private bool manuallyPositioned;
+
     private bool ignoreOutsideClick;
 
     private Vector2 dragOffset;
+
     private Vector2 previousMousePosition;
 
     private float currentSwayAngle;
@@ -162,11 +225,19 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
 
     private void Start()
     {
+        // =====================================================
+        // CAMERA
+        // =====================================================
+
         if (mainCamera == null)
         {
             mainCamera =
                 Camera.main;
         }
+
+        // =====================================================
+        // CANVAS
+        // =====================================================
 
         if (canvas == null)
         {
@@ -174,17 +245,29 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
                 GetComponentInParent<Canvas>();
         }
 
+        // =====================================================
+        // SELECTION WHEEL
+        // =====================================================
+
         if (selectionWheel == null)
         {
             selectionWheel =
                 FindFirstObjectByType<SelectionWheel>();
         }
 
+        // =====================================================
+        // PANEL
+        // =====================================================
+
         if (panel == null)
         {
             panel =
                 transform as RectTransform;
         }
+
+        // =====================================================
+        // CANVAS GROUP
+        // =====================================================
 
         if (canvasGroup == null &&
             panel != null)
@@ -205,17 +288,29 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
                 normalAlpha;
         }
 
+        // =====================================================
+        // SLIDERS
+        // =====================================================
+
         SetupSlider(
-            preyAvailabilitySlider
+            preySlider
         );
 
         SetupSlider(
-            predatorPressureSlider
+            predatorSlider
         );
 
         SetupSlider(
             fireRiskSlider
         );
+
+        SetupSlider(
+            soilHealthSlider
+        );
+
+        // =====================================================
+        // CLOSE BUTTON
+        // =====================================================
 
         if (closeButton != null)
         {
@@ -223,6 +318,10 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
                 Close
             );
         }
+
+        // =====================================================
+        // START HIDDEN
+        // =====================================================
 
         if (panel != null)
         {
@@ -244,11 +343,14 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        slider.minValue = 0f;
-        slider.maxValue = 100f;
+        slider.minValue =
+            0f;
 
-        // Display-only slider.
-        slider.interactable = false;
+        slider.maxValue =
+            100f;
+
+        slider.interactable =
+            false;
     }
 
     // =========================================================
@@ -264,18 +366,34 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
+        // =====================================================
+        // MODE CHECK
+        // =====================================================
+
         if (ShouldCloseBecauseOfMode())
         {
             Close();
+
             return;
         }
+
+        // =====================================================
+        // DRAGGING
+        // =====================================================
 
         HandleDragging();
 
         UpdateDragVisuals();
 
-        // Keep station values live.
+        // =====================================================
+        // LIVE STATS
+        // =====================================================
+
         RefreshUI();
+
+        // =====================================================
+        // OUTSIDE CLICK
+        // =====================================================
 
         if (closeWhenClickingOutside &&
             Input.GetMouseButtonDown(0))
@@ -292,7 +410,7 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     {
         if (!isOpen ||
             isClosing ||
-            currentRangerStation == null ||
+            currentStation == null ||
             panel == null)
         {
             return;
@@ -334,13 +452,29 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     }
 
     // =========================================================
+    // OPEN - COMPATIBILITY VERSION
+    // =========================================================
+
+    public void Open(
+        RangerStation station)
+    {
+        Open(
+            station,
+            station != null
+                ? station.transform
+                : null
+        );
+    }
+
+    // =========================================================
     // OPEN
     // =========================================================
 
     public void Open(
-        RangerStation rangerStation)
+        RangerStation station,
+        Transform target)
     {
-        if (rangerStation == null ||
+        if (station == null ||
             panel == null)
         {
             return;
@@ -378,29 +512,38 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
-        // CURRENT RANGER STATION
+        // CURRENT STATION
         // =====================================================
 
-        currentRangerStation =
-            rangerStation;
+        currentStation =
+            station;
+
+        // =====================================================
+        // FOLLOW TARGET
+        // =====================================================
+
+        followTarget =
+            target != null
+                ? target
+                : station.transform;
 
         // =====================================================
         // FIND INSPECTABLE RANGER STATION
         // =====================================================
 
         currentInspectableRangerStation =
-            rangerStation.GetComponent<InspectableRangerStation>();
+            station.GetComponent<InspectableRangerStation>();
 
         if (currentInspectableRangerStation == null)
         {
             currentInspectableRangerStation =
-                rangerStation.GetComponentInChildren<InspectableRangerStation>();
+                station.GetComponentInChildren<InspectableRangerStation>();
         }
 
         if (currentInspectableRangerStation == null)
         {
             currentInspectableRangerStation =
-                rangerStation.GetComponentInParent<InspectableRangerStation>();
+                station.GetComponentInParent<InspectableRangerStation>();
         }
 
         // =====================================================
@@ -418,12 +561,20 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
         // STATE
         // =====================================================
 
-        isOpen = true;
-        isClosing = false;
-        isDragging = false;
-        manuallyPositioned = false;
+        isOpen =
+            true;
 
-        currentSwayAngle = 0f;
+        isClosing =
+            false;
+
+        isDragging =
+            false;
+
+        manuallyPositioned =
+            false;
+
+        currentSwayAngle =
+            0f;
 
         // =====================================================
         // SHOW PANEL
@@ -473,6 +624,17 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
             StartCoroutine(
                 OpenAnimation()
             );
+
+        // =====================================================
+        // DEBUG
+        // =====================================================
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "Ranger Station inspection opened."
+            );
+        }
     }
 
     // =========================================================
@@ -481,7 +643,7 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
 
     public void RefreshUI()
     {
-        if (currentRangerStation == null)
+        if (currentStation == null)
         {
             return;
         }
@@ -497,31 +659,73 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
-        // PREY AVAILABILITY
+        // VALUES
         // =====================================================
 
-        if (preyAvailabilitySlider != null)
+        float prey =
+            Mathf.Clamp(
+                currentStation.GetPreyAvailability(),
+                0f,
+                100f
+            );
+
+        float predator =
+            Mathf.Clamp(
+                currentStation.GetPredatorPressure(),
+                0f,
+                100f
+            );
+
+        float fireRisk =
+            Mathf.Clamp(
+                currentStation.GetFireRisk(),
+                0f,
+                100f
+            );
+
+        float soilHealth =
+            Mathf.Clamp(
+                currentStation.GetSoilHealth(),
+                0f,
+                100f
+            );
+
+        // =====================================================
+        // PREY
+        // =====================================================
+
+        if (preySlider != null)
         {
-            preyAvailabilitySlider.value =
-                Mathf.Clamp(
-                    currentRangerStation.GetPreyAvailability(),
-                    0f,
-                    100f
-                );
+            preySlider.value =
+                prey;
+        }
+
+        if (preyValueText != null)
+        {
+            preyValueText.text =
+                Mathf.RoundToInt(
+                    prey
+                ) +
+                "%";
         }
 
         // =====================================================
         // PREDATOR PRESSURE
         // =====================================================
 
-        if (predatorPressureSlider != null)
+        if (predatorSlider != null)
         {
-            predatorPressureSlider.value =
-                Mathf.Clamp(
-                    currentRangerStation.GetPredatorPressure(),
-                    0f,
-                    100f
-                );
+            predatorSlider.value =
+                predator;
+        }
+
+        if (predatorValueText != null)
+        {
+            predatorValueText.text =
+                Mathf.RoundToInt(
+                    predator
+                ) +
+                "%";
         }
 
         // =====================================================
@@ -531,11 +735,35 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
         if (fireRiskSlider != null)
         {
             fireRiskSlider.value =
-                Mathf.Clamp(
-                    currentRangerStation.GetFireRisk(),
-                    0f,
-                    100f
-                );
+                fireRisk;
+        }
+
+        if (fireRiskValueText != null)
+        {
+            fireRiskValueText.text =
+                Mathf.RoundToInt(
+                    fireRisk
+                ) +
+                "%";
+        }
+
+        // =====================================================
+        // SOIL HEALTH
+        // =====================================================
+
+        if (soilHealthSlider != null)
+        {
+            soilHealthSlider.value =
+                soilHealth;
+        }
+
+        if (soilHealthValueText != null)
+        {
+            soilHealthValueText.text =
+                Mathf.RoundToInt(
+                    soilHealth
+                ) +
+                "%";
         }
     }
 
@@ -597,7 +825,10 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
         ignoreOutsideClick =
             false;
 
-        currentRangerStation =
+        currentStation =
+            null;
+
+        followTarget =
             null;
 
         currentSwayAngle =
@@ -632,7 +863,7 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     }
 
     // =========================================================
-    // CLEAR HIGHLIGHT
+    // CLEAR RANGER STATION HIGHLIGHT
     // =========================================================
 
     private void ClearCurrentRangerStationHighlight()
@@ -759,7 +990,8 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
             if (overHandle)
             {
                 RectTransform canvasRect =
-                    canvas.transform as RectTransform;
+                    canvas.transform
+                        as RectTransform;
 
                 if (canvasRect == null)
                 {
@@ -796,7 +1028,8 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
             Input.GetMouseButton(0))
         {
             RectTransform canvasRect =
-                canvas.transform as RectTransform;
+                canvas.transform
+                    as RectTransform;
 
             if (canvasRect == null)
             {
@@ -1035,7 +1268,7 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
 
     private Vector2 CalculatePanelPosition()
     {
-        if (currentRangerStation == null ||
+        if (currentStation == null ||
             mainCamera == null ||
             canvas == null ||
             panel == null)
@@ -1045,9 +1278,14 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
                 : Vector2.zero;
         }
 
+        Transform positionTarget =
+            followTarget != null
+                ? followTarget
+                : currentStation.transform;
+
         Vector3 screenPosition =
             mainCamera.WorldToScreenPoint(
-                currentRangerStation.transform.position
+                positionTarget.position
             );
 
         float direction =
@@ -1070,7 +1308,8 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
             verticalOffset;
 
         RectTransform canvasRect =
-            canvas.transform as RectTransform;
+            canvas.transform
+                as RectTransform;
 
         if (canvasRect == null)
         {
@@ -1109,7 +1348,8 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         RectTransform canvasRect =
-            canvas.transform as RectTransform;
+            canvas.transform
+                as RectTransform;
 
         if (canvasRect == null)
         {
@@ -1269,7 +1509,8 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
         float timer =
             0f;
 
-        while (timer < duration)
+        while (timer <
+               duration)
         {
             timer +=
                 Time.unscaledDeltaTime;
@@ -1330,7 +1571,10 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
                 normalAlpha;
         }
 
-        currentRangerStation =
+        currentStation =
+            null;
+
+        followTarget =
             null;
 
         currentSwayAngle =
@@ -1389,7 +1633,8 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
             Vector3.one *
             to;
 
-        while (timer < duration)
+        while (timer <
+               duration)
         {
             timer +=
                 Time.unscaledDeltaTime;
@@ -1436,9 +1681,9 @@ public class RangerStationInspectionUI : MonoBehaviour, IInspectionPanel
     // GETTERS
     // =========================================================
 
-    public RangerStation GetCurrentRangerStation()
+    public RangerStation GetCurrentStation()
     {
-        return currentRangerStation;
+        return currentStation;
     }
 
     public bool IsOpen()

@@ -2,8 +2,16 @@ using UnityEngine;
 
 public class InteractiveGrass : MonoBehaviour
 {
+    // =========================================================
+    // PLAYER
+    // =========================================================
+
     [Header("Player")]
     [SerializeField] private string playerTag = "Player";
+
+    // =========================================================
+    // NORMAL WIND
+    // =========================================================
 
     [Header("Random Wind")]
     [SerializeField] private float maxWindAngle = 5f;
@@ -11,22 +19,135 @@ public class InteractiveGrass : MonoBehaviour
     [SerializeField] private float minWindChangeTime = 0.5f;
     [SerializeField] private float maxWindChangeTime = 2f;
 
+    // =========================================================
+    // RAIN WIND
+    // =========================================================
+
+    [Header("Rain Wind")]
+
+    [Tooltip("How much stronger the grass bends during Rain.")]
+    [SerializeField] private float rainSwayMultiplier = 3f;
+
+    [Tooltip("How much faster the grass reacts during Rain.")]
+    [SerializeField] private float rainSpeedMultiplier = 2.5f;
+
+    [Tooltip("How much faster wind direction changes during Rain.")]
+    [SerializeField] private float rainWindChangeMultiplier = 2.5f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float rainGustAmount = 0.35f;
+
+    [SerializeField] private float rainGustSpeed = 1.5f;
+
+    // =========================================================
+    // RAIN & THUNDER WIND
+    // =========================================================
+
+    [Header("Rain & Thunder Wind")]
+
+    [Tooltip("How much stronger the grass bends during Rain & Thunder.")]
+    [SerializeField] private float stormSwayMultiplier = 7f;
+
+    [Tooltip("How much faster the grass reacts during Rain & Thunder.")]
+    [SerializeField] private float stormSpeedMultiplier = 5f;
+
+    [Tooltip("How much faster wind direction changes during Rain & Thunder.")]
+    [SerializeField] private float stormWindChangeMultiplier = 6f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float stormGustAmount = 0.7f;
+
+    [SerializeField] private float stormGustSpeed = 3f;
+
+    // =========================================================
+    // WEATHER TRANSITION
+    // =========================================================
+
+    [Header("Weather Transition")]
+
+    [Tooltip("How quickly grass transitions between weather wind strengths.")]
+    [SerializeField] private float weatherTransitionSpeed = 4f;
+
+    // =========================================================
+    // PLAYER BEND
+    // =========================================================
+
     [Header("Player Bend")]
     [SerializeField] private float maxTiltAngle = 18f;
     [SerializeField] private float bendSpeed = 15f;
     [SerializeField] private float returnSpeed = 8f;
 
+    // =========================================================
+    // PLAYER SQUASH
+    // =========================================================
+
     [Header("Player Squash")]
     [SerializeField] private float squashAmount = 0.08f;
     [SerializeField] private float squashSpeed = 15f;
+
+    // =========================================================
+    // BUILD SHAKE
+    // =========================================================
 
     [Header("Build Shake")]
     [SerializeField] private float buildShakeAngle = 7f;
     [SerializeField] private float buildShakeSpeed = 35f;
 
+    // =========================================================
+    // BREAK EFFECT
+    // =========================================================
+
     [Header("Break Effect")]
     [SerializeField] private GameObject breakParticlePrefab;
     [SerializeField] private float particleLifetime = 2f;
+
+    // =========================================================
+    // GRASS AUDIO SOURCE
+    // =========================================================
+
+    [Header("Grass Audio")]
+
+    [Tooltip(
+        "AudioSource used for player grass-touch sounds. " +
+        "If left empty, one will be found or created automatically."
+    )]
+    [SerializeField] private AudioSource audioSource;
+
+    // =========================================================
+    // PLAYER TOUCH AUDIO
+    // =========================================================
+
+    [Header("Player Touch Sounds")]
+
+    [Tooltip("Random grass rustle played when the player enters this grass.")]
+    [SerializeField]
+    private AudioClip[] touchSounds = new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float touchVolume = 0.5f;
+
+    [SerializeField] private float touchPitchMin = 0.9f;
+    [SerializeField] private float touchPitchMax = 1.1f;
+
+    // =========================================================
+    // GRASS BREAK AUDIO
+    // =========================================================
+
+    [Header("Grass Break Sounds")]
+
+    [Tooltip("Random sound played when this grass is destroyed.")]
+    [SerializeField]
+    private AudioClip[] breakSounds = new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float breakVolume = 0.7f;
+
+    [SerializeField] private float breakPitchMin = 0.9f;
+    [SerializeField] private float breakPitchMax = 1.1f;
+
+    // =========================================================
+    // PRIVATE
+    // =========================================================
 
     private Quaternion originalRotation;
     private Vector3 originalScale;
@@ -42,6 +163,17 @@ public class InteractiveGrass : MonoBehaviour
     private bool isBreaking;
 
     private float buildShakeOffset;
+    private float weatherNoiseOffset;
+
+    private float currentSwayMultiplier = 1f;
+    private float currentSpeedMultiplier = 1f;
+    private float currentWindChangeMultiplier = 1f;
+    private float currentGustAmount = 0f;
+    private float currentGustSpeed = 1f;
+
+    // =========================================================
+    // AWAKE
+    // =========================================================
 
     private void Awake()
     {
@@ -63,16 +195,95 @@ public class InteractiveGrass : MonoBehaviour
                 maxWindAngle
             );
 
-        // Makes nearby grass shake differently
-        // instead of moving perfectly together.
         buildShakeOffset =
             Random.Range(
                 0f,
                 100f
             );
 
+        weatherNoiseOffset =
+            Random.Range(
+                0f,
+                100f
+            );
+
         ResetWindTimer();
+
+        SetupAudioSource();
     }
+
+    // =========================================================
+    // AUDIO SOURCE SETUP
+    // =========================================================
+
+    private void SetupAudioSource()
+    {
+        // -----------------------------------------------------
+        // Try assigned AudioSource first.
+        // -----------------------------------------------------
+
+        if (audioSource != null)
+        {
+            // If somebody assigned a disabled AudioSource in the
+            // Inspector, make sure it is usable.
+            if (!audioSource.enabled)
+            {
+                audioSource.enabled = true;
+            }
+
+            ConfigureAudioSource(audioSource);
+            return;
+        }
+
+        // -----------------------------------------------------
+        // Try finding one on this GameObject.
+        // -----------------------------------------------------
+
+        audioSource =
+            GetComponent<AudioSource>();
+
+        if (audioSource != null)
+        {
+            if (!audioSource.enabled)
+            {
+                audioSource.enabled = true;
+            }
+
+            ConfigureAudioSource(audioSource);
+            return;
+        }
+
+        // -----------------------------------------------------
+        // No AudioSource exists, so create one.
+        // -----------------------------------------------------
+
+        audioSource =
+            gameObject.AddComponent<AudioSource>();
+
+        ConfigureAudioSource(audioSource);
+    }
+
+    // =========================================================
+    // CONFIGURE AUDIO SOURCE
+    // =========================================================
+
+    private void ConfigureAudioSource(
+        AudioSource source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        source.enabled = true;
+        source.playOnAwake = false;
+        source.loop = false;
+        source.spatialBlend = 0f;
+    }
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
 
     private void Update()
     {
@@ -81,9 +292,112 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
+        UpdateWeatherWind();
         UpdateRandomWind();
         UpdateRotation();
         UpdateScale();
+    }
+
+    // =========================================================
+    // WEATHER WIND
+    // =========================================================
+
+    private void UpdateWeatherWind()
+    {
+        float targetSway = 1f;
+        float targetSpeed = 1f;
+        float targetWindChange = 1f;
+        float targetGustAmount = 0f;
+        float targetGustSpeed = 1f;
+
+        if (WeatherManager.Instance != null)
+        {
+            // -------------------------------------------------
+            // RAIN & THUNDER
+            // -------------------------------------------------
+
+            if (WeatherManager.Instance.IsRainAndThunder())
+            {
+                targetSway =
+                    stormSwayMultiplier;
+
+                targetSpeed =
+                    stormSpeedMultiplier;
+
+                targetWindChange =
+                    stormWindChangeMultiplier;
+
+                targetGustAmount =
+                    stormGustAmount;
+
+                targetGustSpeed =
+                    stormGustSpeed;
+            }
+
+            // -------------------------------------------------
+            // RAIN
+            // -------------------------------------------------
+
+            else if (WeatherManager.Instance.IsRaining())
+            {
+                targetSway =
+                    rainSwayMultiplier;
+
+                targetSpeed =
+                    rainSpeedMultiplier;
+
+                targetWindChange =
+                    rainWindChangeMultiplier;
+
+                targetGustAmount =
+                    rainGustAmount;
+
+                targetGustSpeed =
+                    rainGustSpeed;
+            }
+        }
+
+        float amount =
+            1f -
+            Mathf.Exp(
+                -weatherTransitionSpeed *
+                Time.deltaTime
+            );
+
+        currentSwayMultiplier =
+            Mathf.Lerp(
+                currentSwayMultiplier,
+                targetSway,
+                amount
+            );
+
+        currentSpeedMultiplier =
+            Mathf.Lerp(
+                currentSpeedMultiplier,
+                targetSpeed,
+                amount
+            );
+
+        currentWindChangeMultiplier =
+            Mathf.Lerp(
+                currentWindChangeMultiplier,
+                targetWindChange,
+                amount
+            );
+
+        currentGustAmount =
+            Mathf.Lerp(
+                currentGustAmount,
+                targetGustAmount,
+                amount
+            );
+
+        currentGustSpeed =
+            Mathf.Lerp(
+                currentGustSpeed,
+                targetGustSpeed,
+                amount
+            );
     }
 
     // =========================================================
@@ -92,29 +406,44 @@ public class InteractiveGrass : MonoBehaviour
 
     private void UpdateRandomWind()
     {
-        windTimer -= Time.deltaTime;
+        windTimer -=
+            Time.deltaTime *
+            currentWindChangeMultiplier;
 
         if (windTimer <= 0f)
         {
+            float angleLimit =
+                maxWindAngle *
+                currentSwayMultiplier;
+
             targetWindAngle =
                 Random.Range(
-                    -maxWindAngle,
-                    maxWindAngle
+                    -angleLimit,
+                    angleLimit
                 );
 
             ResetWindTimer();
         }
 
+        float smoothness =
+            windSmoothness *
+            currentSpeedMultiplier;
+
         currentWindAngle =
             Mathf.Lerp(
                 currentWindAngle,
                 targetWindAngle,
-                1f - Mathf.Exp(
-                    -windSmoothness *
+                1f -
+                Mathf.Exp(
+                    -smoothness *
                     Time.deltaTime
                 )
             );
     }
+
+    // =========================================================
+    // WIND TIMER
+    // =========================================================
 
     private void ResetWindTimer()
     {
@@ -126,6 +455,40 @@ public class InteractiveGrass : MonoBehaviour
     }
 
     // =========================================================
+    // GUST MULTIPLIER
+    // =========================================================
+
+    private float GetGustMultiplier()
+    {
+        if (currentGustAmount <= 0.001f)
+        {
+            return 1f;
+        }
+
+        float noise =
+            Mathf.PerlinNoise(
+                weatherNoiseOffset,
+                Time.time *
+                currentGustSpeed
+            );
+
+        float minimum =
+            1f -
+            currentGustAmount;
+
+        float maximum =
+            1f +
+            currentGustAmount;
+
+        return
+            Mathf.Lerp(
+                minimum,
+                maximum,
+                noise
+            );
+    }
+
+    // =========================================================
     // ROTATION
     // =========================================================
 
@@ -133,9 +496,9 @@ public class InteractiveGrass : MonoBehaviour
     {
         float targetAngle;
 
-        // =====================================================
+        // -----------------------------------------------------
         // BUILD SHAKE
-        // =====================================================
+        // -----------------------------------------------------
 
         if (isBuildShaking)
         {
@@ -146,12 +509,13 @@ public class InteractiveGrass : MonoBehaviour
                 ) *
                 buildShakeAngle;
 
-            targetAngle = shake;
+            targetAngle =
+                shake;
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // PLAYER BEND
-        // =====================================================
+        // -----------------------------------------------------
 
         else if (playerInside)
         {
@@ -161,30 +525,38 @@ public class InteractiveGrass : MonoBehaviour
                 0.2f;
         }
 
-        // =====================================================
-        // NORMAL WIND
-        // =====================================================
+        // -----------------------------------------------------
+        // WEATHER WIND
+        // -----------------------------------------------------
 
         else
         {
             targetAngle =
-                currentWindAngle;
+                currentWindAngle *
+                GetGustMultiplier();
         }
+
+        // -----------------------------------------------------
+        // ROTATION SPEED
+        // -----------------------------------------------------
 
         float speed;
 
         if (isBuildShaking)
         {
-            // Very responsive while building.
-            speed = buildShakeSpeed;
+            speed =
+                buildShakeSpeed;
         }
         else if (playerInside)
         {
-            speed = bendSpeed;
+            speed =
+                bendSpeed;
         }
         else
         {
-            speed = returnSpeed;
+            speed =
+                returnSpeed *
+                currentSpeedMultiplier;
         }
 
         float currentAngle =
@@ -198,7 +570,8 @@ public class InteractiveGrass : MonoBehaviour
             Mathf.Lerp(
                 currentAngle,
                 targetAngle,
-                1f - Mathf.Exp(
+                1f -
+                Mathf.Exp(
                     -speed *
                     Time.deltaTime
                 )
@@ -238,7 +611,8 @@ public class InteractiveGrass : MonoBehaviour
             Vector3.Lerp(
                 transform.localScale,
                 targetScale,
-                1f - Mathf.Exp(
+                1f -
+                Mathf.Exp(
                     -squashSpeed *
                     Time.deltaTime
                 )
@@ -256,7 +630,8 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        isBuildShaking = true;
+        isBuildShaking =
+            true;
     }
 
     // =========================================================
@@ -265,7 +640,8 @@ public class InteractiveGrass : MonoBehaviour
 
     public void StopBuildShake()
     {
-        isBuildShaking = false;
+        isBuildShaking =
+            false;
     }
 
     // =========================================================
@@ -280,7 +656,16 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        playerInside = true;
+        // Only play once when the player
+        // first enters this grass.
+
+        if (!playerInside)
+        {
+            PlayTouchSound();
+        }
+
+        playerInside =
+            true;
 
         BendAwayFromPlayer(
             other.transform
@@ -299,7 +684,8 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        playerInside = true;
+        playerInside =
+            true;
 
         BendAwayFromPlayer(
             other.transform
@@ -318,13 +704,20 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        playerInside = false;
-        playerBendAngle = 0f;
+        playerInside =
+            false;
+
+        playerBendAngle =
+            0f;
+
+        float angleLimit =
+            maxWindAngle *
+            currentSwayMultiplier;
 
         targetWindAngle =
             Random.Range(
-                -maxWindAngle,
-                maxWindAngle
+                -angleLimit,
+                angleLimit
             );
 
         ResetWindTimer();
@@ -354,6 +747,217 @@ public class InteractiveGrass : MonoBehaviour
     }
 
     // =========================================================
+    // PLAYER TOUCH SOUND
+    // =========================================================
+
+    private void PlayTouchSound()
+    {
+        AudioClip clip =
+            GetRandomClip(
+                touchSounds
+            );
+
+        if (clip == null)
+        {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // MAKE SURE AUDIO SOURCE EXISTS
+        // -----------------------------------------------------
+
+        if (audioSource == null)
+        {
+            SetupAudioSource();
+        }
+
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // IMPORTANT FIX
+        //
+        // Unity throws:
+        // "Can not play a disabled audio source"
+        // if PlayOneShot is called while the component or its
+        // GameObject is inactive.
+        // -----------------------------------------------------
+
+        if (!audioSource.enabled)
+        {
+            audioSource.enabled =
+                true;
+        }
+
+        if (!audioSource.gameObject.activeInHierarchy)
+        {
+            // Do not call PlayOneShot on an inactive object.
+            return;
+        }
+
+        // -----------------------------------------------------
+        // PLAY
+        // -----------------------------------------------------
+
+        float originalPitch =
+            audioSource.pitch;
+
+        audioSource.pitch =
+            Random.Range(
+                touchPitchMin,
+                touchPitchMax
+            );
+
+        audioSource.PlayOneShot(
+            clip,
+            touchVolume
+        );
+
+        audioSource.pitch =
+            originalPitch;
+    }
+
+    // =========================================================
+    // BREAK SOUND
+    // =========================================================
+
+    private void PlayBreakSound()
+    {
+        AudioClip clip =
+            GetRandomClip(
+                breakSounds
+            );
+
+        if (clip == null)
+        {
+            return;
+        }
+
+        float pitch =
+            Random.Range(
+                breakPitchMin,
+                breakPitchMax
+            );
+
+        // -----------------------------------------------------
+        // TEMPORARY SOUND OBJECT
+        //
+        // We deliberately do NOT use the grass AudioSource
+        // here. The grass is about to be destroyed, so the
+        // sound needs its own object.
+        // -----------------------------------------------------
+
+        GameObject soundObject =
+            new GameObject(
+                "Grass Break Sound"
+            );
+
+        soundObject.transform.position =
+            transform.position;
+
+        AudioSource temporarySource =
+            soundObject.AddComponent<AudioSource>();
+
+        temporarySource.playOnAwake =
+            false;
+
+        temporarySource.loop =
+            false;
+
+        temporarySource.spatialBlend =
+            0f;
+
+        temporarySource.pitch =
+            pitch;
+
+        temporarySource.volume =
+            breakVolume;
+
+        temporarySource.clip =
+            clip;
+
+        // Safety check.
+        if (temporarySource.enabled &&
+            temporarySource.gameObject.activeInHierarchy)
+        {
+            temporarySource.Play();
+        }
+
+        float lifetime =
+            clip.length /
+            Mathf.Max(
+                0.01f,
+                Mathf.Abs(pitch)
+            );
+
+        Destroy(
+            soundObject,
+            lifetime + 0.1f
+        );
+    }
+
+    // =========================================================
+    // RANDOM AUDIO CLIP
+    // =========================================================
+
+    private AudioClip GetRandomClip(
+        AudioClip[] sounds)
+    {
+        if (sounds == null ||
+            sounds.Length == 0)
+        {
+            return null;
+        }
+
+        int validCount = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] != null)
+            {
+                validCount++;
+            }
+        }
+
+        if (validCount <= 0)
+        {
+            return null;
+        }
+
+        int targetIndex =
+            Random.Range(
+                0,
+                validCount
+            );
+
+        int currentIndex = 0;
+
+        for (int i = 0;
+             i < sounds.Length;
+             i++)
+        {
+            if (sounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentIndex ==
+                targetIndex)
+            {
+                return sounds[i];
+            }
+
+            currentIndex++;
+        }
+
+        return null;
+    }
+
+    // =========================================================
     // BREAK GRASS
     // =========================================================
 
@@ -364,12 +968,21 @@ public class InteractiveGrass : MonoBehaviour
             return;
         }
 
-        isBreaking = true;
-        isBuildShaking = false;
+        isBreaking =
+            true;
 
-        // =====================================================
-        // PARTICLE
-        // =====================================================
+        isBuildShaking =
+            false;
+
+        // -----------------------------------------------------
+        // BREAK SOUND
+        // -----------------------------------------------------
+
+        PlayBreakSound();
+
+        // -----------------------------------------------------
+        // PARTICLES
+        // -----------------------------------------------------
 
         if (breakParticlePrefab != null)
         {
@@ -377,9 +990,6 @@ public class InteractiveGrass : MonoBehaviour
                 Instantiate(
                     breakParticlePrefab,
                     transform.position,
-
-                    // Particle does NOT inherit
-                    // grass rotation.
                     Quaternion.identity
                 );
 
@@ -389,11 +999,13 @@ public class InteractiveGrass : MonoBehaviour
             );
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // DESTROY GRASS
-        // =====================================================
+        // -----------------------------------------------------
 
-        Destroy(gameObject);
+        Destroy(
+            gameObject
+        );
     }
 
     // =========================================================

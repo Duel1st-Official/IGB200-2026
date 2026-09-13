@@ -112,6 +112,24 @@ public class TrapPlacementSystem : MonoBehaviour
         Vector3.zero;
 
     // =========================================================
+    // BUILD AUDIO
+    // =========================================================
+
+    [Header("Trap Build Audio")]
+    [SerializeField] private AudioSource buildAudioSource;
+
+    [Tooltip("Random sound played when a trap finishes being built.")]
+    [SerializeField]
+    private AudioClip[] trapBuildSounds =
+        new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float trapBuildVolume = 1f;
+
+    [SerializeField] private float trapBuildPitchMin = 0.95f;
+    [SerializeField] private float trapBuildPitchMax = 1.05f;
+
+    // =========================================================
     // SORTING
     // =========================================================
 
@@ -192,6 +210,16 @@ public class TrapPlacementSystem : MonoBehaviour
         {
             cameraShake =
                 FindFirstObjectByType<CameraShake2D>();
+        }
+
+        // -----------------------------------------------------
+        // BUILD AUDIO
+        // -----------------------------------------------------
+
+        if (buildAudioSource == null)
+        {
+            buildAudioSource =
+                GetComponent<AudioSource>();
         }
 
         // -----------------------------------------------------
@@ -282,7 +310,7 @@ public class TrapPlacementSystem : MonoBehaviour
         UpdatePreview();
 
         // =====================================================
-        // RIGHT CLICK PLACE
+        // LEFT CLICK PLACE
         // =====================================================
 
         if (Input.GetMouseButtonDown(0))
@@ -696,6 +724,12 @@ public class TrapPlacementSystem : MonoBehaviour
         );
 
         // =====================================================
+        // BUILD SOUND
+        // =====================================================
+
+        PlayTrapBuildSound();
+
+        // =====================================================
         // BREAK GRASS
         // =====================================================
 
@@ -1032,6 +1066,87 @@ public class TrapPlacementSystem : MonoBehaviour
 
         sortingGroup.sortingOrder =
             calculatedOrder;
+    }
+
+    // =========================================================
+    // TRAP BUILD SOUND
+    // =========================================================
+
+    private void PlayTrapBuildSound()
+    {
+        if (buildAudioSource == null)
+        {
+            return;
+        }
+
+        if (trapBuildSounds == null ||
+            trapBuildSounds.Length == 0)
+        {
+            return;
+        }
+
+        int validClipCount = 0;
+
+        for (int i = 0;
+             i < trapBuildSounds.Length;
+             i++)
+        {
+            if (trapBuildSounds[i] != null)
+            {
+                validClipCount++;
+            }
+        }
+
+        if (validClipCount <= 0)
+        {
+            return;
+        }
+
+        int randomValidIndex =
+            Random.Range(
+                0,
+                validClipCount
+            );
+
+        AudioClip selectedClip = null;
+        int currentValidIndex = 0;
+
+        for (int i = 0;
+             i < trapBuildSounds.Length;
+             i++)
+        {
+            if (trapBuildSounds[i] == null)
+            {
+                continue;
+            }
+
+            if (currentValidIndex ==
+                randomValidIndex)
+            {
+                selectedClip =
+                    trapBuildSounds[i];
+
+                break;
+            }
+
+            currentValidIndex++;
+        }
+
+        if (selectedClip == null)
+        {
+            return;
+        }
+
+        buildAudioSource.pitch =
+            Random.Range(
+                trapBuildPitchMin,
+                trapBuildPitchMax
+            );
+
+        buildAudioSource.PlayOneShot(
+            selectedClip,
+            trapBuildVolume
+        );
     }
 
     // =========================================================
