@@ -80,7 +80,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.8518044, y: 0.9609318}
+  m_Size: {x: 1.0015777, y: 1.0239387}
   m_EdgeRadius: 0
 --- !u!114 &8518067232654097711
 MonoBehaviour:
@@ -96,6 +96,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentState: 0
   startsWithBait: 0
+  spriteRenderer: {fileID: 5030070009986527181}
+  emptyTrapSprite: {fileID: 2099055159055310883, guid: 41ed6c0e91c0bfb40982b654b63629e1, type: 3}
+  baitedTrapSprite: {fileID: 3333967470306039257, guid: 41ed6c0e91c0bfb40982b654b63629e1, type: 3}
+  feralCatCaughtSprite: {fileID: 6168736975187873401, guid: 41ed6c0e91c0bfb40982b654b63629e1, type: 3}
+  foxCaughtSprite: {fileID: 1018633133331934498, guid: 41ed6c0e91c0bfb40982b654b63629e1, type: 3}
+  genericCaughtSprite: {fileID: 2099055159055310883, guid: 41ed6c0e91c0bfb40982b654b63629e1, type: 3}
+  endDaySystem: {fileID: 0}
+  sunnyCaptureChance: 0.7
+  rainCaptureChance: 0.5
+  thunderCaptureChance: 0.3
+  predatorNames:
+  - Feral Cat
+  - Fox
   caughtMammalName: 
   debugMammalName: Bandicoot
   showDebugLogs: 0
@@ -163,7 +176,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.65, y: 0.65, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4179787396575658181}
@@ -217,7 +230,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1.0233333, y: 1.1466666}
+  m_Size: {x: 4.88, y: 6.2130322}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1

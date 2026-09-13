@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class InteractiveGrass : MonoBehaviour
 {
+    // =========================================================
+    // PLAYER
+    // =========================================================
+
     [Header("Player")]
     [SerializeField] private string playerTag = "Player";
 
@@ -41,19 +45,13 @@ public class InteractiveGrass : MonoBehaviour
 
     [Header("Rain & Thunder Wind")]
 
-    [Tooltip(
-        "How much stronger the grass bends during Rain & Thunder."
-    )]
+    [Tooltip("How much stronger the grass bends during Rain & Thunder.")]
     [SerializeField] private float stormSwayMultiplier = 7f;
 
-    [Tooltip(
-        "How much faster the grass reacts during Rain & Thunder."
-    )]
+    [Tooltip("How much faster the grass reacts during Rain & Thunder.")]
     [SerializeField] private float stormSpeedMultiplier = 5f;
 
-    [Tooltip(
-        "How much faster wind direction changes during Rain & Thunder."
-    )]
+    [Tooltip("How much faster wind direction changes during Rain & Thunder.")]
     [SerializeField] private float stormWindChangeMultiplier = 6f;
 
     [Range(0f, 1f)]
@@ -67,9 +65,7 @@ public class InteractiveGrass : MonoBehaviour
 
     [Header("Weather Transition")]
 
-    [Tooltip(
-        "How quickly grass transitions between weather wind strengths."
-    )]
+    [Tooltip("How quickly grass transitions between weather wind strengths.")]
     [SerializeField] private float weatherTransitionSpeed = 4f;
 
     // =========================================================
@@ -123,12 +119,9 @@ public class InteractiveGrass : MonoBehaviour
 
     [Header("Player Touch Sounds")]
 
-    [Tooltip(
-        "Random grass rustle played when the player enters this grass."
-    )]
+    [Tooltip("Random grass rustle played when the player enters this grass.")]
     [SerializeField]
-    private AudioClip[] touchSounds =
-        new AudioClip[3];
+    private AudioClip[] touchSounds = new AudioClip[3];
 
     [Range(0f, 1f)]
     [SerializeField] private float touchVolume = 0.5f;
@@ -142,12 +135,9 @@ public class InteractiveGrass : MonoBehaviour
 
     [Header("Grass Break Sounds")]
 
-    [Tooltip(
-        "Random sound played when this grass is destroyed."
-    )]
+    [Tooltip("Random sound played when this grass is destroyed.")]
     [SerializeField]
-    private AudioClip[] breakSounds =
-        new AudioClip[3];
+    private AudioClip[] breakSounds = new AudioClip[3];
 
     [Range(0f, 1f)]
     [SerializeField] private float breakVolume = 0.7f;
@@ -219,25 +209,76 @@ public class InteractiveGrass : MonoBehaviour
 
         ResetWindTimer();
 
-        // =====================================================
-        // AUDIO SOURCE
-        // =====================================================
+        SetupAudioSource();
+    }
 
-        if (audioSource == null)
+    // =========================================================
+    // AUDIO SOURCE SETUP
+    // =========================================================
+
+    private void SetupAudioSource()
+    {
+        // -----------------------------------------------------
+        // Try assigned AudioSource first.
+        // -----------------------------------------------------
+
+        if (audioSource != null)
         {
-            audioSource =
-                GetComponent<AudioSource>();
+            // If somebody assigned a disabled AudioSource in the
+            // Inspector, make sure it is usable.
+            if (!audioSource.enabled)
+            {
+                audioSource.enabled = true;
+            }
+
+            ConfigureAudioSource(audioSource);
+            return;
         }
 
-        if (audioSource == null)
+        // -----------------------------------------------------
+        // Try finding one on this GameObject.
+        // -----------------------------------------------------
+
+        audioSource =
+            GetComponent<AudioSource>();
+
+        if (audioSource != null)
         {
-            audioSource =
-                gameObject.AddComponent<AudioSource>();
+            if (!audioSource.enabled)
+            {
+                audioSource.enabled = true;
+            }
+
+            ConfigureAudioSource(audioSource);
+            return;
         }
 
-        audioSource.playOnAwake = false;
-        audioSource.loop = false;
-        audioSource.spatialBlend = 0f;
+        // -----------------------------------------------------
+        // No AudioSource exists, so create one.
+        // -----------------------------------------------------
+
+        audioSource =
+            gameObject.AddComponent<AudioSource>();
+
+        ConfigureAudioSource(audioSource);
+    }
+
+    // =========================================================
+    // CONFIGURE AUDIO SOURCE
+    // =========================================================
+
+    private void ConfigureAudioSource(
+        AudioSource source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        source.enabled = true;
+        source.playOnAwake = false;
+        source.loop = false;
+        source.spatialBlend = 0f;
     }
 
     // =========================================================
@@ -271,6 +312,10 @@ public class InteractiveGrass : MonoBehaviour
 
         if (WeatherManager.Instance != null)
         {
+            // -------------------------------------------------
+            // RAIN & THUNDER
+            // -------------------------------------------------
+
             if (WeatherManager.Instance.IsRainAndThunder())
             {
                 targetSway =
@@ -288,6 +333,11 @@ public class InteractiveGrass : MonoBehaviour
                 targetGustSpeed =
                     stormGustSpeed;
             }
+
+            // -------------------------------------------------
+            // RAIN
+            // -------------------------------------------------
+
             else if (WeatherManager.Instance.IsRaining())
             {
                 targetSway =
@@ -446,9 +496,9 @@ public class InteractiveGrass : MonoBehaviour
     {
         float targetAngle;
 
-        // =====================================================
+        // -----------------------------------------------------
         // BUILD SHAKE
-        // =====================================================
+        // -----------------------------------------------------
 
         if (isBuildShaking)
         {
@@ -463,9 +513,9 @@ public class InteractiveGrass : MonoBehaviour
                 shake;
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // PLAYER BEND
-        // =====================================================
+        // -----------------------------------------------------
 
         else if (playerInside)
         {
@@ -475,9 +525,9 @@ public class InteractiveGrass : MonoBehaviour
                 0.2f;
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // WEATHER WIND
-        // =====================================================
+        // -----------------------------------------------------
 
         else
         {
@@ -486,9 +536,9 @@ public class InteractiveGrass : MonoBehaviour
                 GetGustMultiplier();
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // ROTATION SPEED
-        // =====================================================
+        // -----------------------------------------------------
 
         float speed;
 
@@ -707,11 +757,52 @@ public class InteractiveGrass : MonoBehaviour
                 touchSounds
             );
 
-        if (clip == null ||
-            audioSource == null)
+        if (clip == null)
         {
             return;
         }
+
+        // -----------------------------------------------------
+        // MAKE SURE AUDIO SOURCE EXISTS
+        // -----------------------------------------------------
+
+        if (audioSource == null)
+        {
+            SetupAudioSource();
+        }
+
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // IMPORTANT FIX
+        //
+        // Unity throws:
+        // "Can not play a disabled audio source"
+        // if PlayOneShot is called while the component or its
+        // GameObject is inactive.
+        // -----------------------------------------------------
+
+        if (!audioSource.enabled)
+        {
+            audioSource.enabled =
+                true;
+        }
+
+        if (!audioSource.gameObject.activeInHierarchy)
+        {
+            // Do not call PlayOneShot on an inactive object.
+            return;
+        }
+
+        // -----------------------------------------------------
+        // PLAY
+        // -----------------------------------------------------
+
+        float originalPitch =
+            audioSource.pitch;
 
         audioSource.pitch =
             Random.Range(
@@ -723,6 +814,9 @@ public class InteractiveGrass : MonoBehaviour
             clip,
             touchVolume
         );
+
+        audioSource.pitch =
+            originalPitch;
     }
 
     // =========================================================
@@ -747,9 +841,13 @@ public class InteractiveGrass : MonoBehaviour
                 breakPitchMax
             );
 
-        // Create a temporary AudioSource so the
-        // sound continues after the grass itself
-        // has been destroyed.
+        // -----------------------------------------------------
+        // TEMPORARY SOUND OBJECT
+        //
+        // We deliberately do NOT use the grass AudioSource
+        // here. The grass is about to be destroyed, so the
+        // sound needs its own object.
+        // -----------------------------------------------------
 
         GameObject soundObject =
             new GameObject(
@@ -780,7 +878,12 @@ public class InteractiveGrass : MonoBehaviour
         temporarySource.clip =
             clip;
 
-        temporarySource.Play();
+        // Safety check.
+        if (temporarySource.enabled &&
+            temporarySource.gameObject.activeInHierarchy)
+        {
+            temporarySource.Play();
+        }
 
         float lifetime =
             clip.length /
@@ -871,15 +974,15 @@ public class InteractiveGrass : MonoBehaviour
         isBuildShaking =
             false;
 
-        // =====================================================
+        // -----------------------------------------------------
         // BREAK SOUND
-        // =====================================================
+        // -----------------------------------------------------
 
         PlayBreakSound();
 
-        // =====================================================
+        // -----------------------------------------------------
         // PARTICLES
-        // =====================================================
+        // -----------------------------------------------------
 
         if (breakParticlePrefab != null)
         {
@@ -896,9 +999,9 @@ public class InteractiveGrass : MonoBehaviour
             );
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // DESTROY GRASS
-        // =====================================================
+        // -----------------------------------------------------
 
         Destroy(
             gameObject

@@ -23,30 +23,6 @@ TextureImporter:
   - first:
       213: 8052341174007337326
     second: Trap_6
-  - first:
-      213: -8612709743352899840
-    second: Trap_7
-  - first:
-      213: -6401351591424919171
-    second: Trap_8
-  - first:
-      213: -2549942422911305277
-    second: Trap_9
-  - first:
-      213: 1781892945650459933
-    second: Trap_10
-  - first:
-      213: -220625508122475781
-    second: Trap_11
-  - first:
-      213: -4188068305429791607
-    second: Trap_12
-  - first:
-      213: 4297068374954249032
-    second: Trap_13
-  - first:
-      213: -5923962084708097218
-    second: Trap_14
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -93,7 +69,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 350
+  spritePixelsToUnits: 300
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -145,19 +121,19 @@ TextureImporter:
       name: Trap_0
       rect:
         serializedVersion: 2
-        x: 32
-        y: 306
-        width: 307
-        height: 344
+        x: 31
+        y: 89
+        width: 480
+        height: 508
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 19cd6b109da15f94e86daaecc5460e5b
+      spriteID: 320617fbb87512d10800000000000000
       internalID: 2099055159055310883
       vertices: []
       indices: 
@@ -167,19 +143,19 @@ TextureImporter:
       name: Trap_1
       rect:
         serializedVersion: 2
-        x: 381
-        y: 306
-        width: 309
-        height: 345
+        x: 574
+        y: 89
+        width: 482
+        height: 508
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: 27f7c269dfb1948418bfbdd13c802f86
+      spriteID: 9d59c4800c1a44e20800000000000000
       internalID: 3333967470306039257
       vertices: []
       indices: 
@@ -189,19 +165,19 @@ TextureImporter:
       name: Trap_2
       rect:
         serializedVersion: 2
-        x: 732
-        y: 306
-        width: 308
-        height: 343
+        x: 1118
+        y: 89
+        width: 481
+        height: 508
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: f59624d8aa50f8641ae88e856a602e7e
+      spriteID: 97e04e67891cb9550800000000000000
       internalID: 6168736975187873401
       vertices: []
       indices: 
@@ -211,42 +187,20 @@ TextureImporter:
       name: Trap_3
       rect:
         serializedVersion: 2
-        x: 1081
-        y: 306
-        width: 310
-        height: 343
+        x: 1659
+        y: 89
+        width: 482
+        height: 506
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: 0
+      tessellationDetail: -1
       bones: []
-      spriteID: b05c5dcd42853974b90a01fd0b19a8fd
+      spriteID: 22d61b41079e22e00800000000000000
       internalID: 1018633133331934498
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Trap_4
-      rect:
-        serializedVersion: 2
-        x: 1430
-        y: 306
-        width: 311
-        height: 345
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: aa4f5972fcba7794ea9b98aa634e8d7c
-      internalID: 6840254211512974232
       vertices: []
       indices: 
       edges: []
@@ -255,7 +209,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: dc83bf1834066a741b4c58cb2b69917e
+    spriteID: 34714202353182248ad447f977d58070
     internalID: 0
     vertices: []
     indices: 
@@ -267,19 +221,11 @@ TextureImporter:
     nameFileIdTable:
       Trap_0: 2099055159055310883
       Trap_1: 3333967470306039257
-      Trap_10: 1781892945650459933
-      Trap_11: -220625508122475781
-      Trap_12: -4188068305429791607
-      Trap_13: 4297068374954249032
-      Trap_14: -5923962084708097218
       Trap_2: 6168736975187873401
       Trap_3: 1018633133331934498
       Trap_4: 6840254211512974232
       Trap_5: -6925860838805389657
       Trap_6: 8052341174007337326
-      Trap_7: -8612709743352899840
-      Trap_8: -6401351591424919171
-      Trap_9: -2549942422911305277
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

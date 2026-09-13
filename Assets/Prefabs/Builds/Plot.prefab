@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: -358288229963476569}
   - component: {fileID: 6376127902706515472}
   - component: {fileID: 2248312837672965477}
+  - component: {fileID: 1715616483696070612}
   m_Layer: 3
   m_Name: Plot
   m_TagString: Untagged
@@ -96,6 +97,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   occupied: 0
   planted: 0
+  cropPlot: {fileID: 0}
   rangerStation: {fileID: 0}
   showDebugLogs: 0
 --- !u!114 &6376127902706515472
@@ -134,6 +136,48 @@ MonoBehaviour:
   allowClick: 1
   interactionDistance: 5
   player: {fileID: 0}
+  showDebugLogs: 0
+--- !u!114 &1715616483696070612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4826204611079752087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff72a405668d7e843a5924e532958a9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  plot: {fileID: -358288229963476569}
+  cropRenderer: {fileID: 1459975408311624994}
+  endDaySystem: {fileID: 0}
+  emptyPlotSprite: {fileID: 7818689757044616098, guid: 5342b90694486c8458f27a3292fe2ba8, type: 3}
+  growthStageSprites:
+  - {fileID: 1272313374670823227, guid: 5342b90694486c8458f27a3292fe2ba8, type: 3}
+  - {fileID: -4850483222051155900, guid: 5342b90694486c8458f27a3292fe2ba8, type: 3}
+  - {fileID: 8222000043031654104, guid: 5342b90694486c8458f27a3292fe2ba8, type: 3}
+  mammalPrefabs:
+  - {fileID: 2764321746464462163, guid: f7491d38cfd29ad419f8cbb3cbdb2285, type: 3}
+  - {fileID: 1187780156651742053, guid: fa8dc84e62cbae946a815b1bd452e2f4, type: 3}
+  - {fileID: 5887916849777056642, guid: 6750760fcc60d094dbf06f77188742ff, type: 3}
+  mammalSpawnPoint: {fileID: 682204440209325169}
+  attractMammalWhenFullyGrown: 1
+  onCropPlanted:
+    m_PersistentCalls:
+      m_Calls: []
+  onCropGrown:
+    m_PersistentCalls:
+      m_Calls: []
+  onCropFullyGrown:
+    m_PersistentCalls:
+      m_Calls: []
+  onMammalAttracted:
+    m_PersistentCalls:
+      m_Calls: []
+  onCropHarvested:
+    m_PersistentCalls:
+      m_Calls: []
   showDebugLogs: 0
 --- !u!1 &6519828910645659539
 GameObject:

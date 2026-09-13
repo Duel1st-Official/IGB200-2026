@@ -45,7 +45,43 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     [Header("Buttons")]
+
+    [Tooltip("Button used to close the Farm Plot inspection window.")]
     [SerializeField] private Button closeButton;
+
+    [Tooltip("Button used to plant a seed in an empty plot.")]
+    [SerializeField] private Button plantButton;
+
+    // =========================================================
+    // AUDIO
+    // =========================================================
+
+    [Header("Plot Audio")]
+
+    [Tooltip("AudioSource used for Farm Plot UI sounds. If empty, one will be found or created automatically.")]
+    [SerializeField] private AudioSource audioSource;
+
+    [Tooltip("Random sound played after successfully planting the seed.")]
+    [SerializeField] private AudioClip[] plantSeedSounds = new AudioClip[3];
+
+    [Tooltip("Random sound played when hovering over the Plant button.")]
+    [SerializeField] private AudioClip[] plantButtonHoverSounds = new AudioClip[3];
+
+    [Tooltip("Random sound played when clicking the Plant button.")]
+    [SerializeField] private AudioClip[] plantButtonClickSounds = new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float plantSeedVolume = 1f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float plantButtonHoverVolume = 0.6f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float plantButtonClickVolume = 0.8f;
+
+    [Header("Audio Pitch")]
+    [SerializeField] private float audioPitchMin = 0.95f;
+    [SerializeField] private float audioPitchMax = 1.05f;
 
     // =========================================================
     // POSITION
@@ -149,17 +185,28 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
 
     private float currentSwayAngle;
 
+    private EventTrigger plantButtonEventTrigger;
+    private EventTrigger.Entry plantHoverEntry;
+
     // =========================================================
     // START
     // =========================================================
 
     private void Start()
     {
+        // -----------------------------------------------------
+        // CAMERA
+        // -----------------------------------------------------
+
         if (mainCamera == null)
         {
             mainCamera =
                 Camera.main;
         }
+
+        // -----------------------------------------------------
+        // CANVAS
+        // -----------------------------------------------------
 
         if (canvas == null)
         {
@@ -167,17 +214,29 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
                 GetComponentInParent<Canvas>();
         }
 
+        // -----------------------------------------------------
+        // SELECTION WHEEL
+        // -----------------------------------------------------
+
         if (selectionWheel == null)
         {
             selectionWheel =
                 FindFirstObjectByType<SelectionWheel>();
         }
 
+        // -----------------------------------------------------
+        // PANEL
+        // -----------------------------------------------------
+
         if (panel == null)
         {
             panel =
                 transform as RectTransform;
         }
+
+        // -----------------------------------------------------
+        // CANVAS GROUP
+        // -----------------------------------------------------
 
         if (canvasGroup == null &&
             panel != null)
@@ -198,6 +257,16 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
                 normalAlpha;
         }
 
+        // -----------------------------------------------------
+        // AUDIO SOURCE
+        // -----------------------------------------------------
+
+        SetupAudioSource();
+
+        // -----------------------------------------------------
+        // CLOSE BUTTON
+        // -----------------------------------------------------
+
         if (closeButton != null)
         {
             closeButton.onClick.AddListener(
@@ -205,12 +274,101 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             );
         }
 
+        // -----------------------------------------------------
+        // PLANT BUTTON
+        // -----------------------------------------------------
+
+        if (plantButton != null)
+        {
+            plantButton.onClick.AddListener(
+                HandlePlantButtonClicked
+            );
+
+            SetupPlantButtonHover();
+        }
+
+        // -----------------------------------------------------
+        // START CLOSED
+        // -----------------------------------------------------
+
         if (panel != null)
         {
             panel.gameObject.SetActive(
                 false
             );
         }
+    }
+
+    // =========================================================
+    // AUDIO SETUP
+    // =========================================================
+
+    private void SetupAudioSource()
+    {
+        if (audioSource == null)
+        {
+            audioSource =
+                GetComponent<AudioSource>();
+        }
+
+        if (audioSource == null)
+        {
+            audioSource =
+                gameObject.AddComponent<AudioSource>();
+        }
+
+        audioSource.playOnAwake =
+            false;
+
+        audioSource.loop =
+            false;
+
+        audioSource.spatialBlend =
+            0f;
+    }
+
+    // =========================================================
+    // PLANT BUTTON HOVER SETUP
+    // =========================================================
+
+    private void SetupPlantButtonHover()
+    {
+        if (plantButton == null)
+        {
+            return;
+        }
+
+        plantButtonEventTrigger =
+            plantButton.GetComponent<EventTrigger>();
+
+        if (plantButtonEventTrigger == null)
+        {
+            plantButtonEventTrigger =
+                plantButton.gameObject.AddComponent<EventTrigger>();
+        }
+
+        if (plantButtonEventTrigger.triggers == null)
+        {
+            plantButtonEventTrigger.triggers =
+                new List<EventTrigger.Entry>();
+        }
+
+        plantHoverEntry =
+            new EventTrigger.Entry();
+
+        plantHoverEntry.eventID =
+            EventTriggerType.PointerEnter;
+
+        plantHoverEntry.callback =
+            new EventTrigger.TriggerEvent();
+
+        plantHoverEntry.callback.AddListener(
+            (data) => PlayPlantButtonHoverSound()
+        );
+
+        plantButtonEventTrigger.triggers.Add(
+            plantHoverEntry
+        );
     }
 
     // =========================================================
@@ -231,6 +389,9 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             Close();
             return;
         }
+
+        // Keep button/text state current.
+        RefreshUI();
 
         HandleDragging();
 
@@ -428,40 +589,210 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
+        // =====================================================
+        // TITLE
+        // =====================================================
+
         if (titleText != null)
         {
             titleText.text =
                 "FARM PLOT";
         }
 
-        if (currentPlot.planted)
+        // =====================================================
+        // GROWING
+        // =====================================================
+
+        if (currentPlot.IsPlanted())
         {
             if (statusText != null)
             {
                 statusText.text =
-                    "PLANTED";
+                    "GROWING";
             }
 
             if (descriptionText != null)
             {
                 descriptionText.text =
-                    "Something is growing in this plot.";
+                    "The plant is growing.";
+            }
+
+            if (plantButton != null)
+            {
+                plantButton.gameObject.SetActive(
+                    false
+                );
             }
         }
+
+        // =====================================================
+        // EMPTY
+        // =====================================================
+
         else
         {
             if (statusText != null)
             {
                 statusText.text =
-                    "EMPTY";
+                    "PLANT PLOT";
             }
 
             if (descriptionText != null)
             {
                 descriptionText.text =
-                    "Nothing is planted in this plot.";
+                    "Plant a seed here to attract wildlife.";
+            }
+
+            if (plantButton != null)
+            {
+                plantButton.gameObject.SetActive(
+                    true
+                );
+
+                plantButton.interactable =
+                    true;
             }
         }
+    }
+
+    // =========================================================
+    // PLANT BUTTON CLICK
+    // =========================================================
+
+    private void HandlePlantButtonClicked()
+    {
+        PlayPlantButtonClickSound();
+
+        PlantSeed();
+    }
+
+    // =========================================================
+    // PLANT SEED
+    // =========================================================
+
+    private void PlantSeed()
+    {
+        if (currentPlot == null)
+        {
+            return;
+        }
+
+        if (currentPlot.IsPlanted())
+        {
+            RefreshUI();
+            return;
+        }
+
+        // -----------------------------------------------------
+        // PLANT THROUGH PLOT
+        // -----------------------------------------------------
+
+        currentPlot.Plant();
+
+        // -----------------------------------------------------
+        // SUCCESSFUL PLANT SOUND
+        // -----------------------------------------------------
+
+        if (currentPlot.IsPlanted())
+        {
+            PlayPlantSeedSound();
+        }
+
+        // -----------------------------------------------------
+        // UPDATE HUD
+        // -----------------------------------------------------
+
+        RefreshUI();
+    }
+
+    // =========================================================
+    // PLANT AUDIO
+    // =========================================================
+
+    private void PlayPlantSeedSound()
+    {
+        PlayRandomSound(
+            plantSeedSounds,
+            plantSeedVolume
+        );
+    }
+
+    private void PlayPlantButtonHoverSound()
+    {
+        if (plantButton == null ||
+            !plantButton.gameObject.activeInHierarchy ||
+            !plantButton.interactable)
+        {
+            return;
+        }
+
+        PlayRandomSound(
+            plantButtonHoverSounds,
+            plantButtonHoverVolume
+        );
+    }
+
+    private void PlayPlantButtonClickSound()
+    {
+        PlayRandomSound(
+            plantButtonClickSounds,
+            plantButtonClickVolume
+        );
+    }
+
+    private void PlayRandomSound(
+        AudioClip[] clips,
+        float volume)
+    {
+        if (audioSource == null ||
+            clips == null ||
+            clips.Length == 0)
+        {
+            return;
+        }
+
+        List<AudioClip> validClips =
+            new List<AudioClip>();
+
+        for (int i = 0; i < clips.Length; i++)
+        {
+            if (clips[i] != null)
+            {
+                validClips.Add(
+                    clips[i]
+                );
+            }
+        }
+
+        if (validClips.Count == 0)
+        {
+            return;
+        }
+
+        AudioClip chosenClip =
+            validClips[
+                Random.Range(
+                    0,
+                    validClips.Count
+                )
+            ];
+
+        float oldPitch =
+            audioSource.pitch;
+
+        audioSource.pitch =
+            Random.Range(
+                audioPitchMin,
+                audioPitchMax
+            );
+
+        audioSource.PlayOneShot(
+            chosenClip,
+            volume
+        );
+
+        audioSource.pitch =
+            oldPitch;
     }
 
     // =========================================================
@@ -544,10 +875,6 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             canvasGroup.alpha =
                 normalAlpha;
         }
-
-        // =====================================================
-        // CLEAR MANAGER
-        // =====================================================
 
         if (InspectionUIManager.Instance != null)
         {
@@ -1219,10 +1546,6 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
         animationCoroutine =
             null;
 
-        // =====================================================
-        // CLEAR MANAGER
-        // =====================================================
-
         if (InspectionUIManager.Instance != null)
         {
             InspectionUIManager.Instance.ClearPanel(
@@ -1287,6 +1610,10 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
         panel.localScale =
             end;
     }
+
+    // =========================================================
+    // RESET OUTSIDE CLICK
+    // =========================================================
 
     private IEnumerator ResetOutsideClickIgnore()
     {
@@ -1361,5 +1688,35 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
                 x - 1f,
                 2f
             );
+    }
+
+    // =========================================================
+    // DESTROY
+    // =========================================================
+
+    private void OnDestroy()
+    {
+        if (closeButton != null)
+        {
+            closeButton.onClick.RemoveListener(
+                Close
+            );
+        }
+
+        if (plantButton != null)
+        {
+            plantButton.onClick.RemoveListener(
+                HandlePlantButtonClicked
+            );
+        }
+
+        if (plantButtonEventTrigger != null &&
+            plantHoverEntry != null &&
+            plantButtonEventTrigger.triggers != null)
+        {
+            plantButtonEventTrigger.triggers.Remove(
+                plantHoverEntry
+            );
+        }
     }
 }

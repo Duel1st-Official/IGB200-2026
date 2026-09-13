@@ -13,6 +13,19 @@ public class Plot : MonoBehaviour
     public bool planted;
 
     // =========================================================
+    // CROP
+    // =========================================================
+
+    [Header("Crop")]
+
+    [Tooltip(
+        "Crop system attached to this plot. " +
+        "If empty, one will automatically be found."
+    )]
+    [SerializeField]
+    private CropPlot cropPlot;
+
+    // =========================================================
     // RANGER STATION
     // =========================================================
 
@@ -22,14 +35,17 @@ public class Plot : MonoBehaviour
         "Optional Ranger Station reference. " +
         "If empty, one will automatically be found."
     )]
-    [SerializeField] private RangerStation rangerStation;
+    [SerializeField]
+    private RangerStation rangerStation;
 
     // =========================================================
     // DEBUG
     // =========================================================
 
     [Header("Debug")]
-    [SerializeField] private bool showDebugLogs = false;
+
+    [SerializeField]
+    private bool showDebugLogs = false;
 
     // =========================================================
     // AWAKE
@@ -37,6 +53,26 @@ public class Plot : MonoBehaviour
 
     private void Awake()
     {
+        // -----------------------------------------------------
+        // CROP
+        // -----------------------------------------------------
+
+        if (cropPlot == null)
+        {
+            cropPlot =
+                GetComponent<CropPlot>();
+
+            if (cropPlot == null)
+            {
+                cropPlot =
+                    GetComponentInChildren<CropPlot>();
+            }
+        }
+
+        // -----------------------------------------------------
+        // RANGER STATION
+        // -----------------------------------------------------
+
         if (rangerStation == null)
         {
             rangerStation =
@@ -50,15 +86,42 @@ public class Plot : MonoBehaviour
 
     public void Plant()
     {
-        // Don't damage the soil repeatedly
-        // if this plot has already been planted.
+        // -----------------------------------------------------
+        // ALREADY PLANTED
+        // -----------------------------------------------------
+
         if (planted)
         {
             return;
         }
 
+        // -----------------------------------------------------
+        // SET STATE
+        // -----------------------------------------------------
+
         planted =
             true;
+
+        // -----------------------------------------------------
+        // START CROP
+        // -----------------------------------------------------
+
+        if (cropPlot == null)
+        {
+            cropPlot =
+                GetComponent<CropPlot>();
+
+            if (cropPlot == null)
+            {
+                cropPlot =
+                    GetComponentInChildren<CropPlot>();
+            }
+        }
+
+        if (cropPlot != null)
+        {
+            cropPlot.PlantCrop();
+        }
 
         // =====================================================
         // DAMAGE SOIL
@@ -82,7 +145,8 @@ public class Plot : MonoBehaviour
         if (showDebugLogs)
         {
             Debug.Log(
-                "Plot planted."
+                gameObject.name +
+                " planted."
             );
         }
     }
@@ -99,7 +163,43 @@ public class Plot : MonoBehaviour
         if (showDebugLogs)
         {
             Debug.Log(
-                "Plot cleared."
+                gameObject.name +
+                " plant cleared."
+            );
+        }
+    }
+
+    // =========================================================
+    // CLEAR PLOT AND CROP
+    // =========================================================
+
+    public void ClearPlantAndCrop()
+    {
+        planted =
+            false;
+
+        if (cropPlot == null)
+        {
+            cropPlot =
+                GetComponent<CropPlot>();
+
+            if (cropPlot == null)
+            {
+                cropPlot =
+                    GetComponentInChildren<CropPlot>();
+            }
+        }
+
+        if (cropPlot != null)
+        {
+            cropPlot.ClearCrop();
+        }
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                gameObject.name +
+                " plant and crop cleared."
             );
         }
     }
@@ -129,6 +229,11 @@ public class Plot : MonoBehaviour
         return occupied;
     }
 
+    public CropPlot GetCropPlot()
+    {
+        return cropPlot;
+    }
+
     // =========================================================
     // DEBUG
     // =========================================================
@@ -142,6 +247,6 @@ public class Plot : MonoBehaviour
     [ContextMenu("Debug - Clear Plant")]
     private void DebugClearPlant()
     {
-        ClearPlant();
+        ClearPlantAndCrop();
     }
 }

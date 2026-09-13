@@ -1,7 +1,8 @@
-using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using TMPro;
 
 public class TopDayDropdownUI : MonoBehaviour
 {
@@ -10,168 +11,122 @@ public class TopDayDropdownUI : MonoBehaviour
     // =========================================================
 
     [Header("References")]
+    [SerializeField] private SelectionWheel selectionWheel;
+    [SerializeField] private EndDaySystem endDaySystem;
 
-    [Tooltip(
-        "Your existing SelectionWheel. " +
-        "The dropdown only works in Inspector Mode."
-    )]
-    [SerializeField]
-    private SelectionWheel selectionWheel;
+    [Tooltip("The entire dropdown panel that slides down from the top.")]
+    [SerializeField] private RectTransform dropdownPanel;
 
-    [Tooltip(
-        "The RectTransform containing the actual dropdown panel."
-    )]
-    [SerializeField]
-    private RectTransform dropdownPanel;
-
-    [Tooltip(
-        "Invisible UI area at the very top of the screen. " +
-        "Hovering over this opens the dropdown."
-    )]
-    [SerializeField]
-    private RectTransform topHoverZone;
+    [Tooltip("Invisible or visible area at the top of the screen that opens the dropdown when hovered.")]
+    [SerializeField] private RectTransform topHoverZone;
 
     // =========================================================
-    // TEXT
+    // DAY / TIME TEXT
     // =========================================================
 
-    [Header("Day / Time Text")]
+    [Header("Day / Time")]
+    [SerializeField] private TMP_Text dayText;
+    [SerializeField] private TMP_Text timeText;
 
-    [SerializeField]
-    private TMP_Text dayText;
-
-    [SerializeField]
-    private TMP_Text timeText;
+    [Tooltip("Use AM / PM display instead of 24-hour time.")]
+    [SerializeField] private bool use12HourClock = true;
 
     // =========================================================
     // WEATHER
     // =========================================================
 
     [Header("Weather")]
+    [SerializeField] private Image weatherIcon;
+    [SerializeField] private TMP_Text weatherText;
 
-    [Tooltip(
-        "UI Image used to display the current weather icon."
-    )]
-    [SerializeField]
-    private Image weatherIcon;
+    [Header("Weather Icons")]
+    [SerializeField] private Sprite sunnyIcon;
+    [SerializeField] private Sprite rainIcon;
+    [SerializeField] private Sprite thunderIcon;
 
-    [Tooltip(
-        "Optional text showing the current weather name."
-    )]
-    [SerializeField]
-    private TMP_Text weatherText;
-
-    [Tooltip(
-        "Icon shown during Sunny weather."
-    )]
-    [SerializeField]
-    private Sprite sunnyIcon;
-
-    [Tooltip(
-        "Icon shown during Rain weather."
-    )]
-    [SerializeField]
-    private Sprite rainIcon;
-
-    [Tooltip(
-        "Icon shown during Rain + Thunder weather."
-    )]
-    [SerializeField]
-    private Sprite thunderIcon;
-
-    [Tooltip(
-        "How often the dropdown checks the WeatherManager."
-    )]
-    [SerializeField]
-    private float weatherRefreshInterval = 0.25f;
+    [Tooltip("How often the weather icon checks for changes.")]
+    [SerializeField] private float weatherRefreshInterval = 0.25f;
 
     // =========================================================
     // END DAY
     // =========================================================
 
     [Header("End Day")]
+    [SerializeField] private Button endDayButton;
 
-    [SerializeField]
-    private Button endDayButton;
+    // =========================================================
+    // BUTTON AUDIO
+    // =========================================================
 
-    [Tooltip(
-        "Called when the End Day button is pressed."
-    )]
-    [SerializeField]
-    private UnityEvent onEndDayPressed;
+    [Header("Dropdown Button Audio")]
+
+    [Tooltip("AudioSource used for dropdown button sounds. If empty, one will be found or created automatically.")]
+    [SerializeField] private AudioSource audioSource;
+
+    [Tooltip("Random sounds played when hovering over the End Day button.")]
+    [SerializeField] private AudioClip[] buttonHoverSounds = new AudioClip[3];
+
+    [Tooltip("Random sounds played when clicking the End Day button.")]
+    [SerializeField] private AudioClip[] buttonClickSounds = new AudioClip[3];
+
+    [Range(0f, 1f)]
+    [SerializeField] private float buttonHoverVolume = 0.6f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float buttonClickVolume = 0.8f;
+
+    [Header("Button Audio Pitch")]
+    [SerializeField] private float audioPitchMin = 0.95f;
+    [SerializeField] private float audioPitchMax = 1.05f;
+
+    // =========================================================
+    // OPEN / CLOSE
+    // =========================================================
+
+    [Header("Dropdown Behaviour")]
+
+    [Tooltip("Delay before opening after the mouse enters the top area.")]
+    [SerializeField] private float openDelay = 0.05f;
+
+    [Tooltip("Delay before closing after the mouse leaves.")]
+    [SerializeField] private float closeDelay = 0.20f;
+
+    [Tooltip("How quickly the dropdown slides.")]
+    [SerializeField] private float slideSpeed = 15f;
+
+    [Tooltip("How far downward the dropdown travels when opened.")]
+    [SerializeField] private float dropdownDistance = 150f;
 
     // =========================================================
     // DEFAULT DISPLAY
     // =========================================================
 
     [Header("Default Display")]
-
-    [SerializeField]
-    private int startingDay = 1;
-
-    [SerializeField]
-    private int startingHour = 6;
-
-    [SerializeField]
-    private int startingMinute = 0;
-
-    [SerializeField]
-    private bool use12HourClock = true;
-
-    // =========================================================
-    // DROPDOWN MOVEMENT
-    // =========================================================
-
-    [Header("Dropdown Movement")]
-
-    [Tooltip(
-        "How quickly the menu slides in and out."
-    )]
-    [SerializeField]
-    private float slideSpeed = 12f;
-
-    [Tooltip(
-        "How far downward the dropdown travels when opened."
-    )]
-    [SerializeField]
-    private float dropdownDistance = 100f;
-
-    // =========================================================
-    // HOVER BEHAVIOUR
-    // =========================================================
-
-    [Header("Hover Behaviour")]
-
-    [Tooltip(
-        "Small delay before the dropdown opens."
-    )]
-    [SerializeField]
-    private float openDelay = 0.05f;
-
-    [Tooltip(
-        "Small delay before the dropdown closes."
-    )]
-    [SerializeField]
-    private float closeDelay = 0.20f;
+    [SerializeField] private int defaultDay = 1;
+    [SerializeField] private int defaultHour = 6;
+    [SerializeField] private int defaultMinute = 0;
 
     // =========================================================
     // PRIVATE
     // =========================================================
 
-    private Vector2 shownPosition;
     private Vector2 hiddenPosition;
+    private Vector2 shownPosition;
 
-    private bool dropdownWanted = false;
-    private bool isVisible = false;
+    private bool dropdownOpen;
+    private bool positionsCached;
 
-    private float hoverTimer = 0f;
-    private float leaveTimer = 0f;
+    private float openTimer;
+    private float closeTimer;
 
-    private int currentDay;
-    private int currentHour;
-    private int currentMinute;
+    private float weatherTimer;
 
-    private float nextWeatherRefreshTime = 0f;
+    private int displayedDay;
+    private int displayedHour;
+    private int displayedMinute;
+
+    private EventTrigger endDayEventTrigger;
+    private EventTrigger.Entry hoverEntry;
 
     // =========================================================
     // START
@@ -180,7 +135,7 @@ public class TopDayDropdownUI : MonoBehaviour
     private void Start()
     {
         // -----------------------------------------------------
-        // AUTO FIND SELECTION WHEEL
+        // SELECTION WHEEL
         // -----------------------------------------------------
 
         if (selectionWheel == null)
@@ -190,7 +145,23 @@ public class TopDayDropdownUI : MonoBehaviour
         }
 
         // -----------------------------------------------------
-        // BUTTON
+        // END DAY SYSTEM
+        // -----------------------------------------------------
+
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        // -----------------------------------------------------
+        // AUDIO
+        // -----------------------------------------------------
+
+        SetupAudioSource();
+
+        // -----------------------------------------------------
+        // END DAY BUTTON
         // -----------------------------------------------------
 
         if (endDayButton != null)
@@ -198,61 +169,132 @@ public class TopDayDropdownUI : MonoBehaviour
             endDayButton.onClick.AddListener(
                 HandleEndDayButton
             );
+
+            SetupEndDayButtonHover();
         }
 
         // -----------------------------------------------------
-        // INITIAL DATE / TIME
+        // POSITIONS
         // -----------------------------------------------------
 
-        currentDay =
-            Mathf.Max(
-                1,
-                startingDay
-            );
-
-        currentHour =
-            Mathf.Clamp(
-                startingHour,
-                0,
-                23
-            );
-
-        currentMinute =
-            Mathf.Clamp(
-                startingMinute,
-                0,
-                59
-            );
-
-        RefreshDisplay();
-
-        // -----------------------------------------------------
-        // PANEL POSITIONS
-        // -----------------------------------------------------
+        CacheDropdownPositions();
 
         if (dropdownPanel != null)
         {
-            // Inspector position = hidden position.
-            hiddenPosition =
-                dropdownPanel.anchoredPosition;
-
-            // User controls how far down the panel travels.
-            shownPosition =
-                hiddenPosition +
-                new Vector2(
-                    0f,
-                    -dropdownDistance
-                );
-
             dropdownPanel.anchoredPosition =
                 hiddenPosition;
         }
 
+        dropdownOpen =
+            false;
+
         // -----------------------------------------------------
-        // WEATHER
+        // DEFAULT DISPLAY
         // -----------------------------------------------------
 
-        RefreshWeather();
+        displayedDay =
+            defaultDay;
+
+        displayedHour =
+            defaultHour;
+
+        displayedMinute =
+            defaultMinute;
+
+        // -----------------------------------------------------
+        // USE END DAY SYSTEM VALUES
+        // -----------------------------------------------------
+
+        if (endDaySystem != null)
+        {
+            displayedDay =
+                endDaySystem.GetCurrentDay();
+
+            displayedHour =
+                endDaySystem.GetCurrentHour();
+
+            displayedMinute =
+                endDaySystem.GetCurrentMinute();
+        }
+
+        RefreshDayText();
+        RefreshTimeText();
+        UpdateWeatherDisplay();
+    }
+
+    // =========================================================
+    // AUDIO SOURCE
+    // =========================================================
+
+    private void SetupAudioSource()
+    {
+        if (audioSource == null)
+        {
+            audioSource =
+                GetComponent<AudioSource>();
+        }
+
+        if (audioSource == null)
+        {
+            audioSource =
+                gameObject.AddComponent<AudioSource>();
+        }
+
+        audioSource.playOnAwake =
+            false;
+
+        audioSource.loop =
+            false;
+
+        audioSource.spatialBlend =
+            0f;
+    }
+
+    // =========================================================
+    // END DAY HOVER SETUP
+    // =========================================================
+
+    private void SetupEndDayButtonHover()
+    {
+        if (endDayButton == null)
+        {
+            return;
+        }
+
+        endDayEventTrigger =
+            endDayButton.GetComponent<EventTrigger>();
+
+        if (endDayEventTrigger == null)
+        {
+            endDayEventTrigger =
+                endDayButton.gameObject.AddComponent<EventTrigger>();
+        }
+
+        if (endDayEventTrigger.triggers == null)
+        {
+            endDayEventTrigger.triggers =
+                new List<EventTrigger.Entry>();
+        }
+
+        hoverEntry =
+            new EventTrigger.Entry();
+
+        hoverEntry.eventID =
+            EventTriggerType.PointerEnter;
+
+        hoverEntry.callback =
+            new EventTrigger.TriggerEvent();
+
+        hoverEntry.callback.AddListener(
+            (data) =>
+            {
+                PlayButtonHoverSound();
+            }
+        );
+
+        endDayEventTrigger.triggers.Add(
+            hoverEntry
+        );
     }
 
     // =========================================================
@@ -261,90 +303,135 @@ public class TopDayDropdownUI : MonoBehaviour
 
     private void Update()
     {
-        // =====================================================
-        // WEATHER UPDATE
-        // =====================================================
+        // -----------------------------------------------------
+        // FIND SYSTEM IF NEEDED
+        // -----------------------------------------------------
 
-        if (Time.unscaledTime >=
-            nextWeatherRefreshTime)
+        if (endDaySystem == null)
         {
-            RefreshWeather();
-
-            nextWeatherRefreshTime =
-                Time.unscaledTime +
-                weatherRefreshInterval;
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
         }
 
-        // =====================================================
-        // ONLY ALLOW IN INSPECTOR MODE
-        // =====================================================
-
-        if (!CanUseDropdown())
+        if (selectionWheel == null)
         {
-            ForceClose();
+            selectionWheel =
+                FindFirstObjectByType<SelectionWheel>();
+        }
 
-            AnimateDropdown();
+        // -----------------------------------------------------
+        // DAY / TIME
+        // -----------------------------------------------------
+
+        UpdateDayAndTimeFromSystem();
+
+        // -----------------------------------------------------
+        // WEATHER
+        // -----------------------------------------------------
+
+        weatherTimer +=
+            Time.unscaledDeltaTime;
+
+        if (weatherTimer >=
+            weatherRefreshInterval)
+        {
+            weatherTimer =
+                0f;
+
+            UpdateWeatherDisplay();
+        }
+
+        // -----------------------------------------------------
+        // TRANSITION RUNNING
+        // -----------------------------------------------------
+
+        if (endDaySystem != null &&
+            endDaySystem.IsTransitionRunning())
+        {
+            CloseDropdownImmediately();
 
             return;
         }
 
-        // =====================================================
-        // CHECK MOUSE
-        // =====================================================
+        // -----------------------------------------------------
+        // NORMAL MODE ONLY
+        // -----------------------------------------------------
 
-        bool mouseInTopZone =
-            IsMouseInside(
+        if (!CanUseDropdown())
+        {
+            CloseDropdownImmediately();
+
+            return;
+        }
+
+        // -----------------------------------------------------
+        // HOVER
+        // -----------------------------------------------------
+
+        bool hoveringTop =
+            IsPointerOverRect(
                 topHoverZone
             );
 
-        bool mouseInDropdown =
-            IsMouseInside(
+        bool hoveringPanel =
+            dropdownOpen &&
+            IsPointerOverRect(
                 dropdownPanel
             );
 
-        bool wantsOpen =
-            mouseInTopZone ||
-            mouseInDropdown;
+        bool shouldStayOpen =
+            hoveringTop ||
+            hoveringPanel;
 
-        // =====================================================
-        // OPEN
-        // =====================================================
+        // -----------------------------------------------------
+        // OPEN TIMER
+        // -----------------------------------------------------
 
-        if (wantsOpen)
+        if (!dropdownOpen &&
+            hoveringTop)
         {
-            leaveTimer = 0f;
-
-            hoverTimer +=
+            openTimer +=
                 Time.unscaledDeltaTime;
 
-            if (hoverTimer >=
+            if (openTimer >=
                 openDelay)
             {
-                dropdownWanted =
-                    true;
+                OpenDropdown();
             }
         }
-
-        // =====================================================
-        // CLOSE
-        // =====================================================
-
         else
         {
-            hoverTimer = 0f;
-
-            leaveTimer +=
-                Time.unscaledDeltaTime;
-
-            if (leaveTimer >=
-                closeDelay)
-            {
-                dropdownWanted =
-                    false;
-            }
+            openTimer =
+                0f;
         }
 
-        AnimateDropdown();
+        // -----------------------------------------------------
+        // CLOSE TIMER
+        // -----------------------------------------------------
+
+        if (dropdownOpen &&
+            !shouldStayOpen)
+        {
+            closeTimer +=
+                Time.unscaledDeltaTime;
+
+            if (closeTimer >=
+                closeDelay)
+            {
+                CloseDropdown();
+            }
+        }
+        else
+        {
+            closeTimer =
+                0f;
+        }
+
+        // -----------------------------------------------------
+        // SLIDE
+        // -----------------------------------------------------
+
+        UpdateDropdownPosition();
     }
 
     // =========================================================
@@ -355,6 +442,11 @@ public class TopDayDropdownUI : MonoBehaviour
     {
         if (selectionWheel == null)
         {
+            return true;
+        }
+
+        if (!selectionWheel.IsNormalMode())
+        {
             return false;
         }
 
@@ -363,19 +455,622 @@ public class TopDayDropdownUI : MonoBehaviour
             return false;
         }
 
-        if (!selectionWheel.IsInspectorMode())
-        {
-            return false;
-        }
-
         return true;
     }
 
     // =========================================================
-    // MOUSE INSIDE UI
+    // UPDATE DAY / TIME
     // =========================================================
 
-    private bool IsMouseInside(
+    private void UpdateDayAndTimeFromSystem()
+    {
+        if (endDaySystem == null)
+        {
+            return;
+        }
+
+        int newDay =
+            endDaySystem.GetCurrentDay();
+
+        int newHour =
+            endDaySystem.GetCurrentHour();
+
+        int newMinute =
+            endDaySystem.GetCurrentMinute();
+
+        // -----------------------------------------------------
+        // DAY CHANGED
+        // -----------------------------------------------------
+
+        if (newDay !=
+            displayedDay)
+        {
+            displayedDay =
+                newDay;
+
+            RefreshDayText();
+        }
+
+        // -----------------------------------------------------
+        // TIME CHANGED
+        // -----------------------------------------------------
+
+        if (newHour !=
+                displayedHour ||
+            newMinute !=
+                displayedMinute)
+        {
+            displayedHour =
+                newHour;
+
+            displayedMinute =
+                newMinute;
+
+            RefreshTimeText();
+        }
+    }
+
+    // =========================================================
+    // DAY
+    // =========================================================
+
+    public void SetDay(
+        int day)
+    {
+        displayedDay =
+            Mathf.Max(
+                1,
+                day
+            );
+
+        RefreshDayText();
+    }
+
+    private void RefreshDayText()
+    {
+        if (dayText == null)
+        {
+            return;
+        }
+
+        dayText.text =
+            "DAY " +
+            displayedDay;
+    }
+
+    // =========================================================
+    // TIME
+    // =========================================================
+
+    public void SetTime(
+        int hour,
+        int minute)
+    {
+        displayedHour =
+            Mathf.Clamp(
+                hour,
+                0,
+                23
+            );
+
+        displayedMinute =
+            Mathf.Clamp(
+                minute,
+                0,
+                59
+            );
+
+        RefreshTimeText();
+    }
+
+    public void SetDayAndTime(
+        int day,
+        int hour,
+        int minute)
+    {
+        SetDay(
+            day
+        );
+
+        SetTime(
+            hour,
+            minute
+        );
+    }
+
+    private void RefreshTimeText()
+    {
+        if (timeText == null)
+        {
+            return;
+        }
+
+        // =====================================================
+        // 24 HOUR
+        // =====================================================
+
+        if (!use12HourClock)
+        {
+            timeText.text =
+                displayedHour.ToString("00") +
+                ":" +
+                displayedMinute.ToString("00");
+
+            return;
+        }
+
+        // =====================================================
+        // 12 HOUR
+        // =====================================================
+
+        string period =
+            displayedHour >= 12
+                ? "PM"
+                : "AM";
+
+        int displayHour =
+            displayedHour % 12;
+
+        if (displayHour == 0)
+        {
+            displayHour =
+                12;
+        }
+
+        timeText.text =
+            displayHour +
+            ":" +
+            displayedMinute.ToString("00") +
+            " " +
+            period;
+    }
+
+    // =========================================================
+    // WEATHER
+    // =========================================================
+
+    public void UpdateWeatherDisplay()
+    {
+        if (WeatherManager.Instance == null)
+        {
+            return;
+        }
+
+        // Using ToString keeps this compatible with the
+        // existing WeatherManager enum without requiring
+        // the enum type to be duplicated here.
+
+        string weather =
+            WeatherManager.Instance
+                .GetCurrentWeather()
+                .ToString();
+
+        // =====================================================
+        // SUNNY
+        // =====================================================
+
+        if (weather ==
+            "Sunny")
+        {
+            if (weatherIcon != null)
+            {
+                weatherIcon.sprite =
+                    sunnyIcon;
+            }
+
+            if (weatherText != null)
+            {
+                weatherText.text =
+                    "Sunny";
+            }
+
+            return;
+        }
+
+        // =====================================================
+        // RAIN
+        // =====================================================
+
+        if (weather ==
+            "Rain")
+        {
+            if (weatherIcon != null)
+            {
+                weatherIcon.sprite =
+                    rainIcon;
+            }
+
+            if (weatherText != null)
+            {
+                weatherText.text =
+                    "Rain";
+            }
+
+            return;
+        }
+
+        // =====================================================
+        // THUNDER STORM
+        // =====================================================
+
+        if (weather ==
+                "RainAndThunder" ||
+            weather ==
+                "Thunder" ||
+            weather ==
+                "Storm")
+        {
+            if (weatherIcon != null)
+            {
+                weatherIcon.sprite =
+                    thunderIcon;
+            }
+
+            if (weatherText != null)
+            {
+                weatherText.text =
+                    "Storm";
+            }
+
+            return;
+        }
+    }
+
+    // =========================================================
+    // END DAY BUTTON
+    // =========================================================
+
+    private void HandleEndDayButton()
+    {
+        // -----------------------------------------------------
+        // BUTTON CLICK SFX
+        // -----------------------------------------------------
+
+        PlayButtonClickSound();
+
+        // -----------------------------------------------------
+        // FIND SYSTEM
+        // -----------------------------------------------------
+
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        if (endDaySystem == null)
+        {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // ALREADY TRANSITIONING
+        // -----------------------------------------------------
+
+        if (endDaySystem.IsTransitionRunning())
+        {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // CLOSE DROPDOWN
+        // -----------------------------------------------------
+
+        CloseDropdown();
+
+        // -----------------------------------------------------
+        // END DAY
+        // -----------------------------------------------------
+
+        endDaySystem.EndDay();
+    }
+
+    // =========================================================
+    // BUTTON HOVER AUDIO
+    // =========================================================
+
+    private void PlayButtonHoverSound()
+    {
+        if (endDayButton == null)
+        {
+            return;
+        }
+
+        if (!endDayButton.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        if (!endDayButton.interactable)
+        {
+            return;
+        }
+
+        PlayRandomSound(
+            buttonHoverSounds,
+            buttonHoverVolume
+        );
+    }
+
+    // =========================================================
+    // BUTTON CLICK AUDIO
+    // =========================================================
+
+    private void PlayButtonClickSound()
+    {
+        if (endDayButton == null ||
+            !endDayButton.interactable)
+        {
+            return;
+        }
+
+        PlayRandomSound(
+            buttonClickSounds,
+            buttonClickVolume
+        );
+    }
+
+    // =========================================================
+    // RANDOM AUDIO
+    // =========================================================
+
+    private void PlayRandomSound(
+        AudioClip[] clips,
+        float volume)
+    {
+        if (audioSource == null)
+        {
+            SetupAudioSource();
+        }
+
+        if (audioSource == null ||
+            clips == null ||
+            clips.Length == 0)
+        {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // COUNT VALID CLIPS
+        // -----------------------------------------------------
+
+        int validCount =
+            0;
+
+        for (int i = 0;
+             i < clips.Length;
+             i++)
+        {
+            if (clips[i] != null)
+            {
+                validCount++;
+            }
+        }
+
+        if (validCount == 0)
+        {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // PICK RANDOM VALID CLIP
+        // -----------------------------------------------------
+
+        int chosenValidIndex =
+            Random.Range(
+                0,
+                validCount
+            );
+
+        AudioClip chosenClip =
+            null;
+
+        int currentValidIndex =
+            0;
+
+        for (int i = 0;
+             i < clips.Length;
+             i++)
+        {
+            if (clips[i] == null)
+            {
+                continue;
+            }
+
+            if (currentValidIndex ==
+                chosenValidIndex)
+            {
+                chosenClip =
+                    clips[i];
+
+                break;
+            }
+
+            currentValidIndex++;
+        }
+
+        if (chosenClip == null)
+        {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // RANDOM PITCH
+        // -----------------------------------------------------
+
+        float oldPitch =
+            audioSource.pitch;
+
+        audioSource.pitch =
+            Random.Range(
+                audioPitchMin,
+                audioPitchMax
+            );
+
+        // -----------------------------------------------------
+        // PLAY
+        // -----------------------------------------------------
+
+        audioSource.PlayOneShot(
+            chosenClip,
+            volume
+        );
+
+        audioSource.pitch =
+            oldPitch;
+    }
+
+    // =========================================================
+    // END DAY INTERACTABLE
+    // =========================================================
+
+    public void SetEndDayInteractable(
+        bool interactable)
+    {
+        if (endDayButton == null)
+        {
+            return;
+        }
+
+        endDayButton.interactable =
+            interactable;
+    }
+
+    // =========================================================
+    // OPEN DROPDOWN
+    // =========================================================
+
+    public void OpenDropdown()
+    {
+        if (!CanUseDropdown())
+        {
+            return;
+        }
+
+        dropdownOpen =
+            true;
+
+        openTimer =
+            0f;
+
+        closeTimer =
+            0f;
+    }
+
+    // =========================================================
+    // CLOSE DROPDOWN
+    // =========================================================
+
+    public void CloseDropdown()
+    {
+        dropdownOpen =
+            false;
+
+        openTimer =
+            0f;
+
+        closeTimer =
+            0f;
+    }
+
+    // =========================================================
+    // CLOSE IMMEDIATELY
+    // =========================================================
+
+    private void CloseDropdownImmediately()
+    {
+        dropdownOpen =
+            false;
+
+        openTimer =
+            0f;
+
+        closeTimer =
+            0f;
+
+        if (dropdownPanel != null)
+        {
+            dropdownPanel.anchoredPosition =
+                hiddenPosition;
+        }
+    }
+
+    // =========================================================
+    // IS OPEN
+    // =========================================================
+
+    public bool IsDropdownOpen()
+    {
+        return dropdownOpen;
+    }
+
+    // =========================================================
+    // CACHE POSITIONS
+    // =========================================================
+
+    private void CacheDropdownPositions()
+    {
+        if (positionsCached ||
+            dropdownPanel == null)
+        {
+            return;
+        }
+
+        hiddenPosition =
+            dropdownPanel.anchoredPosition;
+
+        shownPosition =
+            hiddenPosition +
+            new Vector2(
+                0f,
+                -dropdownDistance
+            );
+
+        positionsCached =
+            true;
+    }
+
+    // =========================================================
+    // MOVE DROPDOWN
+    // =========================================================
+
+    private void UpdateDropdownPosition()
+    {
+        if (dropdownPanel == null)
+        {
+            return;
+        }
+
+        if (!positionsCached)
+        {
+            CacheDropdownPositions();
+        }
+
+        Vector2 target =
+            dropdownOpen
+                ? shownPosition
+                : hiddenPosition;
+
+        float smoothing =
+            1f -
+            Mathf.Exp(
+                -slideSpeed *
+                Time.unscaledDeltaTime
+            );
+
+        dropdownPanel.anchoredPosition =
+            Vector2.Lerp(
+                dropdownPanel.anchoredPosition,
+                target,
+                smoothing
+            );
+    }
+
+    // =========================================================
+    // POINTER OVER RECT
+    // =========================================================
+
+    private bool IsPointerOverRect(
         RectTransform rect)
     {
         if (rect == null)
@@ -398,432 +1093,40 @@ public class TopDayDropdownUI : MonoBehaviour
         }
 
         return
-            RectTransformUtility
-                .RectangleContainsScreenPoint(
-                    rect,
-                    Input.mousePosition,
-                    uiCamera
-                );
-    }
-
-    // =========================================================
-    // ANIMATE DROPDOWN
-    // =========================================================
-
-    private void AnimateDropdown()
-    {
-        if (dropdownPanel == null)
-        {
-            return;
-        }
-
-        Vector2 targetPosition =
-            dropdownWanted
-                ? shownPosition
-                : hiddenPosition;
-
-        dropdownPanel.anchoredPosition =
-            Vector2.Lerp(
-                dropdownPanel.anchoredPosition,
-                targetPosition,
-                Time.unscaledDeltaTime *
-                slideSpeed
+            RectTransformUtility.RectangleContainsScreenPoint(
+                rect,
+                Input.mousePosition,
+                uiCamera
             );
-
-        if (Vector2.Distance(
-                dropdownPanel.anchoredPosition,
-                targetPosition
-            ) < 0.1f)
-        {
-            dropdownPanel.anchoredPosition =
-                targetPosition;
-        }
-
-        isVisible =
-            dropdownWanted;
     }
 
     // =========================================================
-    // FORCE CLOSE
-    // =========================================================
-
-    private void ForceClose()
-    {
-        dropdownWanted =
-            false;
-
-        hoverTimer =
-            0f;
-
-        leaveTimer =
-            0f;
-    }
-
-    // =========================================================
-    // WEATHER
-    // =========================================================
-
-    private void RefreshWeather()
-    {
-        if (WeatherManager.Instance == null)
-        {
-            if (weatherText != null)
-            {
-                weatherText.text =
-                    "Weather";
-            }
-
-            return;
-        }
-
-        WeatherManager.WeatherType currentWeather =
-            WeatherManager.Instance
-                .GetCurrentWeather();
-
-        switch (currentWeather)
-        {
-            // =================================================
-            // SUNNY
-            // =================================================
-
-            case WeatherManager.WeatherType.Sunny:
-
-                if (weatherIcon != null)
-                {
-                    weatherIcon.sprite =
-                        sunnyIcon;
-                }
-
-                if (weatherText != null)
-                {
-                    weatherText.text =
-                        "Sunny";
-                }
-
-                break;
-
-            // =================================================
-            // RAIN
-            // =================================================
-
-            case WeatherManager.WeatherType.Rain:
-
-                if (weatherIcon != null)
-                {
-                    weatherIcon.sprite =
-                        rainIcon;
-                }
-
-                if (weatherText != null)
-                {
-                    weatherText.text =
-                        "Rain";
-                }
-
-                break;
-
-            // =================================================
-            // RAIN + THUNDER
-            // =================================================
-
-            case WeatherManager.WeatherType.RainAndThunder:
-
-                if (weatherIcon != null)
-                {
-                    weatherIcon.sprite =
-                        thunderIcon;
-                }
-
-                if (weatherText != null)
-                {
-                    weatherText.text =
-                        "Storm";
-                }
-
-                break;
-        }
-
-        // Keep pixel icons from stretching strangely.
-
-        if (weatherIcon != null)
-        {
-            weatherIcon.preserveAspect =
-                true;
-        }
-    }
-
-    // =========================================================
-    // END DAY BUTTON
-    // =========================================================
-
-    private void HandleEndDayButton()
-    {
-        if (!CanUseDropdown())
-        {
-            return;
-        }
-
-        onEndDayPressed?.Invoke();
-    }
-
-    // =========================================================
-    // DAY
-    // =========================================================
-
-    public void SetDay(
-        int day)
-    {
-        currentDay =
-            Mathf.Max(
-                1,
-                day
-            );
-
-        RefreshDayText();
-    }
-
-    // =========================================================
-    // TIME
-    // =========================================================
-
-    public void SetTime(
-        int hour,
-        int minute)
-    {
-        currentHour =
-            Mathf.Clamp(
-                hour,
-                0,
-                23
-            );
-
-        currentMinute =
-            Mathf.Clamp(
-                minute,
-                0,
-                59
-            );
-
-        RefreshTimeText();
-    }
-
-    // =========================================================
-    // SET DAY + TIME
-    // =========================================================
-
-    public void SetDayAndTime(
-        int day,
-        int hour,
-        int minute)
-    {
-        currentDay =
-            Mathf.Max(
-                1,
-                day
-            );
-
-        currentHour =
-            Mathf.Clamp(
-                hour,
-                0,
-                23
-            );
-
-        currentMinute =
-            Mathf.Clamp(
-                minute,
-                0,
-                59
-            );
-
-        RefreshDisplay();
-    }
-
-    // =========================================================
-    // END DAY BUTTON STATE
-    // =========================================================
-
-    public void SetEndDayInteractable(
-        bool interactable)
-    {
-        if (endDayButton != null)
-        {
-            endDayButton.interactable =
-                interactable;
-        }
-    }
-
-    // =========================================================
-    // REFRESH DISPLAY
-    // =========================================================
-
-    private void RefreshDisplay()
-    {
-        RefreshDayText();
-        RefreshTimeText();
-        RefreshWeather();
-    }
-
-    // =========================================================
-    // DAY TEXT
-    // =========================================================
-
-    private void RefreshDayText()
-    {
-        if (dayText == null)
-        {
-            return;
-        }
-
-        dayText.text =
-            "DAY " +
-            currentDay;
-    }
-
-    // =========================================================
-    // TIME TEXT
-    // =========================================================
-
-    private void RefreshTimeText()
-    {
-        if (timeText == null)
-        {
-            return;
-        }
-
-        // =====================================================
-        // 24 HOUR CLOCK
-        // =====================================================
-
-        if (!use12HourClock)
-        {
-            timeText.text =
-                currentHour.ToString("00") +
-                ":" +
-                currentMinute.ToString("00");
-
-            return;
-        }
-
-        // =====================================================
-        // 12 HOUR CLOCK
-        // =====================================================
-
-        string suffix =
-            currentHour >= 12
-                ? "PM"
-                : "AM";
-
-        int displayHour =
-            currentHour % 12;
-
-        if (displayHour == 0)
-        {
-            displayHour =
-                12;
-        }
-
-        timeText.text =
-            displayHour.ToString("00") +
-            ":" +
-            currentMinute.ToString("00") +
-            " " +
-            suffix;
-    }
-
-    // =========================================================
-    // PUBLIC WEATHER REFRESH
-    // =========================================================
-
-    public void UpdateWeatherDisplay()
-    {
-        RefreshWeather();
-    }
-
-    // =========================================================
-    // PUBLIC OPEN / CLOSE
-    // =========================================================
-
-    public void OpenDropdown()
-    {
-        if (!CanUseDropdown())
-        {
-            return;
-        }
-
-        dropdownWanted =
-            true;
-    }
-
-    public void CloseDropdown()
-    {
-        ForceClose();
-    }
-
-    public bool IsDropdownOpen()
-    {
-        return isVisible;
-    }
-
-    // =========================================================
-    // DEBUG
-    // =========================================================
-
-    [ContextMenu("Debug - Open Dropdown")]
-    private void DebugOpen()
-    {
-        dropdownWanted =
-            true;
-    }
-
-    [ContextMenu("Debug - Close Dropdown")]
-    private void DebugClose()
-    {
-        dropdownWanted =
-            false;
-    }
-
-    [ContextMenu("Debug - Next Day")]
-    private void DebugNextDay()
-    {
-        SetDay(
-            currentDay + 1
-        );
-    }
-
-    [ContextMenu("Debug - Add 1 Hour")]
-    private void DebugAddHour()
-    {
-        int newHour =
-            currentHour + 1;
-
-        if (newHour >= 24)
-        {
-            newHour = 0;
-        }
-
-        SetTime(
-            newHour,
-            currentMinute
-        );
-    }
-
-    [ContextMenu("Debug - Refresh Weather")]
-    private void DebugRefreshWeather()
-    {
-        RefreshWeather();
-    }
-
-    // =========================================================
-    // CLEANUP
+    // DESTROY
     // =========================================================
 
     private void OnDestroy()
     {
+        // -----------------------------------------------------
+        // BUTTON CLICK LISTENER
+        // -----------------------------------------------------
+
         if (endDayButton != null)
         {
             endDayButton.onClick.RemoveListener(
                 HandleEndDayButton
+            );
+        }
+
+        // -----------------------------------------------------
+        // HOVER LISTENER
+        // -----------------------------------------------------
+
+        if (endDayEventTrigger != null &&
+            hoverEntry != null &&
+            endDayEventTrigger.triggers != null)
+        {
+            endDayEventTrigger.triggers.Remove(
+                hoverEntry
             );
         }
     }
