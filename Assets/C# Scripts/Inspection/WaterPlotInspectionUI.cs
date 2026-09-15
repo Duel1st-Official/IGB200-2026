@@ -15,6 +15,7 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Canvas canvas;
     [SerializeField] private SelectionWheel selectionWheel;
+    [SerializeField] private EndDaySystem endDaySystem;
 
     [Tooltip("The entire Water Plot inspection window.")]
     [SerializeField] private RectTransform panel;
@@ -83,27 +84,24 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
 
     [SerializeField] private string cleanButtonNormalText = "CLEAN WATER";
     [SerializeField] private string cleanButtonBusyText = "CLEANING...";
+    [SerializeField] private string cleanButtonLockedText = "DAY ENDED";
 
     // =========================================================
-    // CLEAN BUTTON AUDIO
+    // AUDIO
     // =========================================================
 
     [Header("Clean Button Audio")]
 
-    [Tooltip("AudioSource used for Water Plot UI sounds. If empty, one is automatically found or created.")]
     [SerializeField] private AudioSource audioSource;
 
-    [Tooltip("Random sound played when hovering over Clean Water.")]
     [SerializeField]
     private AudioClip[] cleanButtonHoverSounds =
         new AudioClip[3];
 
-    [Tooltip("Random sound played when Clean Water is clicked.")]
     [SerializeField]
     private AudioClip[] cleanButtonClickSounds =
         new AudioClip[3];
 
-    [Tooltip("Actual cleaning/splash sound played when the water changes stage.")]
     [SerializeField]
     private AudioClip[] waterCleaningSounds =
         new AudioClip[3];
@@ -141,10 +139,6 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private bool clampToCanvas = true;
     [SerializeField] private float canvasPadding = 10f;
 
-    // =========================================================
-    // DRAG VISUALS
-    // =========================================================
-
     [Header("Drag Visuals")]
     [SerializeField] private float dragScale = 0.92f;
     [SerializeField] private float dragScaleSpeed = 12f;
@@ -168,7 +162,7 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private float alphaSmoothSpeed = 10f;
 
     // =========================================================
-    // OPEN ANIMATION
+    // ANIMATION
     // =========================================================
 
     [Header("Open Animation")]
@@ -178,33 +172,21 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private float popDuration = 0.1f;
     [SerializeField] private float settleDuration = 0.1f;
 
-    // =========================================================
-    // CLOSE ANIMATION
-    // =========================================================
-
     [Header("Close Animation")]
     [SerializeField] private float closingScale = 0.65f;
     [SerializeField] private float closeDuration = 0.14f;
     [SerializeField] private bool fadeWhileClosing = true;
 
     // =========================================================
-    // OUTSIDE CLICK
+    // BEHAVIOUR
     // =========================================================
 
     [Header("Outside Click")]
     [SerializeField] private bool closeWhenClickingOutside = true;
 
-    // =========================================================
-    // MODE BEHAVIOUR
-    // =========================================================
-
     [Header("Mode Behaviour")]
     [SerializeField] private bool closeWhenChangingMode = true;
     [SerializeField] private bool closeWhenSelectionWheelOpens = true;
-
-    // =========================================================
-    // DEBUG
-    // =========================================================
 
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
@@ -224,7 +206,6 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     private bool isDragging;
     private bool manuallyPositioned;
     private bool ignoreOutsideClick;
-
     private bool isCleaning;
 
     private Vector2 dragOffset;
@@ -232,144 +213,22 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
 
     private float currentSwayAngle;
 
-    private EventTrigger cleanButtonEventTrigger;
-    private EventTrigger.Entry cleanHoverEntry;
-
     // =========================================================
     // START
     // =========================================================
 
     private void Start()
     {
-        // -----------------------------------------------------
-        // CAMERA
-        // -----------------------------------------------------
-
-        if (mainCamera == null)
-        {
-            mainCamera =
-                Camera.main;
-        }
-
-        // -----------------------------------------------------
-        // CANVAS
-        // -----------------------------------------------------
-
-        if (canvas == null)
-        {
-            canvas =
-                GetComponentInParent<Canvas>();
-        }
-
-        // -----------------------------------------------------
-        // SELECTION WHEEL
-        // -----------------------------------------------------
-
-        if (selectionWheel == null)
-        {
-            selectionWheel =
-                FindFirstObjectByType<SelectionWheel>();
-        }
-
-        // -----------------------------------------------------
-        // PLAYER MOVEMENT
-        // -----------------------------------------------------
-
-        if (playerMovement == null)
-        {
-            playerMovement =
-                FindFirstObjectByType<PlayerMovement>();
-        }
-
-        // -----------------------------------------------------
-        // PLAYER ANIMATOR
-        // -----------------------------------------------------
-
-        if (playerAnimator == null &&
-            playerMovement != null)
-        {
-            playerAnimator =
-                playerMovement.GetComponent<Animator>();
-        }
-
-        if (playerAnimator == null)
-        {
-            GameObject playerObject =
-                GameObject.FindGameObjectWithTag(
-                    "Player"
-                );
-
-            if (playerObject != null)
-            {
-                playerAnimator =
-                    playerObject.GetComponent<Animator>();
-
-                if (playerAnimator == null)
-                {
-                    playerAnimator =
-                        playerObject.GetComponentInChildren<Animator>();
-                }
-            }
-        }
-
-        // -----------------------------------------------------
-        // PANEL
-        // -----------------------------------------------------
-
-        if (panel == null)
-        {
-            panel =
-                transform as RectTransform;
-        }
-
-        // -----------------------------------------------------
-        // CANVAS GROUP
-        // -----------------------------------------------------
-
-        if (canvasGroup == null &&
-            panel != null)
-        {
-            canvasGroup =
-                panel.GetComponent<CanvasGroup>();
-
-            if (canvasGroup == null)
-            {
-                canvasGroup =
-                    panel.gameObject.AddComponent<CanvasGroup>();
-            }
-        }
-
-        if (canvasGroup != null)
-        {
-            canvasGroup.alpha =
-                normalAlpha;
-        }
-
-        // -----------------------------------------------------
-        // QUALITY SLIDER
-        // -----------------------------------------------------
+        AutoAssignReferences();
 
         if (qualitySlider != null)
         {
-            qualitySlider.minValue =
-                0f;
-
-            qualitySlider.maxValue =
-                100f;
-
-            qualitySlider.interactable =
-                false;
+            qualitySlider.minValue = 0f;
+            qualitySlider.maxValue = 100f;
+            qualitySlider.interactable = false;
         }
 
-        // -----------------------------------------------------
-        // AUDIO
-        // -----------------------------------------------------
-
         SetupAudioSource();
-
-        // -----------------------------------------------------
-        // CLEAN BUTTON
-        // -----------------------------------------------------
 
         if (cleanButton != null)
         {
@@ -380,10 +239,6 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             SetupCleanButtonHover();
         }
 
-        // -----------------------------------------------------
-        // CLOSE BUTTON
-        // -----------------------------------------------------
-
         if (closeButton != null)
         {
             closeButton.onClick.AddListener(
@@ -391,91 +246,100 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             );
         }
 
-        // -----------------------------------------------------
-        // START CLOSED
-        // -----------------------------------------------------
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = normalAlpha;
+        }
 
         if (panel != null)
         {
-            panel.gameObject.SetActive(
-                false
-            );
+            panel.gameObject.SetActive(false);
         }
     }
 
     // =========================================================
-    // AUDIO SETUP
+    // REFERENCES
     // =========================================================
 
-    private void SetupAudioSource()
+    private void AutoAssignReferences()
     {
-        if (audioSource == null)
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
+        if (canvas == null)
+            canvas = GetComponentInParent<Canvas>();
+
+        if (selectionWheel == null)
+            selectionWheel =
+                FindFirstObjectByType<SelectionWheel>();
+
+        if (endDaySystem == null)
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+
+        if (playerMovement == null)
+            playerMovement =
+                FindFirstObjectByType<PlayerMovement>();
+
+        if (playerAnimator == null &&
+            playerMovement != null)
         {
-            audioSource =
-                GetComponent<AudioSource>();
+            playerAnimator =
+                playerMovement.GetComponent<Animator>();
         }
 
-        if (audioSource == null)
+        if (playerAnimator == null)
         {
-            audioSource =
-                gameObject.AddComponent<AudioSource>();
-        }
+            GameObject player =
+                GameObject.FindGameObjectWithTag("Player");
 
-        audioSource.playOnAwake =
-            false;
-
-        audioSource.loop =
-            false;
-
-        audioSource.spatialBlend =
-            0f;
-    }
-
-    // =========================================================
-    // CLEAN BUTTON HOVER
-    // =========================================================
-
-    private void SetupCleanButtonHover()
-    {
-        if (cleanButton == null)
-        {
-            return;
-        }
-
-        cleanButtonEventTrigger =
-            cleanButton.GetComponent<EventTrigger>();
-
-        if (cleanButtonEventTrigger == null)
-        {
-            cleanButtonEventTrigger =
-                cleanButton.gameObject.AddComponent<EventTrigger>();
-        }
-
-        if (cleanButtonEventTrigger.triggers == null)
-        {
-            cleanButtonEventTrigger.triggers =
-                new List<EventTrigger.Entry>();
-        }
-
-        cleanHoverEntry =
-            new EventTrigger.Entry();
-
-        cleanHoverEntry.eventID =
-            EventTriggerType.PointerEnter;
-
-        cleanHoverEntry.callback =
-            new EventTrigger.TriggerEvent();
-
-        cleanHoverEntry.callback.AddListener(
-            (data) =>
+            if (player != null)
             {
-                PlayCleanButtonHoverSound();
-            }
-        );
+                playerAnimator =
+                    player.GetComponent<Animator>();
 
-        cleanButtonEventTrigger.triggers.Add(
-            cleanHoverEntry
-        );
+                if (playerAnimator == null)
+                {
+                    playerAnimator =
+                        player.GetComponentInChildren<Animator>();
+                }
+            }
+        }
+
+        if (panel == null)
+            panel = transform as RectTransform;
+
+        if (canvasGroup == null &&
+            panel != null)
+        {
+            canvasGroup =
+                panel.GetComponent<CanvasGroup>();
+
+            if (canvasGroup == null)
+            {
+                canvasGroup =
+                    panel.gameObject
+                        .AddComponent<CanvasGroup>();
+            }
+        }
+    }
+
+    // =========================================================
+    // ACTION PHASE
+    // =========================================================
+
+    private bool IsActionPhaseActive()
+    {
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        if (endDaySystem == null)
+            return true;
+
+        return endDaySystem.IsActionPhaseActive();
     }
 
     // =========================================================
@@ -498,9 +362,7 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         HandleDragging();
-
         UpdateDragVisuals();
-
         RefreshUI();
 
         if (closeWhenClickingOutside &&
@@ -509,10 +371,6 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             HandleOutsideClick();
         }
     }
-
-    // =========================================================
-    // LATE UPDATE
-    // =========================================================
 
     private void LateUpdate()
     {
@@ -534,15 +392,13 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     }
 
     // =========================================================
-    // MODE CHECK
+    // MODE
     // =========================================================
 
     private bool ShouldCloseBecauseOfMode()
     {
         if (selectionWheel == null)
-        {
             return false;
-        }
 
         if (closeWhenChangingMode &&
             !selectionWheel.IsNormalMode())
@@ -572,128 +428,55 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        // -----------------------------------------------------
-        // INSPECTION MANAGER
-        // -----------------------------------------------------
-
         if (InspectionUIManager.Instance != null)
         {
-            InspectionUIManager.Instance.OpenPanel(
-                this
-            );
+            InspectionUIManager.Instance.OpenPanel(this);
         }
-
-        // -----------------------------------------------------
-        // OLD WATER PLOT
-        // -----------------------------------------------------
 
         ClearCurrentWaterPlotHighlight();
 
-        // -----------------------------------------------------
-        // OLD ANIMATION
-        // -----------------------------------------------------
-
         if (animationCoroutine != null)
         {
-            StopCoroutine(
-                animationCoroutine
-            );
-
-            animationCoroutine =
-                null;
+            StopCoroutine(animationCoroutine);
+            animationCoroutine = null;
         }
 
-        // -----------------------------------------------------
-        // CURRENT WATER PLOT
-        // -----------------------------------------------------
-
-        currentWaterPlot =
-            waterPlot;
-
-        // -----------------------------------------------------
-        // FIND INTERACTIVE COMPONENT
-        // -----------------------------------------------------
+        currentWaterPlot = waterPlot;
 
         currentInteractiveWaterPlot =
             waterPlot.GetComponent<InteractiveWaterPlot>();
 
         if (currentInteractiveWaterPlot == null)
-        {
             currentInteractiveWaterPlot =
                 waterPlot.GetComponentInChildren<InteractiveWaterPlot>();
-        }
 
         if (currentInteractiveWaterPlot == null)
-        {
             currentInteractiveWaterPlot =
                 waterPlot.GetComponentInParent<InteractiveWaterPlot>();
-        }
-
-        // -----------------------------------------------------
-        // INSPECTED OUTLINE
-        // -----------------------------------------------------
 
         if (currentInteractiveWaterPlot != null)
-        {
-            currentInteractiveWaterPlot.SetInspected(
-                true
-            );
-        }
+            currentInteractiveWaterPlot.SetInspected(true);
 
-        // -----------------------------------------------------
-        // STATE
-        // -----------------------------------------------------
+        isOpen = true;
+        isClosing = false;
+        isDragging = false;
+        manuallyPositioned = false;
+        currentSwayAngle = 0f;
 
-        isOpen =
-            true;
-
-        isClosing =
-            false;
-
-        isDragging =
-            false;
-
-        manuallyPositioned =
-            false;
-
-        currentSwayAngle =
-            0f;
-
-        // -----------------------------------------------------
-        // SHOW PANEL
-        // -----------------------------------------------------
-
-        panel.gameObject.SetActive(
-            true
-        );
-
-        panel.localRotation =
-            Quaternion.identity;
+        panel.gameObject.SetActive(true);
+        panel.localRotation = Quaternion.identity;
 
         if (canvasGroup != null)
-        {
-            canvasGroup.alpha =
-                normalAlpha;
-        }
+            canvasGroup.alpha = normalAlpha;
 
         RefreshUI();
-
         SetPanelPositionImmediately();
 
-        // -----------------------------------------------------
-        // IGNORE ORIGINAL WORLD CLICK
-        // -----------------------------------------------------
-
-        ignoreOutsideClick =
-            true;
+        ignoreOutsideClick = true;
 
         StartCoroutine(
             ResetOutsideClickIgnore()
         );
-
-        // -----------------------------------------------------
-        // OPEN ANIMATION
-        // -----------------------------------------------------
 
         animationCoroutine =
             StartCoroutine(
@@ -708,23 +491,10 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     public void RefreshUI()
     {
         if (currentWaterPlot == null)
-        {
             return;
-        }
-
-        // -----------------------------------------------------
-        // TITLE
-        // -----------------------------------------------------
 
         if (titleText != null)
-        {
-            titleText.text =
-                "WATER PLOT";
-        }
-
-        // -----------------------------------------------------
-        // QUALITY
-        // -----------------------------------------------------
+            titleText.text = "WATER PLOT";
 
         float quality =
             Mathf.Clamp(
@@ -734,116 +504,94 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             );
 
         if (qualityText != null)
-        {
             qualityText.text =
-                Mathf.RoundToInt(
-                    quality
-                ) +
-                "%";
-        }
+                Mathf.RoundToInt(quality) + "%";
 
         if (qualitySlider != null)
-        {
-            qualitySlider.value =
-                quality;
-        }
-
-        // -----------------------------------------------------
-        // CONDITION
-        // -----------------------------------------------------
+            qualitySlider.value = quality;
 
         if (conditionText != null)
         {
-            switch (
-                currentWaterPlot.GetWaterState())
+            switch (currentWaterPlot.GetWaterState())
             {
                 case WaterPlot.WaterState.Clean:
-
-                    conditionText.text =
-                        "CLEAN";
-
+                    conditionText.text = "CLEAN";
                     break;
 
                 case WaterPlot.WaterState.Dirty:
-
-                    conditionText.text =
-                        "DIRTY";
-
+                    conditionText.text = "DIRTY";
                     break;
 
                 case WaterPlot.WaterState.Murky:
-
-                    conditionText.text =
-                        "MURKY";
-
+                    conditionText.text = "MURKY";
                     break;
 
                 default:
-
-                    conditionText.text =
-                        "UNKNOWN";
-
+                    conditionText.text = "UNKNOWN";
                     break;
             }
         }
 
-        // -----------------------------------------------------
-        // CLEAN BUTTON
-        // -----------------------------------------------------
+        bool actionPhaseActive =
+            IsActionPhaseActive();
+
+        bool waterNeedsCleaning =
+            !currentWaterPlot.IsClean();
+
+        bool canClean =
+            actionPhaseActive &&
+            currentWaterPlot.CanClean() &&
+            !isCleaning;
 
         if (cleanButton != null)
         {
-            bool canClean =
-                currentWaterPlot.CanClean();
+            // Keep the button visible whenever maintenance
+            // would normally be possible so the player can see
+            // that it is locked after 5 PM.
+            cleanButton.gameObject.SetActive(
+                waterNeedsCleaning || isCleaning
+            );
 
-            // While cleaning we KEEP it visible,
-            // but stop the player pressing it again.
-            if (isCleaning)
-            {
-                cleanButton.gameObject.SetActive(
-                    true
-                );
-
-                cleanButton.interactable =
-                    false;
-            }
-            else
-            {
-                cleanButton.gameObject.SetActive(
-                    canClean
-                );
-
-                cleanButton.interactable =
-                    canClean;
-            }
+            cleanButton.interactable =
+                canClean;
         }
-
-        // -----------------------------------------------------
-        // CLEAN BUTTON TEXT
-        // -----------------------------------------------------
 
         if (cleanButtonText != null)
         {
-            cleanButtonText.text =
-                isCleaning
-                    ? cleanButtonBusyText
-                    : cleanButtonNormalText;
+            if (isCleaning)
+            {
+                cleanButtonText.text =
+                    cleanButtonBusyText;
+            }
+            else if (!actionPhaseActive &&
+                     waterNeedsCleaning)
+            {
+                cleanButtonText.text =
+                    cleanButtonLockedText;
+            }
+            else
+            {
+                cleanButtonText.text =
+                    cleanButtonNormalText;
+            }
         }
     }
 
     // =========================================================
-    // CLEAN BUTTON CLICK
+    // CLEAN
     // =========================================================
 
     private void HandleCleanButtonClicked()
     {
-        if (currentWaterPlot == null)
+        if (currentWaterPlot == null ||
+            isCleaning)
         {
             return;
         }
 
-        if (isCleaning)
+        if (!IsActionPhaseActive())
         {
+            RefreshUI();
             return;
         }
 
@@ -853,15 +601,10 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        // -----------------------------------------------------
-        // CLICK SOUND
-        // -----------------------------------------------------
-
-        PlayCleanButtonClickSound();
-
-        // -----------------------------------------------------
-        // START CLEAN ACTION
-        // -----------------------------------------------------
+        PlayRandomSound(
+            cleanButtonClickSounds,
+            cleanButtonClickVolume
+        );
 
         cleaningCoroutine =
             StartCoroutine(
@@ -869,31 +612,20 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             );
     }
 
-    // =========================================================
-    // CLEAN ACTION
-    // =========================================================
-
     private IEnumerator CleanWaterAction()
     {
-        if (currentWaterPlot == null)
+        if (currentWaterPlot == null ||
+            !IsActionPhaseActive())
         {
             yield break;
         }
 
-        isCleaning =
-            true;
-
+        isCleaning = true;
         RefreshUI();
 
-        // -----------------------------------------------------
-        // LOCK PLAYER
-        // -----------------------------------------------------
-
         if (playerMovement == null)
-        {
             playerMovement =
                 FindFirstObjectByType<PlayerMovement>();
-        }
 
         if (playerMovement != null)
         {
@@ -901,10 +633,6 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
                 cleanActionDuration
             );
         }
-
-        // -----------------------------------------------------
-        // ANIMATION
-        // -----------------------------------------------------
 
         if (playerAnimator == null &&
             playerMovement != null)
@@ -915,24 +643,12 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
 
         if (playerAnimator != null &&
             !string.IsNullOrEmpty(
-                cleanAnimationTrigger
-            ))
+                cleanAnimationTrigger))
         {
             playerAnimator.SetTrigger(
                 cleanAnimationTrigger
             );
         }
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                "Started cleaning Water Plot."
-            );
-        }
-
-        // -----------------------------------------------------
-        // WAIT UNTIL ACTION IMPACT POINT
-        // -----------------------------------------------------
 
         float applyDelay =
             Mathf.Clamp(
@@ -947,16 +663,14 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
         if (applyDelay > 0f)
         {
             yield return
-                new WaitForSeconds(
-                    applyDelay
-                );
+                new WaitForSeconds(applyDelay);
         }
 
-        // -----------------------------------------------------
-        // CLEAN ONE STAGE
-        // -----------------------------------------------------
-
+        // Recheck here as well.
+        // If the day ended while the animation was playing,
+        // the cleaning does NOT apply.
         if (currentWaterPlot != null &&
+            IsActionPhaseActive() &&
             currentWaterPlot.CanClean())
         {
             WaterPlot.WaterState previousState =
@@ -969,107 +683,98 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
 
             if (previousState != newState)
             {
-                PlayWaterCleaningSound();
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        "Water cleaned: " +
-                        previousState +
-                        " -> " +
-                        newState
-                    );
-                }
+                PlayRandomSound(
+                    waterCleaningSounds,
+                    waterCleaningVolume
+                );
             }
         }
 
         RefreshUI();
 
-        // -----------------------------------------------------
-        // WAIT FOR REST OF ACTION
-        // -----------------------------------------------------
-
-        float remainingTime =
+        float remaining =
             cleanActionDuration -
             applyDelay;
 
-        if (remainingTime > 0f)
+        if (remaining > 0f)
         {
             yield return
-                new WaitForSeconds(
-                    remainingTime
-                );
+                new WaitForSeconds(remaining);
         }
 
-        // -----------------------------------------------------
-        // FINISH
-        // -----------------------------------------------------
-
-        isCleaning =
-            false;
-
-        cleaningCoroutine =
-            null;
+        isCleaning = false;
+        cleaningCoroutine = null;
 
         RefreshUI();
     }
 
     // =========================================================
-    // HOVER SOUND
+    // AUDIO
     // =========================================================
 
-    private void PlayCleanButtonHoverSound()
+    private void SetupAudioSource()
     {
-        if (cleanButton == null ||
-            isCleaning ||
-            !cleanButton.gameObject.activeInHierarchy ||
-            !cleanButton.interactable)
-        {
+        if (audioSource == null)
+            audioSource =
+                GetComponent<AudioSource>();
+
+        if (audioSource == null)
+            audioSource =
+                gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+    }
+
+    private void SetupCleanButtonHover()
+    {
+        if (cleanButton == null)
             return;
-        }
 
-        PlayRandomSound(
-            cleanButtonHoverSounds,
-            cleanButtonHoverVolume
+        EventTrigger trigger =
+            cleanButton.GetComponent<EventTrigger>();
+
+        if (trigger == null)
+            trigger =
+                cleanButton.gameObject
+                    .AddComponent<EventTrigger>();
+
+        if (trigger.triggers == null)
+            trigger.triggers =
+                new List<EventTrigger.Entry>();
+
+        EventTrigger.Entry entry =
+            new EventTrigger.Entry();
+
+        entry.eventID =
+            EventTriggerType.PointerEnter;
+
+        entry.callback =
+            new EventTrigger.TriggerEvent();
+
+        entry.callback.AddListener(
+            (data) =>
+            {
+                if (cleanButton.interactable)
+                {
+                    PlayRandomSound(
+                        cleanButtonHoverSounds,
+                        cleanButtonHoverVolume
+                    );
+                }
+            }
         );
+
+        trigger.triggers.Add(entry);
     }
-
-    // =========================================================
-    // CLICK SOUND
-    // =========================================================
-
-    private void PlayCleanButtonClickSound()
-    {
-        PlayRandomSound(
-            cleanButtonClickSounds,
-            cleanButtonClickVolume
-        );
-    }
-
-    // =========================================================
-    // CLEANING SOUND
-    // =========================================================
-
-    private void PlayWaterCleaningSound()
-    {
-        PlayRandomSound(
-            waterCleaningSounds,
-            waterCleaningVolume
-        );
-    }
-
-    // =========================================================
-    // RANDOM SOUND
-    // =========================================================
 
     private void PlayRandomSound(
         AudioClip[] clips,
         float volume)
     {
         if (audioSource == null)
-        {
             SetupAudioSource();
-        }
 
         if (audioSource == null ||
             clips == null ||
@@ -1078,63 +783,19 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        int validCount =
-            0;
+        List<AudioClip> valid =
+            new List<AudioClip>();
 
-        for (int i = 0;
-             i < clips.Length;
-             i++)
+        foreach (AudioClip clip in clips)
         {
-            if (clips[i] != null)
-            {
-                validCount++;
-            }
+            if (clip != null)
+                valid.Add(clip);
         }
 
-        if (validCount == 0)
-        {
+        if (valid.Count == 0)
             return;
-        }
 
-        int targetIndex =
-            Random.Range(
-                0,
-                validCount
-            );
-
-        int validIndex =
-            0;
-
-        AudioClip chosenClip =
-            null;
-
-        for (int i = 0;
-             i < clips.Length;
-             i++)
-        {
-            if (clips[i] == null)
-            {
-                continue;
-            }
-
-            if (validIndex ==
-                targetIndex)
-            {
-                chosenClip =
-                    clips[i];
-
-                break;
-            }
-
-            validIndex++;
-        }
-
-        if (chosenClip == null)
-        {
-            return;
-        }
-
-        float originalPitch =
+        float oldPitch =
             audioSource.pitch;
 
         audioSource.pitch =
@@ -1144,12 +805,17 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             );
 
         audioSource.PlayOneShot(
-            chosenClip,
+            valid[
+                Random.Range(
+                    0,
+                    valid.Count
+                )
+            ],
             volume
         );
 
         audioSource.pitch =
-            originalPitch;
+            oldPitch;
     }
 
     // =========================================================
@@ -1164,19 +830,8 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        // Don't let closing cancel the water cleaning
-        // halfway through the actual action.
-        if (isCleaning)
-        {
-            return;
-        }
-
         if (animationCoroutine != null)
-        {
-            StopCoroutine(
-                animationCoroutine
-            );
-        }
+            StopCoroutine(animationCoroutine);
 
         animationCoroutine =
             StartCoroutine(
@@ -1184,103 +839,57 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             );
     }
 
-    // =========================================================
-    // CLOSE IMMEDIATELY
-    // =========================================================
-
     public void CloseImmediately()
     {
-        // If another inspection window is opened during
-        // cleaning, finish/cancel this HUD safely.
-        if (cleaningCoroutine != null)
-        {
-            StopCoroutine(
-                cleaningCoroutine
-            );
-
-            cleaningCoroutine =
-                null;
-        }
-
-        isCleaning =
-            false;
-
         if (animationCoroutine != null)
         {
-            StopCoroutine(
-                animationCoroutine
-            );
-
-            animationCoroutine =
-                null;
+            StopCoroutine(animationCoroutine);
+            animationCoroutine = null;
         }
+
+        if (cleaningCoroutine != null)
+        {
+            StopCoroutine(cleaningCoroutine);
+            cleaningCoroutine = null;
+        }
+
+        isCleaning = false;
 
         ClearCurrentWaterPlotHighlight();
 
-        isOpen =
-            false;
+        isOpen = false;
+        isClosing = false;
+        isDragging = false;
+        manuallyPositioned = false;
+        ignoreOutsideClick = false;
 
-        isClosing =
-            false;
-
-        isDragging =
-            false;
-
-        manuallyPositioned =
-            false;
-
-        ignoreOutsideClick =
-            false;
-
-        currentWaterPlot =
-            null;
-
-        currentSwayAngle =
-            0f;
+        currentWaterPlot = null;
+        currentSwayAngle = 0f;
 
         if (panel != null)
         {
             panel.localScale =
-                Vector3.one *
-                normalScale;
+                Vector3.one * normalScale;
 
             panel.localRotation =
                 Quaternion.identity;
 
-            panel.gameObject.SetActive(
-                false
-            );
+            panel.gameObject.SetActive(false);
         }
 
         if (canvasGroup != null)
-        {
-            canvasGroup.alpha =
-                normalAlpha;
-        }
+            canvasGroup.alpha = normalAlpha;
 
         if (InspectionUIManager.Instance != null)
-        {
-            InspectionUIManager.Instance.ClearPanel(
-                this
-            );
-        }
+            InspectionUIManager.Instance.ClearPanel(this);
     }
-
-    // =========================================================
-    // CLEAR HIGHLIGHT
-    // =========================================================
 
     private void ClearCurrentWaterPlotHighlight()
     {
         if (currentInteractiveWaterPlot != null)
-        {
-            currentInteractiveWaterPlot.SetInspected(
-                false
-            );
-        }
+            currentInteractiveWaterPlot.SetInspected(false);
 
-        currentInteractiveWaterPlot =
-            null;
+        currentInteractiveWaterPlot = null;
     }
 
     // =========================================================
@@ -1289,30 +898,19 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
 
     private void HandleOutsideClick()
     {
-        if (ignoreOutsideClick ||
-            isCleaning)
-        {
+        if (ignoreOutsideClick)
             return;
-        }
 
         if (IsPointerOverInspectionUI())
-        {
             return;
-        }
 
         Close();
     }
 
-    // =========================================================
-    // POINTER OVER UI
-    // =========================================================
-
     private bool IsPointerOverInspectionUI()
     {
         if (panel == null)
-        {
             return false;
-        }
 
         if (RectTransformUtility.RectangleContainsScreenPoint(
             panel,
@@ -1323,9 +921,7 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         if (EventSystem.current == null)
-        {
             return false;
-        }
 
         PointerEventData pointerData =
             new PointerEventData(
@@ -1346,15 +942,13 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
         foreach (RaycastResult result in results)
         {
             if (result.gameObject == null)
-            {
                 continue;
-            }
 
-            Transform hitTransform =
+            Transform hit =
                 result.gameObject.transform;
 
-            if (hitTransform == panel ||
-                hitTransform.IsChildOf(panel))
+            if (hit == panel ||
+                hit.IsChildOf(panel))
             {
                 return true;
             }
@@ -1364,13 +958,12 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     }
 
     // =========================================================
-    // DRAGGING
+    // DRAG
     // =========================================================
 
     private void HandleDragging()
     {
         if (!allowDragging ||
-            isCleaning ||
             dragHandle == null ||
             canvas == null)
         {
@@ -1380,113 +973,71 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
         Camera uiCamera =
             GetUICamera();
 
-        // -----------------------------------------------------
-        // START DRAG
-        // -----------------------------------------------------
+        RectTransform canvasRect =
+            canvas.transform as RectTransform;
 
-        if (Input.GetMouseButtonDown(0))
+        if (canvasRect == null)
+            return;
+
+        if (Input.GetMouseButtonDown(0) &&
+            RectTransformUtility.RectangleContainsScreenPoint(
+                dragHandle,
+                Input.mousePosition,
+                uiCamera))
         {
-            bool overHandle =
-                RectTransformUtility.RectangleContainsScreenPoint(
-                    dragHandle,
-                    Input.mousePosition,
-                    uiCamera
-                );
-
-            if (overHandle)
-            {
-                RectTransform canvasRect =
-                    canvas.transform
-                        as RectTransform;
-
-                if (canvasRect == null)
-                {
-                    return;
-                }
-
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            RectTransformUtility
+                .ScreenPointToLocalPointInRectangle(
                     canvasRect,
                     Input.mousePosition,
                     uiCamera,
                     out Vector2 mousePosition
                 );
 
-                dragOffset =
-                    panel.anchoredPosition -
-                    mousePosition;
+            dragOffset =
+                panel.anchoredPosition -
+                mousePosition;
 
-                isDragging =
-                    true;
+            isDragging = true;
+            manuallyPositioned = true;
 
-                manuallyPositioned =
-                    true;
-
-                previousMousePosition =
-                    Input.mousePosition;
-            }
+            previousMousePosition =
+                Input.mousePosition;
         }
-
-        // -----------------------------------------------------
-        // DRAG
-        // -----------------------------------------------------
 
         if (isDragging &&
             Input.GetMouseButton(0))
         {
-            RectTransform canvasRect =
-                canvas.transform
-                    as RectTransform;
+            RectTransformUtility
+                .ScreenPointToLocalPointInRectangle(
+                    canvasRect,
+                    Input.mousePosition,
+                    uiCamera,
+                    out Vector2 mousePosition
+                );
 
-            if (canvasRect == null)
-            {
-                return;
-            }
-
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvasRect,
-                Input.mousePosition,
-                uiCamera,
-                out Vector2 mousePosition
-            );
-
-            Vector2 newPosition =
+            Vector2 position =
                 mousePosition +
                 dragOffset;
 
             if (clampToCanvas)
-            {
-                newPosition =
-                    ClampPanelToCanvas(
-                        newPosition
-                    );
-            }
+                position =
+                    ClampPanelToCanvas(position);
 
             panel.anchoredPosition =
-                newPosition;
+                position;
         }
-
-        // -----------------------------------------------------
-        // RELEASE
-        // -----------------------------------------------------
 
         if (isDragging &&
             Input.GetMouseButtonUp(0))
         {
-            isDragging =
-                false;
+            isDragging = false;
         }
     }
-
-    // =========================================================
-    // DRAG VISUALS
-    // =========================================================
 
     private void UpdateDragVisuals()
     {
         if (panel == null)
-        {
             return;
-        }
 
         float delta =
             Time.unscaledDeltaTime;
@@ -1498,7 +1049,7 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
 
         if (canvasGroup != null)
         {
-            float alphaAmount =
+            float amount =
                 1f -
                 Mathf.Exp(
                     -alphaSmoothSpeed *
@@ -1509,17 +1060,13 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
                 Mathf.Lerp(
                     canvasGroup.alpha,
                     targetAlpha,
-                    alphaAmount
+                    amount
                 );
         }
 
-        // -----------------------------------------------------
-        // DRAGGING
-        // -----------------------------------------------------
-
         if (isDragging)
         {
-            float scaleAmount =
+            float amount =
                 1f -
                 Mathf.Exp(
                     -dragScaleSpeed *
@@ -1529,9 +1076,8 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             panel.localScale =
                 Vector3.Lerp(
                     panel.localScale,
-                    Vector3.one *
-                    dragScale,
-                    scaleAmount
+                    Vector3.one * dragScale,
+                    amount
                 );
 
             Vector2 currentMouse =
@@ -1545,12 +1091,9 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
                 currentMouse;
 
             float targetSway =
-                -mouseDelta.x *
-                swayStrength;
-
-            targetSway =
                 Mathf.Clamp(
-                    targetSway,
+                    -mouseDelta.x *
+                    swayStrength,
                     -maxDragSwayAngle,
                     maxDragSwayAngle
                 );
@@ -1568,22 +1111,10 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
                     targetSway,
                     swayAmount
                 );
-
-            panel.localRotation =
-                Quaternion.Euler(
-                    0f,
-                    0f,
-                    currentSwayAngle
-                );
         }
-
-        // -----------------------------------------------------
-        // RETURN
-        // -----------------------------------------------------
-
         else
         {
-            float returnAmount =
+            float amount =
                 1f -
                 Mathf.Exp(
                     -dropReturnSpeed *
@@ -1593,37 +1124,36 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             panel.localScale =
                 Vector3.Lerp(
                     panel.localScale,
-                    Vector3.one *
-                    normalScale,
-                    returnAmount
+                    Vector3.one * normalScale,
+                    amount
                 );
 
             currentSwayAngle =
                 Mathf.Lerp(
                     currentSwayAngle,
                     0f,
-                    returnAmount
-                );
-
-            panel.localRotation =
-                Quaternion.Euler(
-                    0f,
-                    0f,
-                    currentSwayAngle
+                    amount
                 );
         }
+
+        panel.localRotation =
+            Quaternion.Euler(
+                0f,
+                0f,
+                currentSwayAngle
+            );
     }
 
     // =========================================================
-    // FOLLOW WATER PLOT
+    // POSITION
     // =========================================================
 
     private void UpdatePanelPosition()
     {
-        Vector2 targetPosition =
+        Vector2 target =
             CalculatePanelPosition();
 
-        float smoothing =
+        float amount =
             1f -
             Mathf.Exp(
                 -followSpeed *
@@ -1633,188 +1163,121 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
         panel.anchoredPosition =
             Vector2.Lerp(
                 panel.anchoredPosition,
-                targetPosition,
-                smoothing
+                target,
+                amount
             );
     }
 
-    // =========================================================
-    // POSITION IMMEDIATELY
-    // =========================================================
-
     private void SetPanelPositionImmediately()
     {
-        if (panel == null)
-        {
-            return;
-        }
-
-        Vector2 position =
-            CalculatePanelPosition();
-
-        if (clampToCanvas)
-        {
-            position =
-                ClampPanelToCanvas(
-                    position
-                );
-        }
-
         panel.anchoredPosition =
-            position;
+            ClampPanelToCanvas(
+                CalculatePanelPosition()
+            );
     }
-
-    // =========================================================
-    // CALCULATE POSITION
-    // =========================================================
 
     private Vector2 CalculatePanelPosition()
     {
         if (currentWaterPlot == null ||
             mainCamera == null ||
-            canvas == null ||
-            panel == null)
-        {
-            return panel != null
-                ? panel.anchoredPosition
-                : Vector2.zero;
-        }
-
-        Vector3 screenPosition =
-            mainCamera.WorldToScreenPoint(
-                currentWaterPlot.transform.position
-            );
-
-        float direction =
-            1f;
-
-        if (automaticallyFlipSide &&
-            screenPosition.x >
-            Screen.width -
-            screenEdgePadding)
-        {
-            direction =
-                -1f;
-        }
-
-        screenPosition.x +=
-            horizontalOffset *
-            direction;
-
-        screenPosition.y +=
-            verticalOffset;
-
-        RectTransform canvasRect =
-            canvas.transform
-                as RectTransform;
-
-        if (canvasRect == null)
+            canvas == null)
         {
             return panel.anchoredPosition;
         }
 
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvasRect,
-            screenPosition,
-            GetUICamera(),
-            out Vector2 canvasPosition
-        );
+        Vector3 screen =
+            mainCamera.WorldToScreenPoint(
+                currentWaterPlot.transform.position
+            );
 
-        if (clampToCanvas)
+        float direction = 1f;
+
+        if (automaticallyFlipSide &&
+            screen.x >
+            Screen.width -
+            screenEdgePadding)
         {
-            canvasPosition =
-                ClampPanelToCanvas(
-                    canvasPosition
-                );
+            direction = -1f;
         }
 
-        return canvasPosition;
+        screen.x +=
+            horizontalOffset *
+            direction;
+
+        screen.y +=
+            verticalOffset;
+
+        RectTransform canvasRect =
+            canvas.transform as RectTransform;
+
+        RectTransformUtility
+            .ScreenPointToLocalPointInRectangle(
+                canvasRect,
+                screen,
+                GetUICamera(),
+                out Vector2 result
+            );
+
+        return clampToCanvas
+            ? ClampPanelToCanvas(result)
+            : result;
     }
 
-    // =========================================================
-    // CLAMP
-    // =========================================================
-
     private Vector2 ClampPanelToCanvas(
-        Vector2 targetPosition)
+        Vector2 position)
     {
         if (canvas == null ||
             panel == null)
         {
-            return targetPosition;
+            return position;
         }
 
         RectTransform canvasRect =
-            canvas.transform
-                as RectTransform;
+            canvas.transform as RectTransform;
 
         if (canvasRect == null)
-        {
-            return targetPosition;
-        }
+            return position;
 
-        Rect canvasBounds =
+        Rect bounds =
             canvasRect.rect;
 
-        Vector2 panelSize =
+        Vector2 size =
             panel.rect.size;
 
         Vector2 pivot =
             panel.pivot;
 
-        float minX =
-            canvasBounds.xMin +
-            panelSize.x *
-            pivot.x +
-            canvasPadding;
-
-        float maxX =
-            canvasBounds.xMax -
-            panelSize.x *
-            (1f - pivot.x) -
-            canvasPadding;
-
-        float minY =
-            canvasBounds.yMin +
-            panelSize.y *
-            pivot.y +
-            canvasPadding;
-
-        float maxY =
-            canvasBounds.yMax -
-            panelSize.y *
-            (1f - pivot.y) -
-            canvasPadding;
-
-        targetPosition.x =
+        position.x =
             Mathf.Clamp(
-                targetPosition.x,
-                minX,
-                maxX
+                position.x,
+                bounds.xMin +
+                size.x * pivot.x +
+                canvasPadding,
+                bounds.xMax -
+                size.x *
+                (1f - pivot.x) -
+                canvasPadding
             );
 
-        targetPosition.y =
+        position.y =
             Mathf.Clamp(
-                targetPosition.y,
-                minY,
-                maxY
+                position.y,
+                bounds.yMin +
+                size.y * pivot.y +
+                canvasPadding,
+                bounds.yMax -
+                size.y *
+                (1f - pivot.y) -
+                canvasPadding
             );
 
-        return targetPosition;
+        return position;
     }
-
-    // =========================================================
-    // UI CAMERA
-    // =========================================================
 
     private Camera GetUICamera()
     {
-        if (canvas == null)
-        {
-            return null;
-        }
-
-        if (canvas.renderMode ==
+        if (canvas == null ||
+            canvas.renderMode ==
             RenderMode.ScreenSpaceOverlay)
         {
             return null;
@@ -1824,22 +1287,14 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     }
 
     // =========================================================
-    // OPEN ANIMATION
+    // ANIMATION
     // =========================================================
 
     private IEnumerator OpenAnimation()
     {
-        if (panel == null)
-        {
-            yield break;
-        }
-
         panel.localScale =
             Vector3.one *
             startingScale;
-
-        panel.localRotation =
-            Quaternion.identity;
 
         yield return ScalePanel(
             startingScale,
@@ -1859,52 +1314,31 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             Vector3.one *
             normalScale;
 
-        animationCoroutine =
-            null;
+        animationCoroutine = null;
     }
-
-    // =========================================================
-    // CLOSE ANIMATION
-    // =========================================================
 
     private IEnumerator CloseAnimation()
     {
-        if (panel == null)
-        {
-            yield break;
-        }
-
-        isClosing =
-            true;
-
-        isDragging =
-            false;
+        isClosing = true;
+        isDragging = false;
 
         ClearCurrentWaterPlotHighlight();
 
         Vector3 startScale =
             panel.localScale;
 
-        Quaternion startRotation =
-            panel.localRotation;
-
         float startAlpha =
             canvasGroup != null
                 ? canvasGroup.alpha
                 : normalAlpha;
 
-        Vector3 targetScale =
-            Vector3.one *
-            closingScale;
+        float timer = 0f;
 
         float duration =
             Mathf.Max(
                 0.01f,
                 closeDuration
             );
-
-        float timer =
-            0f;
 
         while (timer < duration)
         {
@@ -1913,26 +1347,17 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
 
             float t =
                 Mathf.Clamp01(
-                    timer /
-                    duration
+                    timer / duration
                 );
 
             float eased =
-                EaseInCubic(
-                    t
-                );
+                t * t * t;
 
             panel.localScale =
                 Vector3.Lerp(
                     startScale,
-                    targetScale,
-                    eased
-                );
-
-            panel.localRotation =
-                Quaternion.Lerp(
-                    startRotation,
-                    Quaternion.identity,
+                    Vector3.one *
+                    closingScale,
                     eased
                 );
 
@@ -1950,9 +1375,7 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             yield return null;
         }
 
-        panel.gameObject.SetActive(
-            false
-        );
+        panel.gameObject.SetActive(false);
 
         panel.localScale =
             Vector3.one *
@@ -1962,69 +1385,35 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
             Quaternion.identity;
 
         if (canvasGroup != null)
-        {
             canvasGroup.alpha =
                 normalAlpha;
-        }
 
-        currentWaterPlot =
-            null;
+        currentWaterPlot = null;
 
-        currentSwayAngle =
-            0f;
+        isOpen = false;
+        isClosing = false;
+        isDragging = false;
+        manuallyPositioned = false;
 
-        isOpen =
-            false;
-
-        isClosing =
-            false;
-
-        isDragging =
-            false;
-
-        manuallyPositioned =
-            false;
-
-        ignoreOutsideClick =
-            false;
-
-        animationCoroutine =
-            null;
+        animationCoroutine = null;
 
         if (InspectionUIManager.Instance != null)
-        {
-            InspectionUIManager.Instance.ClearPanel(
-                this
-            );
-        }
+            InspectionUIManager.Instance.ClearPanel(this);
     }
-
-    // =========================================================
-    // SCALE ANIMATION
-    // =========================================================
 
     private IEnumerator ScalePanel(
         float from,
         float to,
         float duration,
-        bool useBackEase)
+        bool backEase)
     {
         duration =
             Mathf.Max(
-                duration,
-                0.01f
+                0.01f,
+                duration
             );
 
-        float timer =
-            0f;
-
-        Vector3 start =
-            Vector3.one *
-            from;
-
-        Vector3 end =
-            Vector3.one *
-            to;
+        float timer = 0f;
 
         while (timer < duration)
         {
@@ -2033,19 +1422,23 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
 
             float t =
                 Mathf.Clamp01(
-                    timer /
-                    duration
+                    timer / duration
                 );
 
             float eased =
-                useBackEase
+                backEase
                     ? EaseOutBack(t)
-                    : EaseOutCubic(t);
+                    : 1f -
+                      Mathf.Pow(
+                          1f - t,
+                          3f
+                      );
 
             panel.localScale =
-                Vector3.LerpUnclamped(
-                    start,
-                    end,
+                Vector3.one *
+                Mathf.LerpUnclamped(
+                    from,
+                    to,
                     eased
                 );
 
@@ -2053,78 +1446,21 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         panel.localScale =
-            end;
+            Vector3.one * to;
     }
-
-    // =========================================================
-    // RESET OUTSIDE CLICK
-    // =========================================================
 
     private IEnumerator ResetOutsideClickIgnore()
     {
         yield return
             new WaitForEndOfFrame();
 
-        ignoreOutsideClick =
-            false;
+        ignoreOutsideClick = false;
     }
 
-    // =========================================================
-    // GETTERS
-    // =========================================================
-
-    public WaterPlot GetCurrentWaterPlot()
+    private float EaseOutBack(float x)
     {
-        return currentWaterPlot;
-    }
-
-    public bool IsOpen()
-    {
-        return isOpen;
-    }
-
-    public bool IsDragging()
-    {
-        return isDragging;
-    }
-
-    public bool IsCleaning()
-    {
-        return isCleaning;
-    }
-
-    // =========================================================
-    // EASING
-    // =========================================================
-
-    private float EaseOutCubic(
-        float x)
-    {
-        return
-            1f -
-            Mathf.Pow(
-                1f - x,
-                3f
-            );
-    }
-
-    private float EaseInCubic(
-        float x)
-    {
-        return
-            x *
-            x *
-            x;
-    }
-
-    private float EaseOutBack(
-        float x)
-    {
-        const float c1 =
-            1.70158f;
-
-        const float c3 =
-            c1 + 1f;
+        const float c1 = 1.70158f;
+        const float c3 = c1 + 1f;
 
         return
             1f +
@@ -2138,35 +1474,5 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
                 x - 1f,
                 2f
             );
-    }
-
-    // =========================================================
-    // DESTROY
-    // =========================================================
-
-    private void OnDestroy()
-    {
-        if (cleanButton != null)
-        {
-            cleanButton.onClick.RemoveListener(
-                HandleCleanButtonClicked
-            );
-        }
-
-        if (closeButton != null)
-        {
-            closeButton.onClick.RemoveListener(
-                Close
-            );
-        }
-
-        if (cleanButtonEventTrigger != null &&
-            cleanHoverEntry != null &&
-            cleanButtonEventTrigger.triggers != null)
-        {
-            cleanButtonEventTrigger.triggers.Remove(
-                cleanHoverEntry
-            );
-        }
     }
 }

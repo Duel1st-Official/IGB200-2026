@@ -39,6 +39,19 @@ public class Plot : MonoBehaviour
     private RangerStation rangerStation;
 
     // =========================================================
+    // END DAY SYSTEM
+    // =========================================================
+
+    [Header("Action Phase")]
+
+    [Tooltip(
+        "Controls whether the player is currently allowed " +
+        "to plant crops. If empty, one is automatically found."
+    )]
+    [SerializeField]
+    private EndDaySystem endDaySystem;
+
+    // =========================================================
     // DEBUG
     // =========================================================
 
@@ -52,6 +65,15 @@ public class Plot : MonoBehaviour
     // =========================================================
 
     private void Awake()
+    {
+        AutoAssignReferences();
+    }
+
+    // =========================================================
+    // AUTO ASSIGN REFERENCES
+    // =========================================================
+
+    private void AutoAssignReferences()
     {
         // -----------------------------------------------------
         // CROP
@@ -78,6 +100,39 @@ public class Plot : MonoBehaviour
             rangerStation =
                 FindFirstObjectByType<RangerStation>();
         }
+
+        // -----------------------------------------------------
+        // END DAY SYSTEM
+        // -----------------------------------------------------
+
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+    }
+
+    // =========================================================
+    // ACTION PHASE
+    // =========================================================
+
+    public bool CanPerformPlayerAction()
+    {
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        // If there is no EndDaySystem in the scene,
+        // preserve the old behaviour rather than breaking
+        // planting completely.
+        if (endDaySystem == null)
+        {
+            return true;
+        }
+
+        return endDaySystem.IsActionPhaseActive();
     }
 
     // =========================================================
@@ -86,6 +141,23 @@ public class Plot : MonoBehaviour
 
     public void Plant()
     {
+        // =====================================================
+        // ACTION PHASE LOCK
+        // =====================================================
+
+        if (!CanPerformPlayerAction())
+        {
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    gameObject.name +
+                    " cannot be planted because the action phase has ended."
+                );
+            }
+
+            return;
+        }
+
         // -----------------------------------------------------
         // ALREADY PLANTED
         // -----------------------------------------------------
@@ -157,6 +229,13 @@ public class Plot : MonoBehaviour
 
     public void ClearPlant()
     {
+        // IMPORTANT:
+        // No action-phase check here.
+        //
+        // This method is also used internally when crops are
+        // harvested/removed, so automatic/system cleanup must
+        // remain possible after the action phase ends.
+
         planted =
             false;
 
@@ -175,6 +254,11 @@ public class Plot : MonoBehaviour
 
     public void ClearPlantAndCrop()
     {
+        // IMPORTANT:
+        // This remains available to internal systems/debugging.
+        // Player-facing removal is controlled by the
+        // SelectionWheel / placement system.
+
         planted =
             false;
 

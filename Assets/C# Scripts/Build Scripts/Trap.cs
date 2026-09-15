@@ -18,28 +18,44 @@ public class Trap : MonoBehaviour
     private TrapState currentState =
         TrapState.Empty;
 
-    [SerializeField] private bool startsWithBait = false;
+    [SerializeField]
+    private bool startsWithBait = false;
 
     // =========================================================
     // VISUALS
     // =========================================================
 
     [Header("Trap Visuals")]
-    [SerializeField] private SpriteRenderer spriteRenderer;
 
-    [SerializeField] private Sprite emptyTrapSprite;
-    [SerializeField] private Sprite baitedTrapSprite;
-    [SerializeField] private Sprite feralCatCaughtSprite;
-    [SerializeField] private Sprite foxCaughtSprite;
-    [SerializeField] private Sprite genericCaughtSprite;
+    [SerializeField]
+    private SpriteRenderer spriteRenderer;
+
+    [SerializeField]
+    private Sprite emptyTrapSprite;
+
+    [SerializeField]
+    private Sprite baitedTrapSprite;
+
+    [SerializeField]
+    private Sprite feralCatCaughtSprite;
+
+    [SerializeField]
+    private Sprite foxCaughtSprite;
+
+    [SerializeField]
+    private Sprite genericCaughtSprite;
 
     // =========================================================
     // REFERENCES
     // =========================================================
 
     [Header("References")]
-    [SerializeField] private EndDaySystem endDaySystem;
-    [SerializeField] private RangerStation rangerStation;
+
+    [SerializeField]
+    private EndDaySystem endDaySystem;
+
+    [SerializeField]
+    private RangerStation rangerStation;
 
     // =========================================================
     // CAPTURE CHANCES
@@ -48,19 +64,23 @@ public class Trap : MonoBehaviour
     [Header("Daily Capture Chance")]
 
     [Range(0f, 1f)]
-    [SerializeField] private float sunnyCaptureChance = 0.70f;
+    [SerializeField]
+    private float sunnyCaptureChance = 0.70f;
 
     [Range(0f, 1f)]
-    [SerializeField] private float rainCaptureChance = 0.50f;
+    [SerializeField]
+    private float rainCaptureChance = 0.50f;
 
     [Range(0f, 1f)]
-    [SerializeField] private float thunderCaptureChance = 0.30f;
+    [SerializeField]
+    private float thunderCaptureChance = 0.30f;
 
     // =========================================================
     // PREDATORS
     // =========================================================
 
     [Header("Predators")]
+
     [SerializeField]
     private string[] predatorNames =
     {
@@ -74,24 +94,35 @@ public class Trap : MonoBehaviour
 
     [Header("Predator Pressure Reduction")]
 
-    [SerializeField] private float feralCatPredatorReduction = 6f;
-    [SerializeField] private float foxPredatorReduction = 8f;
-    [SerializeField] private float genericPredatorReduction = 5f;
+    [SerializeField]
+    private float feralCatPredatorReduction = 6f;
+
+    [SerializeField]
+    private float foxPredatorReduction = 8f;
+
+    [SerializeField]
+    private float genericPredatorReduction = 5f;
 
     // =========================================================
     // CAUGHT PREDATOR
     // =========================================================
 
     [Header("Caught Predator")]
-    [SerializeField] private string caughtMammalName = "";
+
+    [SerializeField]
+    private string caughtMammalName = "";
 
     // =========================================================
     // DEBUG
     // =========================================================
 
     [Header("Debug")]
-    [SerializeField] private string debugMammalName = "Feral Cat";
-    [SerializeField] private bool showDebugLogs = true;
+
+    [SerializeField]
+    private string debugMammalName = "Feral Cat";
+
+    [SerializeField]
+    private bool showDebugLogs = true;
 
     // =========================================================
     // PRIVATE
@@ -143,9 +174,10 @@ public class Trap : MonoBehaviour
         recordedDayWeather =
             GetCurrentWeatherName();
 
+        // Starting state is setup, not a player action.
         if (startsWithBait)
         {
-            SetTrap();
+            SetTrapInternal();
         }
         else
         {
@@ -179,6 +211,26 @@ public class Trap : MonoBehaviour
             rangerStation =
                 FindFirstObjectByType<RangerStation>();
         }
+    }
+
+    // =========================================================
+    // ACTION PHASE
+    // =========================================================
+
+    public bool CanPerformPlayerAction()
+    {
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        if (endDaySystem == null)
+        {
+            return true;
+        }
+
+        return endDaySystem.IsActionPhaseActive();
     }
 
     // =========================================================
@@ -220,6 +272,10 @@ public class Trap : MonoBehaviour
 
         string previousWeather =
             recordedDayWeather;
+
+        // IMPORTANT:
+        // This is automatic overnight processing.
+        // It is intentionally NOT blocked by the action phase.
 
         if (currentState ==
                 TrapState.Set &&
@@ -392,10 +448,36 @@ public class Trap : MonoBehaviour
     }
 
     // =========================================================
-    // SET
+    // SET TRAP - PLAYER ACTION
     // =========================================================
 
     public void SetTrap()
+    {
+        // =====================================================
+        // ACTION PHASE LOCK
+        // =====================================================
+
+        if (!CanPerformPlayerAction())
+        {
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    gameObject.name +
+                    " cannot be set because the action phase has ended."
+                );
+            }
+
+            return;
+        }
+
+        SetTrapInternal();
+    }
+
+    // =========================================================
+    // INTERNAL SET TRAP
+    // =========================================================
+
+    private void SetTrapInternal()
     {
         hasBait =
             true;
@@ -440,6 +522,10 @@ public class Trap : MonoBehaviour
     public void TriggerTrap(
         string mammalName)
     {
+        // IMPORTANT:
+        // No action lock.
+        // This is used by automatic overnight capture.
+
         if (!IsSet())
         {
             return;
@@ -490,6 +576,24 @@ public class Trap : MonoBehaviour
 
     public void CollectCaughtMammal()
     {
+        // =====================================================
+        // ACTION PHASE LOCK
+        // =====================================================
+
+        if (!CanPerformPlayerAction())
+        {
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    gameObject.name +
+                    " predator cannot be relocated because " +
+                    "the action phase has ended."
+                );
+            }
+
+            return;
+        }
+
         if (!IsCaught())
         {
             return;
@@ -498,7 +602,6 @@ public class Trap : MonoBehaviour
         string relocatedPredator =
             caughtMammalName;
 
-        // Ecosystem effect BEFORE clearing name.
         ReducePredatorPressure(
             relocatedPredator
         );
@@ -664,10 +767,6 @@ public class Trap : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // EMPTY
-        // =====================================================
-
         if (IsEmpty())
         {
             if (emptyTrapSprite != null)
@@ -678,10 +777,6 @@ public class Trap : MonoBehaviour
 
             return;
         }
-
-        // =====================================================
-        // SET / BAIT
-        // =====================================================
 
         if (IsSet())
         {
@@ -698,10 +793,6 @@ public class Trap : MonoBehaviour
 
             return;
         }
-
-        // =====================================================
-        // CAUGHT
-        // =====================================================
 
         Sprite caughtSprite =
             GetCaughtPredatorSprite();
@@ -864,7 +955,7 @@ public class Trap : MonoBehaviour
     {
         if (!IsSet())
         {
-            SetTrap();
+            SetTrapInternal();
         }
 
         AttemptDailyCapture(
@@ -877,7 +968,7 @@ public class Trap : MonoBehaviour
     {
         if (!IsSet())
         {
-            SetTrap();
+            SetTrapInternal();
         }
 
         AttemptDailyCapture(
@@ -890,7 +981,7 @@ public class Trap : MonoBehaviour
     {
         if (!IsSet())
         {
-            SetTrap();
+            SetTrapInternal();
         }
 
         AttemptDailyCapture(

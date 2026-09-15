@@ -16,6 +16,12 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private Canvas canvas;
     [SerializeField] private SelectionWheel selectionWheel;
 
+    [Tooltip(
+        "Controls whether management actions are currently available. " +
+        "Automatically found if left empty."
+    )]
+    [SerializeField] private EndDaySystem endDaySystem;
+
     [Tooltip("The entire Farm Plot inspection window.")]
     [SerializeField] private RectTransform panel;
 
@@ -58,17 +64,26 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
 
     [Header("Plot Audio")]
 
-    [Tooltip("AudioSource used for Farm Plot UI sounds. If empty, one will be found or created automatically.")]
+    [Tooltip(
+        "AudioSource used for Farm Plot UI sounds. " +
+        "If empty, one will be found or created automatically."
+    )]
     [SerializeField] private AudioSource audioSource;
 
     [Tooltip("Random sound played after successfully planting the seed.")]
-    [SerializeField] private AudioClip[] plantSeedSounds = new AudioClip[3];
+    [SerializeField]
+    private AudioClip[] plantSeedSounds =
+        new AudioClip[3];
 
     [Tooltip("Random sound played when hovering over the Plant button.")]
-    [SerializeField] private AudioClip[] plantButtonHoverSounds = new AudioClip[3];
+    [SerializeField]
+    private AudioClip[] plantButtonHoverSounds =
+        new AudioClip[3];
 
     [Tooltip("Random sound played when clicking the Plant button.")]
-    [SerializeField] private AudioClip[] plantButtonClickSounds = new AudioClip[3];
+    [SerializeField]
+    private AudioClip[] plantButtonClickSounds =
+        new AudioClip[3];
 
     [Range(0f, 1f)]
     [SerializeField] private float plantSeedVolume = 1f;
@@ -225,6 +240,18 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // -----------------------------------------------------
+        // END DAY SYSTEM
+        // -----------------------------------------------------
+
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        // -----------------------------------------------------
         // PANEL
         // -----------------------------------------------------
 
@@ -300,6 +327,29 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     }
 
     // =========================================================
+    // ACTION PHASE
+    // =========================================================
+
+    private bool IsActionPhaseActive()
+    {
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        // Fail open if this scene has no EndDaySystem.
+        if (endDaySystem == null)
+        {
+            return true;
+        }
+
+        return endDaySystem.IsActionPhaseActive();
+    }
+
+    // =========================================================
     // AUDIO SETUP
     // =========================================================
 
@@ -363,7 +413,8 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             new EventTrigger.TriggerEvent();
 
         plantHoverEntry.callback.AddListener(
-            (data) => PlayPlantButtonHoverSound()
+            (data) =>
+                PlayPlantButtonHoverSound()
         );
 
         plantButtonEventTrigger.triggers.Add(
@@ -390,7 +441,9 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        // Keep button/text state current.
+        // This runs every frame while open.
+        // It immediately disables Plant when the action phase ends
+        // and re-enables it after End Day starts the next day.
         RefreshUI();
 
         HandleDragging();
@@ -589,6 +642,9 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
+        bool actionPhaseActive =
+            IsActionPhaseActive();
+
         // =====================================================
         // TITLE
         // =====================================================
@@ -622,6 +678,9 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
                 plantButton.gameObject.SetActive(
                     false
                 );
+
+                plantButton.interactable =
+                    false;
             }
         }
 
@@ -639,18 +698,28 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
 
             if (descriptionText != null)
             {
-                descriptionText.text =
-                    "Plant a seed here to attract wildlife.";
+                if (actionPhaseActive)
+                {
+                    descriptionText.text =
+                        "Plant a seed here to attract wildlife.";
+                }
+                else
+                {
+                    descriptionText.text =
+                        "The working day has ended. End the day before planting.";
+                }
             }
 
             if (plantButton != null)
             {
+                // Keep it visible so the player can see
+                // the action exists, but disable it at day end.
                 plantButton.gameObject.SetActive(
                     true
                 );
 
                 plantButton.interactable =
-                    true;
+                    actionPhaseActive;
             }
         }
     }
@@ -661,6 +730,30 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
 
     private void HandlePlantButtonClicked()
     {
+        // -----------------------------------------------------
+        // END DAY LOCK
+        // -----------------------------------------------------
+
+        if (!IsActionPhaseActive())
+        {
+            RefreshUI();
+            return;
+        }
+
+        if (plantButton != null &&
+            !plantButton.interactable)
+        {
+            return;
+        }
+
+        if (currentPlot == null ||
+            currentPlot.IsPlanted())
+        {
+            RefreshUI();
+            return;
+        }
+
+        // Only play the click when this is a valid action.
         PlayPlantButtonClickSound();
 
         PlantSeed();
@@ -674,6 +767,16 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     {
         if (currentPlot == null)
         {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // SECOND END DAY GUARD
+        // -----------------------------------------------------
+
+        if (!IsActionPhaseActive())
+        {
+            RefreshUI();
             return;
         }
 
@@ -754,7 +857,9 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
         List<AudioClip> validClips =
             new List<AudioClip>();
 
-        for (int i = 0; i < clips.Length; i++)
+        for (int i = 0;
+             i < clips.Length;
+             i++)
         {
             if (clips[i] != null)
             {
@@ -780,10 +885,22 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
         float oldPitch =
             audioSource.pitch;
 
-        audioSource.pitch =
-            Random.Range(
+        float minPitch =
+            Mathf.Min(
                 audioPitchMin,
                 audioPitchMax
+            );
+
+        float maxPitch =
+            Mathf.Max(
+                audioPitchMin,
+                audioPitchMax
+            );
+
+        audioSource.pitch =
+            Random.Range(
+                minPitch,
+                maxPitch
             );
 
         audioSource.PlayOneShot(

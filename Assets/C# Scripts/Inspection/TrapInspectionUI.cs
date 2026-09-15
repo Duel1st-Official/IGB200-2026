@@ -15,6 +15,7 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Canvas canvas;
     [SerializeField] private SelectionWheel selectionWheel;
+    [SerializeField] private EndDaySystem endDaySystem;
 
     [Tooltip("The entire Trap inspection window.")]
     [SerializeField] private RectTransform panel;
@@ -295,6 +296,12 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
                 FindFirstObjectByType<SelectionWheel>();
         }
 
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
         if (panel == null)
         {
             panel =
@@ -369,6 +376,27 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
                 false
             );
         }
+    }
+
+    // =========================================================
+    // ACTION PHASE
+    // =========================================================
+
+    private bool IsActionPhaseActive()
+    {
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        // If no EndDaySystem exists, don't break the Trap UI.
+        if (endDaySystem == null)
+        {
+            return true;
+        }
+
+        return endDaySystem.IsActionPhaseActive();
     }
 
     // =========================================================
@@ -519,6 +547,8 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
 
         UpdateDragVisuals();
 
+        // Refresh every frame so Set / Relocate immediately
+        // become unavailable when the action phase ends.
         RefreshUI();
 
         if (closeWhenClickingOutside &&
@@ -690,6 +720,9 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
+        bool actionPhaseActive =
+            IsActionPhaseActive();
+
         if (titleText != null)
         {
             titleText.text =
@@ -716,8 +749,16 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
 
             if (descriptionText != null)
             {
-                descriptionText.text =
-                    "Set and bait the trap to monitor nearby predators.";
+                if (actionPhaseActive)
+                {
+                    descriptionText.text =
+                        "Set and bait the trap to monitor nearby predators.";
+                }
+                else
+                {
+                    descriptionText.text =
+                        "The working day has ended. End the day before setting this trap.";
+                }
             }
 
             if (setTrapButton != null)
@@ -727,7 +768,7 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
                 );
 
                 setTrapButton.interactable =
-                    true;
+                    actionPhaseActive;
             }
 
             if (relocateButton != null)
@@ -735,6 +776,9 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
                 relocateButton.gameObject.SetActive(
                     false
                 );
+
+                relocateButton.interactable =
+                    false;
             }
 
             return;
@@ -769,6 +813,9 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
                 setTrapButton.gameObject.SetActive(
                     false
                 );
+
+                setTrapButton.interactable =
+                    false;
             }
 
             if (relocateButton != null)
@@ -776,6 +823,9 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
                 relocateButton.gameObject.SetActive(
                     false
                 );
+
+                relocateButton.interactable =
+                    false;
             }
 
             return;
@@ -811,8 +861,16 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
 
             if (descriptionText != null)
             {
-                descriptionText.text =
-                    "A predator has been safely captured. Relocate it away from the conservation area.";
+                if (actionPhaseActive)
+                {
+                    descriptionText.text =
+                        "A predator has been safely captured. Relocate it away from the conservation area.";
+                }
+                else
+                {
+                    descriptionText.text =
+                        "A predator has been safely captured. End the day before relocating it.";
+                }
             }
 
             if (setTrapButton != null)
@@ -820,6 +878,9 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
                 setTrapButton.gameObject.SetActive(
                     false
                 );
+
+                setTrapButton.interactable =
+                    false;
             }
 
             if (relocateButton != null)
@@ -829,8 +890,34 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
                 );
 
                 relocateButton.interactable =
-                    true;
+                    actionPhaseActive;
             }
+
+            return;
+        }
+
+        // =====================================================
+        // FALLBACK
+        // =====================================================
+
+        if (setTrapButton != null)
+        {
+            setTrapButton.gameObject.SetActive(
+                false
+            );
+
+            setTrapButton.interactable =
+                false;
+        }
+
+        if (relocateButton != null)
+        {
+            relocateButton.gameObject.SetActive(
+                false
+            );
+
+            relocateButton.interactable =
+                false;
         }
     }
 
@@ -842,6 +929,16 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
     {
         if (currentTrap == null)
         {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // END DAY LOCK
+        // -----------------------------------------------------
+
+        if (!IsActionPhaseActive())
+        {
+            RefreshUI();
             return;
         }
 
@@ -891,6 +988,16 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
     {
         if (currentTrap == null)
         {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // END DAY LOCK
+        // -----------------------------------------------------
+
+        if (!IsActionPhaseActive())
+        {
+            RefreshUI();
             return;
         }
 

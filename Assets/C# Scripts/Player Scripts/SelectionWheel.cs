@@ -1,5 +1,4 @@
 ﻿using TMPro;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -24,6 +23,13 @@ public class SelectionWheel : MonoBehaviour
     public TMP_Text modeText;
     public Camera mainCamera;
 
+    [Tooltip(
+        "Controls whether Build and Remove modes are available. " +
+        "If empty, one will automatically be found."
+    )]
+    [SerializeField]
+    private EndDaySystem endDaySystem;
+
     // =========================================================
     // WHEEL OPTIONS
     // =========================================================
@@ -32,6 +38,37 @@ public class SelectionWheel : MonoBehaviour
     public Image normalImage;
     public Image buildImage;
     public Image removeImage;
+
+    // =========================================================
+    // ACTION PHASE LOCK
+    // =========================================================
+
+    [Header("Action Phase Lock")]
+
+    [Tooltip(
+        "When enabled, Build and Remove modes can only be used " +
+        "while the EndDaySystem action phase is active."
+    )]
+    [SerializeField]
+    private bool lockActionsAfterDayEnd = true;
+
+    [Tooltip(
+        "If enabled, the player is automatically returned to " +
+        "Inspector Mode when the action phase ends."
+    )]
+    [SerializeField]
+    private bool returnToInspectorAtDayEnd = true;
+
+    [Tooltip(
+        "Optional colour used for Build and Remove icons when " +
+        "the action phase has ended."
+    )]
+    [SerializeField]
+    private bool visuallyDisableLockedModes = true;
+
+    [SerializeField]
+    private Color lockedModeColour =
+        new Color(1f, 1f, 1f, 0.35f);
 
     // =========================================================
     // INPUT
@@ -106,16 +143,20 @@ public class SelectionWheel : MonoBehaviour
     [Header("Sound Effects")]
 
     [Tooltip("Audio Source used by the selection wheel.")]
-    [SerializeField] private AudioSource audioSource;
+    [SerializeField]
+    private AudioSource audioSource;
 
     [Tooltip("Played when the selection wheel opens.")]
-    [SerializeField] private AudioClip openSound;
+    [SerializeField]
+    private AudioClip openSound;
 
     [Tooltip("Played when the selection wheel closes.")]
-    [SerializeField] private AudioClip closeSound;
+    [SerializeField]
+    private AudioClip closeSound;
 
     [Tooltip("Played whenever a new wheel option is highlighted.")]
-    [SerializeField] private AudioClip hoverSound;
+    [SerializeField]
+    private AudioClip hoverSound;
 
     // =========================================================
     // MODE SELECTION SOUNDS
@@ -151,16 +192,20 @@ public class SelectionWheel : MonoBehaviour
     [Header("Sound Volumes")]
 
     [Range(0f, 1f)]
-    [SerializeField] private float openVolume = 1f;
+    [SerializeField]
+    private float openVolume = 1f;
 
     [Range(0f, 1f)]
-    [SerializeField] private float closeVolume = 1f;
+    [SerializeField]
+    private float closeVolume = 1f;
 
     [Range(0f, 1f)]
-    [SerializeField] private float hoverVolume = 0.6f;
+    [SerializeField]
+    private float hoverVolume = 0.6f;
 
     [Range(0f, 1f)]
-    [SerializeField] private float selectVolume = 1f;
+    [SerializeField]
+    private float selectVolume = 1f;
 
     // =========================================================
     // SOUND PITCH
@@ -168,11 +213,17 @@ public class SelectionWheel : MonoBehaviour
 
     [Header("Sound Pitch Variation")]
 
-    [SerializeField] private float hoverPitchMin = 0.95f;
-    [SerializeField] private float hoverPitchMax = 1.05f;
+    [SerializeField]
+    private float hoverPitchMin = 0.95f;
 
-    [SerializeField] private float selectPitchMin = 0.95f;
-    [SerializeField] private float selectPitchMax = 1.05f;
+    [SerializeField]
+    private float hoverPitchMax = 1.05f;
+
+    [SerializeField]
+    private float selectPitchMin = 0.95f;
+
+    [SerializeField]
+    private float selectPitchMax = 1.05f;
 
     // =========================================================
     // PRIVATE
@@ -189,6 +240,12 @@ public class SelectionWheel : MonoBehaviour
     private Vector2 normalOpenPosition;
     private Vector2 buildOpenPosition;
     private Vector2 removeOpenPosition;
+
+    private Color normalOriginalColour = Color.white;
+    private Color buildOriginalColour = Color.white;
+    private Color removeOriginalColour = Color.white;
+
+    private bool actionPhaseWasActive = true;
 
     // =========================================================
     // START
@@ -207,7 +264,38 @@ public class SelectionWheel : MonoBehaviour
                 GetComponent<AudioSource>();
         }
 
-        // Save open positions from the Inspector
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        // -----------------------------------------------------
+        // Save original colours
+        // -----------------------------------------------------
+
+        if (normalImage != null)
+        {
+            normalOriginalColour =
+                normalImage.color;
+        }
+
+        if (buildImage != null)
+        {
+            buildOriginalColour =
+                buildImage.color;
+        }
+
+        if (removeImage != null)
+        {
+            removeOriginalColour =
+                removeImage.color;
+        }
+
+        // -----------------------------------------------------
+        // Save open positions
+        // -----------------------------------------------------
+
         if (normalImage != null)
         {
             normalOpenPosition =
@@ -226,7 +314,10 @@ public class SelectionWheel : MonoBehaviour
                 removeImage.rectTransform.anchoredPosition;
         }
 
+        // -----------------------------------------------------
         // Start collapsed
+        // -----------------------------------------------------
+
         SetOptionsToCenter();
 
         if (selectionWheel != null)
@@ -239,10 +330,15 @@ public class SelectionWheel : MonoBehaviour
 
         Cursor.visible = true;
 
-        currentMode = PlayerMode.Normal;
+        currentMode =
+            PlayerMode.Normal;
+
+        actionPhaseWasActive =
+            IsActionPhaseAvailable();
 
         UpdateModeText();
         ResetOptionRotations();
+        UpdateLockedVisuals();
     }
 
     // =========================================================
@@ -251,18 +347,34 @@ public class SelectionWheel : MonoBehaviour
 
     private void Update()
     {
-        // =========================
+        // =====================================================
+        // FIND END DAY SYSTEM IF NECESSARY
+        // =====================================================
+
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        // =====================================================
+        // ACTION PHASE LOCK
+        // =====================================================
+
+        HandleActionPhaseLock();
+
+        // =====================================================
         // OPEN
-        // =========================
+        // =====================================================
 
         if (Input.GetKeyDown(wheelKey))
         {
             OpenWheel();
         }
 
-        // =========================
+        // =====================================================
         // WHEEL OPEN
-        // =========================
+        // =====================================================
 
         if (wheelOpen)
         {
@@ -275,9 +387,9 @@ public class SelectionWheel : MonoBehaviour
             UpdateVisuals();
         }
 
-        // =========================
+        // =====================================================
         // RELEASE TAB
-        // =========================
+        // =====================================================
 
         if (Input.GetKeyUp(wheelKey))
         {
@@ -303,9 +415,9 @@ public class SelectionWheel : MonoBehaviour
             UpdateModeText();
         }
 
-        // =========================
+        // =====================================================
         // CLOSE ANIMATION
-        // =========================
+        // =====================================================
 
         if (wheelClosing)
         {
@@ -314,6 +426,147 @@ public class SelectionWheel : MonoBehaviour
             AnimateOptionsBackToNormalScale();
 
             CheckIfWheelFinishedClosing();
+        }
+
+        UpdateLockedVisuals();
+    }
+
+    // =========================================================
+    // ACTION PHASE LOCK
+    // =========================================================
+
+    private void HandleActionPhaseLock()
+    {
+        bool actionPhaseActive =
+            IsActionPhaseAvailable();
+
+        // -----------------------------------------------------
+        // Phase just ended
+        // -----------------------------------------------------
+
+        if (actionPhaseWasActive &&
+            !actionPhaseActive)
+        {
+            if (returnToInspectorAtDayEnd &&
+                currentMode != PlayerMode.Normal)
+            {
+                currentMode =
+                    PlayerMode.Normal;
+
+                UpdateModeText();
+            }
+
+            // If Build / Remove is highlighted while the timer
+            // expires, clear that selection.
+            if (highlightedOption == 1 ||
+                highlightedOption == 2)
+            {
+                highlightedOption = -1;
+                previousHighlightedOption = -1;
+
+                wiggleTimer = 0f;
+
+                ResetOptionRotations();
+                UpdateModeText();
+            }
+        }
+
+        actionPhaseWasActive =
+            actionPhaseActive;
+    }
+
+    // =========================================================
+    // ACTION PHASE AVAILABLE
+    // =========================================================
+
+    public bool IsActionPhaseAvailable()
+    {
+        if (!lockActionsAfterDayEnd)
+        {
+            return true;
+        }
+
+        // If there is temporarily no EndDaySystem reference,
+        // do not break the player's controls.
+        if (endDaySystem == null)
+        {
+            return true;
+        }
+
+        return
+            endDaySystem.IsActionPhaseActive();
+    }
+
+    // =========================================================
+    // CAN USE BUILD / REMOVE
+    // =========================================================
+
+    public bool CanUseBuildMode()
+    {
+        return IsActionPhaseAvailable();
+    }
+
+    public bool CanUseRemoveMode()
+    {
+        return IsActionPhaseAvailable();
+    }
+
+    // =========================================================
+    // LOCKED VISUALS
+    // =========================================================
+
+    private void UpdateLockedVisuals()
+    {
+        if (!visuallyDisableLockedModes)
+        {
+            RestoreOriginalColours();
+            return;
+        }
+
+        bool available =
+            IsActionPhaseAvailable();
+
+        if (normalImage != null)
+        {
+            normalImage.color =
+                normalOriginalColour;
+        }
+
+        if (buildImage != null)
+        {
+            buildImage.color =
+                available
+                    ? buildOriginalColour
+                    : lockedModeColour;
+        }
+
+        if (removeImage != null)
+        {
+            removeImage.color =
+                available
+                    ? removeOriginalColour
+                    : lockedModeColour;
+        }
+    }
+
+    private void RestoreOriginalColours()
+    {
+        if (normalImage != null)
+        {
+            normalImage.color =
+                normalOriginalColour;
+        }
+
+        if (buildImage != null)
+        {
+            buildImage.color =
+                buildOriginalColour;
+        }
+
+        if (removeImage != null)
+        {
+            removeImage.color =
+                removeOriginalColour;
         }
     }
 
@@ -333,10 +586,8 @@ public class SelectionWheel : MonoBehaviour
 
         PlayOpenSound();
 
-        // Start mouse in middle
         MoveCursorToWheelCenter();
 
-        // Hide system cursor
         Cursor.visible = false;
 
         highlightedOption = -1;
@@ -417,7 +668,8 @@ public class SelectionWheel : MonoBehaviour
 
     private void AnimateWheelClosed()
     {
-        Vector2 center = Vector2.zero;
+        Vector2 center =
+            Vector2.zero;
 
         if (normalImage != null)
         {
@@ -494,7 +746,8 @@ public class SelectionWheel : MonoBehaviour
 
     private void CheckIfWheelFinishedClosing()
     {
-        Vector2 center = Vector2.zero;
+        Vector2 center =
+            Vector2.zero;
 
         bool normalClosed =
             normalImage == null ||
@@ -541,7 +794,8 @@ public class SelectionWheel : MonoBehaviour
                 selectionWheel.SetActive(false);
             }
 
-            wheelClosing = false;
+            wheelClosing =
+                false;
         }
     }
 
@@ -595,7 +849,6 @@ public class SelectionWheel : MonoBehaviour
             mousePosition -
             centerPosition;
 
-        // Cursor is in centre
         if (direction.sqrMagnitude <= 0.01f)
         {
             selectionArrow.anchoredPosition =
@@ -647,13 +900,14 @@ public class SelectionWheel : MonoBehaviour
             mousePosition -
             centerPosition;
 
-        // =========================
+        // =====================================================
         // DEAD ZONE
-        // =========================
+        // =====================================================
 
         if (direction.magnitude < deadZone)
         {
-            highlightedOption = -1;
+            highlightedOption =
+                -1;
 
             UpdateHighlightedText();
 
@@ -681,21 +935,46 @@ public class SelectionWheel : MonoBehaviour
            REMOVE 180° ◀────●────▶ 0° INSPECT
         */
 
+        // =====================================================
         // BUILD - TOP
+        // =====================================================
+
         if (angle >= 45f &&
             angle < 135f)
         {
-            highlightedOption = 1;
+            // Build is unavailable once the action phase ends.
+            if (CanUseBuildMode())
+            {
+                highlightedOption = 1;
+            }
+            else
+            {
+                highlightedOption = -1;
+            }
         }
 
+        // =====================================================
         // REMOVE - LEFT
+        // =====================================================
+
         else if (angle >= 135f &&
                  angle < 270f)
         {
-            highlightedOption = 2;
+            // Remove is unavailable once the action phase ends.
+            if (CanUseRemoveMode())
+            {
+                highlightedOption = 2;
+            }
+            else
+            {
+                highlightedOption = -1;
+            }
         }
 
+        // =====================================================
         // INSPECTOR - RIGHT
+        // =====================================================
+
         else
         {
             highlightedOption = 0;
@@ -710,10 +989,6 @@ public class SelectionWheel : MonoBehaviour
 
     private void UpdateVisuals()
     {
-        // =========================
-        // NEW OPTION HIGHLIGHTED
-        // =========================
-
         if (highlightedOption !=
             previousHighlightedOption)
         {
@@ -728,16 +1003,13 @@ public class SelectionWheel : MonoBehaviour
             }
             else
             {
-                wiggleTimer = 0f;
+                wiggleTimer =
+                    0f;
             }
 
             previousHighlightedOption =
                 highlightedOption;
         }
-
-        // =========================
-        // SCALE
-        // =========================
 
         UpdateOptionScale(
             normalImage,
@@ -753,10 +1025,6 @@ public class SelectionWheel : MonoBehaviour
             removeImage,
             highlightedOption == 2
         );
-
-        // =========================
-        // WIGGLE
-        // =========================
 
         if (wiggleTimer > 0f &&
             highlightedOption != -1)
@@ -785,7 +1053,8 @@ public class SelectionWheel : MonoBehaviour
         }
         else
         {
-            wiggleTimer = 0f;
+            wiggleTimer =
+                0f;
 
             ResetOptionRotations();
         }
@@ -866,12 +1135,10 @@ public class SelectionWheel : MonoBehaviour
         int option,
         float rotation)
     {
-        // Reset other icons first
         ResetOptionRotations();
 
         switch (option)
         {
-            // Inspector
             case 0:
 
                 if (normalImage != null)
@@ -886,7 +1153,6 @@ public class SelectionWheel : MonoBehaviour
 
                 break;
 
-            // Build
             case 1:
 
                 if (buildImage != null)
@@ -901,7 +1167,6 @@ public class SelectionWheel : MonoBehaviour
 
                 break;
 
-            // Remove
             case 2:
 
                 if (removeImage != null)
@@ -956,7 +1221,10 @@ public class SelectionWheel : MonoBehaviour
 
         switch (highlightedOption)
         {
-            // Inspector
+            // =================================================
+            // INSPECTOR
+            // =================================================
+
             case 0:
 
                 currentMode =
@@ -964,16 +1232,42 @@ public class SelectionWheel : MonoBehaviour
 
                 break;
 
-            // Build
+            // =================================================
+            // BUILD
+            // =================================================
+
             case 1:
+
+                if (!CanUseBuildMode())
+                {
+                    currentMode =
+                        PlayerMode.Normal;
+
+                    UpdateModeText();
+
+                    return;
+                }
 
                 currentMode =
                     PlayerMode.Build;
 
                 break;
 
-            // Remove
+            // =================================================
+            // REMOVE
+            // =================================================
+
             case 2:
+
+                if (!CanUseRemoveMode())
+                {
+                    currentMode =
+                        PlayerMode.Normal;
+
+                    UpdateModeText();
+
+                    return;
+                }
 
                 currentMode =
                     PlayerMode.Remove;
@@ -981,8 +1275,6 @@ public class SelectionWheel : MonoBehaviour
                 break;
         }
 
-        // Play one of the 3 sounds belonging
-        // to the mode we just selected.
         PlayModeSelectionSound();
 
         UpdateModeText();
@@ -1016,14 +1308,18 @@ public class SelectionWheel : MonoBehaviour
             case 1:
 
                 modeText.text =
-                    "Build Mode";
+                    CanUseBuildMode()
+                        ? "Build Mode"
+                        : "Build Locked";
 
                 break;
 
             case 2:
 
                 modeText.text =
-                    "Remove Mode";
+                    CanUseRemoveMode()
+                        ? "Remove Mode"
+                        : "Remove Locked";
 
                 break;
 
@@ -1131,7 +1427,8 @@ public class SelectionWheel : MonoBehaviour
 
     private void PlayModeSelectionSound()
     {
-        AudioClip[] sounds = null;
+        AudioClip[] sounds =
+            null;
 
         switch (currentMode)
         {
@@ -1180,8 +1477,8 @@ public class SelectionWheel : MonoBehaviour
             return;
         }
 
-        // Build a count of valid sounds.
-        int validSoundCount = 0;
+        int validSoundCount =
+            0;
 
         for (int i = 0;
              i < sounds.Length;
@@ -1198,7 +1495,6 @@ public class SelectionWheel : MonoBehaviour
             return;
         }
 
-        // Choose from only the valid sounds.
         int randomValidIndex =
             Random.Range(
                 0,
@@ -1208,7 +1504,8 @@ public class SelectionWheel : MonoBehaviour
         AudioClip selectedClip =
             null;
 
-        int currentValidIndex = 0;
+        int currentValidIndex =
+            0;
 
         for (int i = 0;
              i < sounds.Length;
@@ -1280,20 +1577,29 @@ public class SelectionWheel : MonoBehaviour
 
     public bool IsNormalMode()
     {
-        return currentMode ==
-               PlayerMode.Normal;
+        return
+            currentMode ==
+            PlayerMode.Normal;
     }
 
     public bool IsBuildMode()
     {
-        return currentMode ==
-               PlayerMode.Build;
+        // Extra safety:
+        // anything asking whether we're in Build Mode receives
+        // false once the action phase is over.
+        return
+            currentMode ==
+                PlayerMode.Build &&
+            CanUseBuildMode();
     }
 
     public bool IsRemoveMode()
     {
-        return currentMode ==
-               PlayerMode.Remove;
+        // Same protection for removing.
+        return
+            currentMode ==
+                PlayerMode.Remove &&
+            CanUseRemoveMode();
     }
 
     public bool IsWheelOpen()
@@ -1304,6 +1610,36 @@ public class SelectionWheel : MonoBehaviour
     public void SetMode(
         PlayerMode newMode)
     {
+        // =====================================================
+        // BLOCK EXTERNAL BUILD REQUEST
+        // =====================================================
+
+        if (newMode == PlayerMode.Build &&
+            !CanUseBuildMode())
+        {
+            currentMode =
+                PlayerMode.Normal;
+
+            UpdateModeText();
+
+            return;
+        }
+
+        // =====================================================
+        // BLOCK EXTERNAL REMOVE REQUEST
+        // =====================================================
+
+        if (newMode == PlayerMode.Remove &&
+            !CanUseRemoveMode())
+        {
+            currentMode =
+                PlayerMode.Normal;
+
+            UpdateModeText();
+
+            return;
+        }
+
         currentMode =
             newMode;
 
@@ -1312,8 +1648,9 @@ public class SelectionWheel : MonoBehaviour
 
     public bool IsInspectorMode()
     {
-        return currentMode ==
-               PlayerMode.Normal;
+        return
+            currentMode ==
+            PlayerMode.Normal;
     }
 
     // =========================================================
@@ -1322,13 +1659,16 @@ public class SelectionWheel : MonoBehaviour
 
     private void OnDisable()
     {
-        Cursor.visible = true;
+        Cursor.visible =
+            true;
 
         ResetOptionRotations();
+        RestoreOriginalColours();
 
         if (audioSource != null)
         {
-            audioSource.pitch = 1f;
+            audioSource.pitch =
+                1f;
         }
     }
 }
