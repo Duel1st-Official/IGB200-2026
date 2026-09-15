@@ -21,12 +21,28 @@ public class BatColony : MonoBehaviour
     }
 
     // =========================================================
-    // POPULATION
+    // REFERENCES
+    // =========================================================
+
+    [Header("References")]
+
+    [Tooltip("Automatically finds the EndDaySystem if empty.")]
+    [SerializeField]
+    private EndDaySystem endDaySystem;
+
+    [Tooltip("Automatically finds the RangerStation if empty.")]
+    [SerializeField]
+    private RangerStation rangerStation;
+
+    // =========================================================
+    // COLONY POPULATION
     // =========================================================
 
     [Header("Colony Population")]
+
     [Min(0)]
-    [SerializeField] private int colonyPopulation = 20;
+    [SerializeField]
+    private int colonyPopulation = 20;
 
     [SerializeField]
     private ColonyTrend populationTrend =
@@ -38,14 +54,186 @@ public class BatColony : MonoBehaviour
 
     [Header("Colony Values")]
 
+    [Tooltip("Colony Health starts at 50 by default.")]
     [Range(0f, 100f)]
-    [SerializeField] private float batHealth = 100f;
+    [SerializeField]
+    private float batHealth = 50f;
 
     [Range(0f, 100f)]
-    [SerializeField] private float batFood = 100f;
+    [SerializeField]
+    private float batFood = 100f;
 
     [Range(0f, 100f)]
-    [SerializeField] private float batWater = 100f;
+    [SerializeField]
+    private float batWater = 100f;
+
+    // =========================================================
+    // DAILY FOOD CONSUMPTION
+    // =========================================================
+
+    [Header("Daily Food Consumption")]
+
+    [Tooltip("Enable automatic Food consumption each day.")]
+    [SerializeField]
+    private bool consumeFoodDaily = true;
+
+    [Tooltip("How much Food the colony consumes each day.")]
+    [Min(0f)]
+    [SerializeField]
+    private float foodConsumedPerDay = 10f;
+
+    // =========================================================
+    // DAILY HEALTH
+    // =========================================================
+
+    [Header("Daily Health")]
+
+    [Tooltip(
+        "Enable the normal daily ecosystem Health calculation."
+    )]
+    [SerializeField]
+    private bool calculateHealthDaily = true;
+
+    [Tooltip(
+        "Maximum Health the normal ecosystem calculation " +
+        "can remove in one day."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float maximumDailyHealthLoss = 4f;
+
+    [Tooltip(
+        "Maximum Health the normal ecosystem calculation " +
+        "can restore in one day."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float maximumDailyHealthGain = 8f;
+
+    // =========================================================
+    // FOOD -> HEALTH
+    // =========================================================
+
+    [Header("Health - Food")]
+
+    [Tooltip(
+        "Food at or above this value improves Health."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float goodFoodThreshold = 70f;
+
+    [Tooltip(
+        "Health gained each day when Food is good."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float goodFoodHealthGain = 3f;
+
+    [Tooltip(
+        "Food at or below this value damages Health."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float lowFoodThreshold = 25f;
+
+    [Tooltip(
+        "Health lost each day when Food is low."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float lowFoodHealthLoss = 2f;
+
+    // =========================================================
+    // WATER -> HEALTH
+    // =========================================================
+
+    [Header("Health - Water")]
+
+    [Tooltip(
+        "Water at or above this value improves Health."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float goodWaterThreshold = 70f;
+
+    [Tooltip(
+        "Health gained each day when Water is good."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float goodWaterHealthGain = 3f;
+
+    [Tooltip(
+        "Water at or below this value damages Health."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float lowWaterThreshold = 20f;
+
+    [Tooltip(
+        "Health lost each day when Water is low. " +
+        "This is intentionally gentle because Water Plot " +
+        "quality can change frequently."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float lowWaterHealthLoss = 1f;
+
+    // =========================================================
+    // PREDATOR PRESSURE -> HEALTH
+    // =========================================================
+
+    [Header("Health - Predator Pressure")]
+
+    [Tooltip(
+        "Predator Pressure at or below this value " +
+        "improves colony Health."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float safePredatorThreshold = 30f;
+
+    [Tooltip(
+        "Health gained each day when Predator Pressure is low."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float safePredatorHealthGain = 2f;
+
+    [Tooltip(
+        "Predator Pressure at or above this value damages Health."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float dangerousPredatorThreshold = 70f;
+
+    [Tooltip(
+        "Health lost each day when Predator Pressure is high."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float dangerousPredatorHealthLoss = 1.5f;
+
+    // =========================================================
+    // FIRE RISK -> HEALTH
+    // =========================================================
+
+    [Header("Health - Fire Risk")]
+
+    [Tooltip(
+        "Fire Risk must reach this value before it damages Health."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float dangerousFireRiskThreshold = 80f;
+
+    [Tooltip(
+        "Health lost each day when Fire Risk is dangerous."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float dangerousFireHealthLoss = 1f;
 
     // =========================================================
     // CONDITION THRESHOLDS
@@ -53,26 +241,552 @@ public class BatColony : MonoBehaviour
 
     [Header("Condition Thresholds")]
 
-    [Tooltip("At or below this value, the condition becomes Danger.")]
+    [Tooltip(
+        "Values at or below this amount display as Danger."
+    )]
     [Range(0f, 100f)]
-    [SerializeField] private float dangerThreshold = 30f;
+    [SerializeField]
+    private float dangerThreshold = 30f;
 
-    [Tooltip("At or below this value, the condition becomes Poor.")]
+    [Tooltip(
+        "Values at or below this amount display as Poor."
+    )]
     [Range(0f, 100f)]
-    [SerializeField] private float poorThreshold = 65f;
+    [SerializeField]
+    private float poorThreshold = 65f;
+
+    // =========================================================
+    // POPULATION HEALTH THRESHOLDS
+    // =========================================================
+
+    [Header("Population Health Thresholds")]
+
+    [Tooltip(
+        "Health at or above this value is considered " +
+        "healthy enough for future population growth."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float growingHealthThreshold = 75f;
+
+    [Tooltip(
+        "Health at or below this value is considered " +
+        "dangerous enough for future population decline."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float dyingHealthThreshold = 30f;
 
     // =========================================================
     // DEBUG
     // =========================================================
 
     [Header("Debug")]
-    [SerializeField] private bool showDebugLogs = false;
+
+    [SerializeField]
+    private bool showDebugLogs = false;
+
+    [SerializeField]
+    private int lastProcessedDay = -1;
+
+    [SerializeField]
+    private float lastDailyHealthChange = 0f;
+
+    [SerializeField]
+    private float lastFoodHealthChange = 0f;
+
+    [SerializeField]
+    private float lastWaterHealthChange = 0f;
+
+    [SerializeField]
+    private float lastPredatorHealthChange = 0f;
+
+    [SerializeField]
+    private float lastFireHealthChange = 0f;
+
+    // =========================================================
+    // AWAKE
+    // =========================================================
+
+    private void Awake()
+    {
+        AutoAssignReferences();
+    }
+
+    // =========================================================
+    // START
+    // =========================================================
+
+    private void Start()
+    {
+        AutoAssignReferences();
+
+        // -----------------------------------------------------
+        // Do not process daily effects immediately.
+        // Start processing when the NEXT day begins.
+        // -----------------------------------------------------
+
+        if (endDaySystem != null)
+        {
+            lastProcessedDay =
+                endDaySystem.GetCurrentDay();
+
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    "[BatColony] Started on Day " +
+                    lastProcessedDay +
+                    ". Daily effects begin next day."
+                );
+            }
+        }
+    }
+
+    // =========================================================
+    // AUTO ASSIGN
+    // =========================================================
+
+    private void AutoAssignReferences()
+    {
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        if (rangerStation == null)
+        {
+            rangerStation =
+                FindFirstObjectByType<RangerStation>();
+        }
+    }
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
+    private void Update()
+    {
+        if (endDaySystem == null ||
+            rangerStation == null)
+        {
+            AutoAssignReferences();
+        }
+
+        if (endDaySystem == null)
+        {
+            return;
+        }
+
+        int currentDay =
+            endDaySystem.GetCurrentDay();
+
+        // -----------------------------------------------------
+        // Initialise day tracker if needed.
+        // -----------------------------------------------------
+
+        if (lastProcessedDay < 0)
+        {
+            lastProcessedDay =
+                currentDay;
+
+            return;
+        }
+
+        // -----------------------------------------------------
+        // No new day.
+        // -----------------------------------------------------
+
+        if (currentDay <= lastProcessedDay)
+        {
+            return;
+        }
+
+        // -----------------------------------------------------
+        // Process each new day.
+        // -----------------------------------------------------
+
+        while (lastProcessedDay < currentDay)
+        {
+            lastProcessedDay++;
+
+            ProcessNewDay();
+        }
+    }
+
+    // =========================================================
+    // PROCESS NEW DAY
+    // =========================================================
+
+    private void ProcessNewDay()
+    {
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "====================================" +
+                "\n[BAT COLONY] DAY " +
+                lastProcessedDay +
+                "\n===================================="
+            );
+        }
+
+        // =====================================================
+        // 1. COLONY EATS
+        // =====================================================
+
+        if (consumeFoodDaily)
+        {
+            ConsumeDailyFood();
+        }
+
+        // =====================================================
+        // 2. ECOSYSTEM AFFECTS HEALTH
+        // =====================================================
+
+        if (calculateHealthDaily)
+        {
+            CalculateDailyHealth();
+        }
+
+        // =====================================================
+        // 3. UPDATE POPULATION TREND
+        //
+        // This currently changes the displayed trend only.
+        // Actual population growth/decline can be implemented
+        // separately.
+        // =====================================================
+
+        UpdatePopulationTrendFromHealth();
+
+        if (showDebugLogs)
+        {
+            DebugState();
+        }
+
+        // =====================================================
+        // FUTURE:
+        //
+        // END-OF-DAY EVENTS CAN BE PROCESSED HERE LATER.
+        //
+        // Examples:
+        // - Heatwave
+        // - Bushfire
+        // - Predator outbreak
+        // - Disease
+        // - Water contamination
+        // - Successful conservation event
+        //
+        // These can apply additional difficulty separately
+        // from the normal ecosystem Health calculation.
+        // =====================================================
+    }
+
+    // =========================================================
+    // FOOD CONSUMPTION
+    // =========================================================
+
+    private void ConsumeDailyFood()
+    {
+        if (foodConsumedPerDay <= 0f)
+        {
+            return;
+        }
+
+        float oldFood =
+            batFood;
+
+        RemoveBatFood(
+            foodConsumedPerDay
+        );
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[BatColony] DAILY FOOD" +
+                "\nConsumed: " +
+                foodConsumedPerDay +
+                "\nFood: " +
+                oldFood +
+                " -> " +
+                batFood
+            );
+        }
+    }
+
+    // =========================================================
+    // DAILY HEALTH
+    // =========================================================
+
+    private void CalculateDailyHealth()
+    {
+        // =====================================================
+        // FOOD
+        // =====================================================
+
+        lastFoodHealthChange =
+            CalculateFoodHealthChange();
+
+        // =====================================================
+        // WATER
+        // =====================================================
+
+        lastWaterHealthChange =
+            CalculateWaterHealthChange();
+
+        // =====================================================
+        // PREDATORS
+        // =====================================================
+
+        lastPredatorHealthChange =
+            CalculatePredatorHealthChange();
+
+        // =====================================================
+        // FIRE
+        // =====================================================
+
+        lastFireHealthChange =
+            CalculateFireHealthChange();
+
+        // =====================================================
+        // RAW TOTAL
+        // =====================================================
+
+        float rawHealthChange =
+            lastFoodHealthChange +
+            lastWaterHealthChange +
+            lastPredatorHealthChange +
+            lastFireHealthChange;
+
+        // =====================================================
+        // SAFETY CAP
+        //
+        // Normal ecosystem conditions cannot change Health
+        // faster than these limits.
+        //
+        // Future events can bypass this if desired.
+        // =====================================================
+
+        lastDailyHealthChange =
+            Mathf.Clamp(
+                rawHealthChange,
+                -maximumDailyHealthLoss,
+                maximumDailyHealthGain
+            );
+
+        float oldHealth =
+            batHealth;
+
+        AddBatHealth(
+            lastDailyHealthChange
+        );
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[BatColony] DAILY HEALTH" +
+
+                "\nFood: " +
+                batFood +
+                " | " +
+                FormatSignedNumber(
+                    lastFoodHealthChange
+                ) +
+
+                "\nWater: " +
+                batWater +
+                " | " +
+                FormatSignedNumber(
+                    lastWaterHealthChange
+                ) +
+
+                "\nPredators: " +
+                GetPredatorPressureForDebug() +
+                " | " +
+                FormatSignedNumber(
+                    lastPredatorHealthChange
+                ) +
+
+                "\nFire Risk: " +
+                GetFireRiskForDebug() +
+                " | " +
+                FormatSignedNumber(
+                    lastFireHealthChange
+                ) +
+
+                "\nRaw Change: " +
+                FormatSignedNumber(
+                    rawHealthChange
+                ) +
+
+                "\nFinal Change: " +
+                FormatSignedNumber(
+                    lastDailyHealthChange
+                ) +
+
+                "\nHealth: " +
+                oldHealth +
+                " -> " +
+                batHealth
+            );
+        }
+    }
+
+    // =========================================================
+    // FOOD -> HEALTH
+    // =========================================================
+
+    private float CalculateFoodHealthChange()
+    {
+        if (batFood >=
+            goodFoodThreshold)
+        {
+            return
+                Mathf.Abs(
+                    goodFoodHealthGain
+                );
+        }
+
+        if (batFood <=
+            lowFoodThreshold)
+        {
+            return
+                -Mathf.Abs(
+                    lowFoodHealthLoss
+                );
+        }
+
+        return 0f;
+    }
+
+    // =========================================================
+    // WATER -> HEALTH
+    // =========================================================
+
+    private float CalculateWaterHealthChange()
+    {
+        if (batWater >=
+            goodWaterThreshold)
+        {
+            return
+                Mathf.Abs(
+                    goodWaterHealthGain
+                );
+        }
+
+        if (batWater <=
+            lowWaterThreshold)
+        {
+            return
+                -Mathf.Abs(
+                    lowWaterHealthLoss
+                );
+        }
+
+        return 0f;
+    }
+
+    // =========================================================
+    // PREDATOR PRESSURE -> HEALTH
+    // =========================================================
+
+    private float CalculatePredatorHealthChange()
+    {
+        if (rangerStation == null)
+        {
+            return 0f;
+        }
+
+        float predatorPressure =
+            rangerStation.GetPredatorPressure();
+
+        if (predatorPressure <=
+            safePredatorThreshold)
+        {
+            return
+                Mathf.Abs(
+                    safePredatorHealthGain
+                );
+        }
+
+        if (predatorPressure >=
+            dangerousPredatorThreshold)
+        {
+            return
+                -Mathf.Abs(
+                    dangerousPredatorHealthLoss
+                );
+        }
+
+        return 0f;
+    }
+
+    // =========================================================
+    // FIRE RISK -> HEALTH
+    // =========================================================
+
+    private float CalculateFireHealthChange()
+    {
+        if (rangerStation == null)
+        {
+            return 0f;
+        }
+
+        float fireRisk =
+            rangerStation.GetFireRisk();
+
+        if (fireRisk >=
+            dangerousFireRiskThreshold)
+        {
+            return
+                -Mathf.Abs(
+                    dangerousFireHealthLoss
+                );
+        }
+
+        return 0f;
+    }
+
+    // =========================================================
+    // POPULATION TREND FROM HEALTH
+    // =========================================================
+
+    private void UpdatePopulationTrendFromHealth()
+    {
+        if (batHealth >=
+            growingHealthThreshold)
+        {
+            populationTrend =
+                ColonyTrend.Growing;
+        }
+        else if (batHealth <=
+                 dyingHealthThreshold)
+        {
+            populationTrend =
+                ColonyTrend.Dying;
+        }
+        else
+        {
+            populationTrend =
+                ColonyTrend.Stable;
+        }
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[BatColony] Population Trend: " +
+                GetPopulationTrendText() +
+                " | Health: " +
+                batHealth
+            );
+        }
+    }
 
     // =========================================================
     // POPULATION
     // =========================================================
 
-    public void SetPopulation(int amount)
+    public void SetPopulation(
+        int amount)
     {
         colonyPopulation =
             Mathf.Max(
@@ -83,27 +797,35 @@ public class BatColony : MonoBehaviour
         DebugState();
     }
 
-    public void AddPopulation(int amount)
+    public void AddPopulation(
+        int amount)
     {
         colonyPopulation =
             Mathf.Max(
                 0,
-                colonyPopulation + amount
+                colonyPopulation +
+                amount
             );
 
         DebugState();
     }
 
-    public void RemovePopulation(int amount)
+    public void RemovePopulation(
+        int amount)
     {
         colonyPopulation =
             Mathf.Max(
                 0,
-                colonyPopulation - amount
+                colonyPopulation -
+                amount
             );
 
         DebugState();
     }
+
+    // =========================================================
+    // POPULATION TREND
+    // =========================================================
 
     public void SetPopulationTrend(
         ColonyTrend trend)
@@ -118,7 +840,8 @@ public class BatColony : MonoBehaviour
     // HEALTH
     // =========================================================
 
-    public void SetBatHealth(float value)
+    public void SetBatHealth(
+        float value)
     {
         batHealth =
             Mathf.Clamp(
@@ -130,10 +853,21 @@ public class BatColony : MonoBehaviour
         DebugState();
     }
 
-    public void AddBatHealth(float amount)
+    public void AddBatHealth(
+        float amount)
     {
         SetBatHealth(
-            batHealth + amount
+            batHealth +
+            amount
+        );
+    }
+
+    public void RemoveBatHealth(
+        float amount)
+    {
+        SetBatHealth(
+            batHealth -
+            amount
         );
     }
 
@@ -141,7 +875,8 @@ public class BatColony : MonoBehaviour
     // FOOD
     // =========================================================
 
-    public void SetBatFood(float value)
+    public void SetBatFood(
+        float value)
     {
         batFood =
             Mathf.Clamp(
@@ -153,10 +888,21 @@ public class BatColony : MonoBehaviour
         DebugState();
     }
 
-    public void AddBatFood(float amount)
+    public void AddBatFood(
+        float amount)
     {
         SetBatFood(
-            batFood + amount
+            batFood +
+            amount
+        );
+    }
+
+    public void RemoveBatFood(
+        float amount)
+    {
+        SetBatFood(
+            batFood -
+            amount
         );
     }
 
@@ -164,7 +910,8 @@ public class BatColony : MonoBehaviour
     // WATER
     // =========================================================
 
-    public void SetBatWater(float value)
+    public void SetBatWater(
+        float value)
     {
         batWater =
             Mathf.Clamp(
@@ -176,10 +923,21 @@ public class BatColony : MonoBehaviour
         DebugState();
     }
 
-    public void AddBatWater(float amount)
+    public void AddBatWater(
+        float amount)
     {
         SetBatWater(
-            batWater + amount
+            batWater +
+            amount
+        );
+    }
+
+    public void RemoveBatWater(
+        float amount)
+    {
+        SetBatWater(
+            batWater -
+            amount
         );
     }
 
@@ -213,40 +971,102 @@ public class BatColony : MonoBehaviour
     }
 
     // =========================================================
-    // CONDITION GETTERS
+    // FOOD SYSTEM GETTERS
+    // =========================================================
+
+    public float GetFoodConsumedPerDay()
+    {
+        return foodConsumedPerDay;
+    }
+
+    public bool IsDailyFoodConsumptionEnabled()
+    {
+        return consumeFoodDaily;
+    }
+
+    // =========================================================
+    // HEALTH SYSTEM GETTERS
+    // =========================================================
+
+    public float GetLastDailyHealthChange()
+    {
+        return lastDailyHealthChange;
+    }
+
+    public float GetLastFoodHealthChange()
+    {
+        return lastFoodHealthChange;
+    }
+
+    public float GetLastWaterHealthChange()
+    {
+        return lastWaterHealthChange;
+    }
+
+    public float GetLastPredatorHealthChange()
+    {
+        return lastPredatorHealthChange;
+    }
+
+    public float GetLastFireHealthChange()
+    {
+        return lastFireHealthChange;
+    }
+
+    // =========================================================
+    // POPULATION THRESHOLD GETTERS
+    // =========================================================
+
+    public float GetGrowingHealthThreshold()
+    {
+        return growingHealthThreshold;
+    }
+
+    public float GetDyingHealthThreshold()
+    {
+        return dyingHealthThreshold;
+    }
+
+    // =========================================================
+    // CONDITIONS
     // =========================================================
 
     public ColonyCondition GetBatHealthCondition()
     {
-        return GetConditionFromValue(
-            batHealth
-        );
+        return
+            GetConditionFromValue(
+                batHealth
+            );
     }
 
     public ColonyCondition GetBatFoodCondition()
     {
-        return GetConditionFromValue(
-            batFood
-        );
+        return
+            GetConditionFromValue(
+                batFood
+            );
     }
 
     public ColonyCondition GetBatWaterCondition()
     {
-        return GetConditionFromValue(
-            batWater
-        );
+        return
+            GetConditionFromValue(
+                batWater
+            );
     }
 
     private ColonyCondition GetConditionFromValue(
         float value)
     {
-        if (value <= dangerThreshold)
+        if (value <=
+            dangerThreshold)
         {
             return
                 ColonyCondition.Danger;
         }
 
-        if (value <= poorThreshold)
+        if (value <=
+            poorThreshold)
         {
             return
                 ColonyCondition.Poor;
@@ -257,7 +1077,7 @@ public class BatColony : MonoBehaviour
     }
 
     // =========================================================
-    // DISPLAY
+    // TEXT
     // =========================================================
 
     public string GetPopulationTrendText()
@@ -275,9 +1095,85 @@ public class BatColony : MonoBehaviour
         }
     }
 
+    public string GetBatHealthConditionText()
+    {
+        return
+            GetConditionText(
+                GetBatHealthCondition()
+            );
+    }
+
+    public string GetBatFoodConditionText()
+    {
+        return
+            GetConditionText(
+                GetBatFoodCondition()
+            );
+    }
+
+    public string GetBatWaterConditionText()
+    {
+        return
+            GetConditionText(
+                GetBatWaterCondition()
+            );
+    }
+
+    private string GetConditionText(
+        ColonyCondition condition)
+    {
+        switch (condition)
+        {
+            case ColonyCondition.Danger:
+                return "DANGER";
+
+            case ColonyCondition.Poor:
+                return "POOR";
+
+            default:
+                return "GOOD";
+        }
+    }
+
     // =========================================================
-    // DEBUG
+    // DEBUG HELPERS
     // =========================================================
+
+    private string FormatSignedNumber(
+        float value)
+    {
+        if (value > 0f)
+        {
+            return
+                "+" +
+                value.ToString("0.#");
+        }
+
+        return
+            value.ToString("0.#");
+    }
+
+    private float GetPredatorPressureForDebug()
+    {
+        if (rangerStation == null)
+        {
+            return 0f;
+        }
+
+        return
+            rangerStation.GetPredatorPressure();
+    }
+
+    private float GetFireRiskForDebug()
+    {
+        if (rangerStation == null)
+        {
+            return 0f;
+        }
+
+        return
+            rangerStation.GetFireRisk();
+    }
 
     private void DebugState()
     {
@@ -287,47 +1183,158 @@ public class BatColony : MonoBehaviour
         }
 
         Debug.Log(
-            "Bat Colony | Population: " +
+            "[BatColony]" +
+            "\nPopulation: " +
             colonyPopulation +
             " (" +
             GetPopulationTrendText() +
             ")" +
-            " | Health: " +
+            "\nHealth: " +
             batHealth +
-            " | Food: " +
+            "\nFood: " +
             batFood +
-            " | Water: " +
+            "\nWater: " +
             batWater
         );
     }
 
-    [ContextMenu("Debug - Healthy Colony")]
-    private void DebugHealthyColony()
+    // =========================================================
+    // DEBUG
+    // =========================================================
+
+    [ContextMenu("Debug - Calculate Daily Health")]
+    private void DebugCalculateDailyHealth()
     {
-        colonyPopulation = 25;
+        AutoAssignReferences();
 
-        populationTrend =
-            ColonyTrend.Growing;
+        CalculateDailyHealth();
 
-        batHealth = 90f;
-        batFood = 85f;
-        batWater = 95f;
-
-        DebugState();
+        UpdatePopulationTrendFromHealth();
     }
 
-    [ContextMenu("Debug - Struggling Colony")]
-    private void DebugStrugglingColony()
+    [ContextMenu("Debug - Process Daily Colony Effects")]
+    private void DebugProcessDailyEffects()
     {
-        colonyPopulation = 12;
+        AutoAssignReferences();
 
-        populationTrend =
-            ColonyTrend.Dying;
+        ProcessNewDay();
+    }
 
-        batHealth = 55f;
-        batFood = 40f;
-        batWater = 20f;
+    [ContextMenu("Debug - Consume One Day Food")]
+    private void DebugConsumeOneDayFood()
+    {
+        ConsumeDailyFood();
+    }
 
-        DebugState();
+    [ContextMenu("Debug - Set Health To 50")]
+    private void DebugSetHealthTo50()
+    {
+        SetBatHealth(
+            50f
+        );
+
+        UpdatePopulationTrendFromHealth();
+    }
+
+    [ContextMenu("Debug - Set Health To 75")]
+    private void DebugSetHealthTo75()
+    {
+        SetBatHealth(
+            75f
+        );
+
+        UpdatePopulationTrendFromHealth();
+    }
+
+    [ContextMenu("Debug - Add 20 Food")]
+    private void DebugAddFood()
+    {
+        AddBatFood(
+            20f
+        );
+    }
+
+    [ContextMenu("Debug - Remove 10 Food")]
+    private void DebugRemoveFood()
+    {
+        RemoveBatFood(
+            10f
+        );
+    }
+
+    [ContextMenu("Debug - Empty Food")]
+    private void DebugEmptyFood()
+    {
+        SetBatFood(
+            0f
+        );
+    }
+
+    [ContextMenu("Debug - Fill Food")]
+    private void DebugFillFood()
+    {
+        SetBatFood(
+            100f
+        );
+    }
+
+    [ContextMenu("Debug - Damage Health 10")]
+    private void DebugDamageHealth()
+    {
+        RemoveBatHealth(
+            10f
+        );
+
+        UpdatePopulationTrendFromHealth();
+    }
+
+    [ContextMenu("Debug - Heal Health 10")]
+    private void DebugHealHealth()
+    {
+        AddBatHealth(
+            10f
+        );
+
+        UpdatePopulationTrendFromHealth();
+    }
+
+    [ContextMenu("Debug - Remove Water 10")]
+    private void DebugRemoveWater()
+    {
+        RemoveBatWater(
+            10f
+        );
+    }
+
+    [ContextMenu("Debug - Add Water 10")]
+    private void DebugAddWater()
+    {
+        AddBatWater(
+            10f
+        );
+    }
+
+    [ContextMenu("Debug - Auto Assign References")]
+    private void DebugAutoAssignReferences()
+    {
+        AutoAssignReferences();
+
+        Debug.Log(
+            "[BatColony] AUTO ASSIGN" +
+
+            "\nEnd Day System: " +
+            (
+                endDaySystem != null
+                    ? endDaySystem.name
+                    : "NOT FOUND"
+            ) +
+
+            "\nRanger Station: " +
+            (
+                rangerStation != null
+                    ? rangerStation.name
+                    : "NOT FOUND"
+            )
+        );
     }
 }

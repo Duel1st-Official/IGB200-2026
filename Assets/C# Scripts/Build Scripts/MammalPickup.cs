@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -10,17 +10,34 @@ public class MammalPickup : MonoBehaviour
     // =========================================================
 
     [Header("References")]
-    [SerializeField] private SelectionWheel selectionWheel;
-    [SerializeField] private Camera mainCamera;
-    [SerializeField] private SpriteRenderer spriteRenderer;
-    [SerializeField] private Transform player;
+
+    [SerializeField]
+    private SelectionWheel selectionWheel;
+
+    [SerializeField]
+    private Camera mainCamera;
+
+    [SerializeField]
+    private SpriteRenderer spriteRenderer;
+
+    [SerializeField]
+    private Transform player;
+
+    [Tooltip(
+        "Crop Plot that spawned this mammal. " +
+        "This is automatically assigned."
+    )]
+    [SerializeField]
+    private CropPlot cropOwner;
 
     // =========================================================
     // MAMMAL
     // =========================================================
 
     [Header("Mammal")]
-    [SerializeField] private string mammalName = "Mammal";
+
+    [SerializeField]
+    private string mammalName = "Mammal";
 
     // =========================================================
     // INTERACTION
@@ -28,18 +45,26 @@ public class MammalPickup : MonoBehaviour
 
     [Header("Interaction")]
 
-    [Tooltip("Maximum distance from the player that the mammal can be collected.")]
-    [SerializeField] private float pickupDistance = 3f;
+    [Tooltip(
+        "Maximum distance from the player that the mammal can be collected."
+    )]
+    [SerializeField]
+    private float pickupDistance = 3f;
 
-    [Tooltip("Allow the mammal to be collected by left clicking it.")]
-    [SerializeField] private bool allowClickPickup = true;
+    [Tooltip(
+        "Allow the mammal to be collected by left clicking it."
+    )]
+    [SerializeField]
+    private bool allowClickPickup = true;
 
     // =========================================================
     // HOVER
     // =========================================================
 
     [Header("Hover")]
-    [SerializeField] private Material hoverMaterial;
+
+    [SerializeField]
+    private Material hoverMaterial;
 
     // =========================================================
     // IDLE BOB
@@ -47,17 +72,29 @@ public class MammalPickup : MonoBehaviour
 
     [Header("Idle Bob")]
 
-    [Tooltip("Makes the mammal slowly float up and down while waiting.")]
-    [SerializeField] private bool enableIdleBob = true;
+    [Tooltip(
+        "Makes the mammal slowly float up and down while waiting."
+    )]
+    [SerializeField]
+    private bool enableIdleBob = true;
 
-    [Tooltip("How far the mammal moves vertically.")]
-    [SerializeField] private float bobHeight = 0.12f;
+    [Tooltip(
+        "How far the mammal moves vertically."
+    )]
+    [SerializeField]
+    private float bobHeight = 0.12f;
 
-    [Tooltip("How quickly the mammal bobs. Lower = slower.")]
-    [SerializeField] private float bobSpeed = 1.5f;
+    [Tooltip(
+        "How quickly the mammal bobs."
+    )]
+    [SerializeField]
+    private float bobSpeed = 1.5f;
 
-    [Tooltip("Offsets different mammals so they do not all bob at exactly the same time.")]
-    [SerializeField] private bool randomizeBobPhase = true;
+    [Tooltip(
+        "Offsets mammals so they do not all bob together."
+    )]
+    [SerializeField]
+    private bool randomizeBobPhase = true;
 
     // =========================================================
     // COLLECTION ANIMATION
@@ -65,18 +102,30 @@ public class MammalPickup : MonoBehaviour
 
     [Header("Collection Animation")]
 
-    [Tooltip("How long the pickup animation takes.")]
-    [SerializeField] private float collectDuration = 0.45f;
+    [Tooltip(
+        "How long the pickup animation takes."
+    )]
+    [SerializeField]
+    private float collectDuration = 0.45f;
 
-    [Tooltip("How far upward the mammal travels when collected.")]
-    [SerializeField] private float collectRiseDistance = 0.7f;
+    [Tooltip(
+        "How far upward the mammal travels when collected."
+    )]
+    [SerializeField]
+    private float collectRiseDistance = 0.7f;
 
-    [Tooltip("Final scale multiplier at the end of the collection animation.")]
+    [Tooltip(
+        "Final scale multiplier at the end of collection."
+    )]
     [Range(0f, 1f)]
-    [SerializeField] private float collectEndScale = 0.25f;
+    [SerializeField]
+    private float collectEndScale = 0.25f;
 
-    [Tooltip("Fade the mammal out while it is being collected.")]
-    [SerializeField] private bool fadeOnCollect = true;
+    [Tooltip(
+        "Fade the mammal while being collected."
+    )]
+    [SerializeField]
+    private bool fadeOnCollect = true;
 
     // =========================================================
     // COLLECTION AUDIO
@@ -84,43 +133,55 @@ public class MammalPickup : MonoBehaviour
 
     [Header("Collection Audio")]
 
-    [Tooltip("Random sound played when the mammal is collected.")]
-    [SerializeField] private AudioClip[] collectSounds = new AudioClip[3];
+    [Tooltip(
+        "Random sound played when the mammal is collected."
+    )]
+    [SerializeField]
+    private AudioClip[] collectSounds =
+        new AudioClip[3];
 
     [Range(0f, 1f)]
-    [SerializeField] private float collectSoundVolume = 1f;
+    [SerializeField]
+    private float collectSoundVolume = 1f;
 
-    [SerializeField] private float collectPitchMin = 0.95f;
-    [SerializeField] private float collectPitchMax = 1.05f;
+    [SerializeField]
+    private float collectPitchMin = 0.95f;
+
+    [SerializeField]
+    private float collectPitchMax = 1.05f;
 
     // =========================================================
     // EVENTS
     // =========================================================
 
     [Header("Events")]
-    [SerializeField] private UnityEvent onCollected;
+
+    [SerializeField]
+    private UnityEvent onCollected;
 
     // =========================================================
     // DEBUG
     // =========================================================
 
     [Header("Debug")]
-    [SerializeField] private bool showDebugLogs = false;
+
+    [SerializeField]
+    private bool showDebugLogs = false;
 
     // =========================================================
     // PRIVATE
     // =========================================================
 
-    private CropPlot cropOwner;
-
     private Material normalMaterial;
 
     private Collider2D mammalCollider;
 
-    private bool collected;
-    private bool isHovered;
+    private bool collected = false;
+
+    private bool isHovered = false;
 
     private Vector3 baseLocalPosition;
+
     private Vector3 originalScale;
 
     private float bobPhase;
@@ -133,35 +194,11 @@ public class MammalPickup : MonoBehaviour
 
     private void Awake()
     {
-        // -----------------------------------------------------
-        // CAMERA
-        // -----------------------------------------------------
+        AutoAssignReferences();
 
-        if (mainCamera == null)
-        {
-            mainCamera =
-                Camera.main;
-        }
-
-        // -----------------------------------------------------
-        // SPRITE RENDERER
-        // -----------------------------------------------------
-
-        if (spriteRenderer == null)
-        {
-            spriteRenderer =
-                GetComponent<SpriteRenderer>();
-        }
-
-        if (spriteRenderer == null)
-        {
-            spriteRenderer =
-                GetComponentInChildren<SpriteRenderer>();
-        }
-
-        // -----------------------------------------------------
+        // =====================================================
         // MATERIAL
-        // -----------------------------------------------------
+        // =====================================================
 
         if (spriteRenderer != null)
         {
@@ -172,9 +209,9 @@ public class MammalPickup : MonoBehaviour
                 spriteRenderer.color;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // COLLIDER
-        // -----------------------------------------------------
+        // =====================================================
 
         mammalCollider =
             GetComponent<Collider2D>();
@@ -185,9 +222,9 @@ public class MammalPickup : MonoBehaviour
                 GetComponentInChildren<Collider2D>();
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // BOB
-        // -----------------------------------------------------
+        // =====================================================
 
         baseLocalPosition =
             transform.localPosition;
@@ -205,8 +242,7 @@ public class MammalPickup : MonoBehaviour
         }
         else
         {
-            bobPhase =
-                0f;
+            bobPhase = 0f;
         }
     }
 
@@ -216,32 +252,84 @@ public class MammalPickup : MonoBehaviour
 
     private void Start()
     {
-        // -----------------------------------------------------
+        AutoAssignReferences();
+
+        // =====================================================
+        // IMPORTANT
+        //
+        // The mammal has now finished being instantiated by
+        // CropPlot, so search for its owner again here.
+        // =====================================================
+
+        AutoFindCropOwner();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[MammalPickup] " +
+                mammalName +
+                " started." +
+                "\nCrop Owner = " +
+                (
+                    cropOwner != null
+                        ? cropOwner.name
+                        : "NOT FOUND"
+                )
+            );
+        }
+    }
+
+    // =========================================================
+    // AUTO ASSIGN
+    // =========================================================
+
+    private void AutoAssignReferences()
+    {
+        // =====================================================
+        // CAMERA
+        // =====================================================
+
+        if (mainCamera == null)
+        {
+            mainCamera =
+                Camera.main;
+        }
+
+        // =====================================================
+        // SPRITE RENDERER
+        // =====================================================
+
+        if (spriteRenderer == null)
+        {
+            spriteRenderer =
+                GetComponent<SpriteRenderer>();
+
+            if (spriteRenderer == null)
+            {
+                spriteRenderer =
+                    GetComponentInChildren<SpriteRenderer>();
+            }
+        }
+
+        // =====================================================
         // SELECTION WHEEL
-        // -----------------------------------------------------
+        // =====================================================
 
         if (selectionWheel == null)
         {
             selectionWheel =
-                FindFirstObjectByType<SelectionWheel>();
+                FindFirstObjectByType<SelectionWheel>(
+                    FindObjectsInactive.Include
+                );
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // PLAYER
-        // -----------------------------------------------------
+        // =====================================================
 
         if (player == null)
         {
-            GameObject playerObject =
-                GameObject.FindGameObjectWithTag(
-                    "Player"
-                );
-
-            if (playerObject != null)
-            {
-                player =
-                    playerObject.transform;
-            }
+            TryFindPlayer();
         }
     }
 
@@ -256,15 +344,15 @@ public class MammalPickup : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // IDLE BOB
-        // -----------------------------------------------------
+        // =====================================================
 
         UpdateIdleBob();
 
-        // -----------------------------------------------------
+        // =====================================================
         // NORMAL MODE ONLY
-        // -----------------------------------------------------
+        // =====================================================
 
         if (selectionWheel != null)
         {
@@ -287,9 +375,9 @@ public class MammalPickup : MonoBehaviour
             }
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // UI BLOCKING
-        // -----------------------------------------------------
+        // =====================================================
 
         if (IsPointerOverUI())
         {
@@ -300,9 +388,9 @@ public class MammalPickup : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // CAMERA
-        // -----------------------------------------------------
+        // =====================================================
 
         if (mainCamera == null)
         {
@@ -315,18 +403,18 @@ public class MammalPickup : MonoBehaviour
             }
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // PLAYER
-        // -----------------------------------------------------
+        // =====================================================
 
         if (player == null)
         {
             TryFindPlayer();
         }
 
-        // -----------------------------------------------------
-        // MOUSE POSITION
-        // -----------------------------------------------------
+        // =====================================================
+        // MOUSE
+        // =====================================================
 
         Vector3 mouseWorld =
             mainCamera.ScreenToWorldPoint(
@@ -336,18 +424,14 @@ public class MammalPickup : MonoBehaviour
         mouseWorld.z =
             transform.position.z;
 
-        // -----------------------------------------------------
+        // =====================================================
         // HOVER
-        // -----------------------------------------------------
+        // =====================================================
 
         bool hovering =
             IsMouseOverMammal(
                 mouseWorld
             );
-
-        // -----------------------------------------------------
-        // RANGE
-        // -----------------------------------------------------
 
         bool inRange =
             IsPlayerInRange();
@@ -357,9 +441,9 @@ public class MammalPickup : MonoBehaviour
             inRange
         );
 
-        // -----------------------------------------------------
+        // =====================================================
         // PICKUP
-        // -----------------------------------------------------
+        // =====================================================
 
         if (allowClickPickup &&
             isHovered &&
@@ -384,6 +468,157 @@ public class MammalPickup : MonoBehaviour
         {
             player =
                 playerObject.transform;
+        }
+    }
+
+    // =========================================================
+    // AUTO FIND CROP OWNER
+    // =========================================================
+
+    private void AutoFindCropOwner()
+    {
+        // Already assigned by CropPlot.
+        if (cropOwner != null)
+        {
+            return;
+        }
+
+        // =====================================================
+        // FIRST TRY PARENT
+        // =====================================================
+
+        cropOwner =
+            GetComponentInParent<CropPlot>();
+
+        if (cropOwner != null)
+        {
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    "[MammalPickup] Found CropPlot through parent: " +
+                    cropOwner.name
+                );
+            }
+
+            return;
+        }
+
+        // =====================================================
+        // FIND ALL FARM PLOTS
+        //
+        // CropPlot stores a reference to the mammal that it
+        // spawned. We can compare that reference against this
+        // MammalPickup.
+        // =====================================================
+
+        CropPlot[] cropPlots =
+            FindObjectsByType<CropPlot>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None
+            );
+
+        foreach (CropPlot candidate in cropPlots)
+        {
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            GameObject candidateMammal =
+                candidate.GetAttractedMammal();
+
+            if (candidateMammal == null)
+            {
+                continue;
+            }
+
+            // =================================================
+            // MAMMAL PICKUP IS ON ROOT
+            // =================================================
+
+            if (candidateMammal ==
+                gameObject)
+            {
+                cropOwner =
+                    candidate;
+
+                break;
+            }
+
+            // =================================================
+            // MAMMAL PICKUP IS ON CHILD
+            // =================================================
+
+            if (transform.IsChildOf(
+                candidateMammal.transform
+            ))
+            {
+                cropOwner =
+                    candidate;
+
+                break;
+            }
+
+            // =================================================
+            // MAMMAL ROOT MAY BE A CHILD
+            // =================================================
+
+            if (candidateMammal.transform.IsChildOf(
+                transform
+            ))
+            {
+                cropOwner =
+                    candidate;
+
+                break;
+            }
+        }
+
+        // =====================================================
+        // DEBUG
+        // =====================================================
+
+        if (showDebugLogs)
+        {
+            if (cropOwner != null)
+            {
+                Debug.Log(
+                    "[MammalPickup] Automatically found Crop Owner: " +
+                    cropOwner.name
+                );
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[MammalPickup] Could not automatically find " +
+                    "the CropPlot that spawned " +
+                    mammalName +
+                    "."
+                );
+            }
+        }
+    }
+
+    // =========================================================
+    // SET CROP OWNER
+    // =========================================================
+
+    public void SetCropOwner(
+        CropPlot owner)
+    {
+        cropOwner =
+            owner;
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[MammalPickup] Crop Owner assigned directly: " +
+                (
+                    cropOwner != null
+                        ? cropOwner.name
+                        : "NULL"
+                )
+            );
         }
     }
 
@@ -430,9 +665,10 @@ public class MammalPickup : MonoBehaviour
             return false;
         }
 
-        return spriteRenderer.bounds.Contains(
-            mouseWorld
-        );
+        return
+            spriteRenderer.bounds.Contains(
+                mouseWorld
+            );
     }
 
     // =========================================================
@@ -452,7 +688,8 @@ public class MammalPickup : MonoBehaviour
                 transform.position
             );
 
-        return distance <=
+        return
+            distance <=
             pickupDistance;
     }
 
@@ -491,17 +728,6 @@ public class MammalPickup : MonoBehaviour
     }
 
     // =========================================================
-    // SET CROP OWNER
-    // =========================================================
-
-    public void SetCropOwner(
-        CropPlot owner)
-    {
-        cropOwner =
-            owner;
-    }
-
-    // =========================================================
     // COLLECT
     // =========================================================
 
@@ -512,12 +738,22 @@ public class MammalPickup : MonoBehaviour
             return;
         }
 
+        // =====================================================
+        // IMPORTANT:
+        // FIND CROP OWNER BEFORE DOING ANYTHING ELSE
+        // =====================================================
+
+        if (cropOwner == null)
+        {
+            AutoFindCropOwner();
+        }
+
         collected =
             true;
 
-        // -----------------------------------------------------
+        // =====================================================
         // STOP HOVER
-        // -----------------------------------------------------
+        // =====================================================
 
         isHovered =
             false;
@@ -529,9 +765,9 @@ public class MammalPickup : MonoBehaviour
                 normalMaterial;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // DISABLE COLLIDER
-        // -----------------------------------------------------
+        // =====================================================
 
         if (mammalCollider != null)
         {
@@ -539,36 +775,59 @@ public class MammalPickup : MonoBehaviour
                 false;
         }
 
-        // -----------------------------------------------------
-        // PLAY COLLECTION SOUND
-        // -----------------------------------------------------
+        // =====================================================
+        // AUDIO
+        // =====================================================
 
         PlayCollectSound();
 
-        // -----------------------------------------------------
+        // =====================================================
         // EVENT
-        // -----------------------------------------------------
+        // =====================================================
 
-        if (onCollected != null)
-        {
-            onCollected.Invoke();
-        }
+        onCollected?.Invoke();
 
-        // -----------------------------------------------------
+        // =====================================================
         // TELL CROP
-        // -----------------------------------------------------
+        //
+        // THIS IS WHAT ACTUALLY CAUSES:
+        //
+        // Mammal collected
+        //       ↓
+        // CropPlot.MammalCollected()
+        //       ↓
+        // BatColony.AddBatFood()
+        //       ↓
+        // Food slider increases
+        // =====================================================
 
-        // This consumes/clears the crop immediately.
         if (cropOwner != null)
         {
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    "[MammalPickup] Sending collection to CropPlot: " +
+                    cropOwner.name
+                );
+            }
+
             cropOwner.MammalCollected(
                 this
             );
         }
+        else
+        {
+            Debug.LogWarning(
+                "[MammalPickup] " +
+                mammalName +
+                " was collected, but its CropPlot owner " +
+                "could not be found. No Bat Food was awarded."
+            );
+        }
 
-        // -----------------------------------------------------
+        // =====================================================
         // DEBUG
-        // -----------------------------------------------------
+        // =====================================================
 
         if (showDebugLogs)
         {
@@ -578,9 +837,9 @@ public class MammalPickup : MonoBehaviour
             );
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // COLLECTION ANIMATION
-        // -----------------------------------------------------
+        // =====================================================
 
         StartCoroutine(
             CollectAnimation()
@@ -602,7 +861,7 @@ public class MammalPickup : MonoBehaviour
         float timer =
             0f;
 
-        // Keep the current bob position so it does not snap.
+        // Keep current bob position.
         Vector3 startPosition =
             transform.position;
 
@@ -635,16 +894,14 @@ public class MammalPickup : MonoBehaviour
                     duration
                 );
 
-            // Strong movement at the start,
-            // slowly settling toward the end.
             float eased =
                 EaseOutCubic(
                     t
                 );
 
-            // -------------------------------------------------
+            // =================================================
             // RISE
-            // -------------------------------------------------
+            // =================================================
 
             transform.position =
                 Vector3.Lerp(
@@ -653,9 +910,9 @@ public class MammalPickup : MonoBehaviour
                     eased
                 );
 
-            // -------------------------------------------------
+            // =================================================
             // SHRINK
-            // -------------------------------------------------
+            // =================================================
 
             transform.localScale =
                 Vector3.Lerp(
@@ -664,9 +921,9 @@ public class MammalPickup : MonoBehaviour
                     eased
                 );
 
-            // -------------------------------------------------
+            // =================================================
             // FADE
-            // -------------------------------------------------
+            // =================================================
 
             if (fadeOnCollect &&
                 spriteRenderer != null)
@@ -709,14 +966,9 @@ public class MammalPickup : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // DETACHED AUDIO OBJECT
-        // -----------------------------------------------------
-        //
-        // The sound is played on its own temporary object.
-        // This means it continues playing even after the
-        // mammal itself has disappeared.
-        // -----------------------------------------------------
+        // =====================================================
 
         GameObject audioObject =
             new GameObject(
@@ -729,6 +981,9 @@ public class MammalPickup : MonoBehaviour
 
         AudioSource source =
             audioObject.AddComponent<AudioSource>();
+
+        source.enabled =
+            true;
 
         source.playOnAwake =
             false;
@@ -751,7 +1006,11 @@ public class MammalPickup : MonoBehaviour
                 collectPitchMax
             );
 
-        source.Play();
+        if (source.enabled &&
+            source.gameObject.activeInHierarchy)
+        {
+            source.Play();
+        }
 
         float pitch =
             Mathf.Max(
@@ -773,7 +1032,7 @@ public class MammalPickup : MonoBehaviour
     }
 
     // =========================================================
-    // RANDOM CLIP
+    // RANDOM SOUND
     // =========================================================
 
     private AudioClip GetRandomValidClip(
@@ -834,7 +1093,7 @@ public class MammalPickup : MonoBehaviour
     }
 
     // =========================================================
-    // UI CHECK
+    // UI
     // =========================================================
 
     private bool IsPointerOverUI()
@@ -844,7 +1103,9 @@ public class MammalPickup : MonoBehaviour
             return false;
         }
 
-        return EventSystem.current.IsPointerOverGameObject();
+        return
+            EventSystem.current
+                .IsPointerOverGameObject();
     }
 
     // =========================================================
@@ -859,6 +1120,11 @@ public class MammalPickup : MonoBehaviour
     public bool IsCollected()
     {
         return collected;
+    }
+
+    public CropPlot GetCropOwner()
+    {
+        return cropOwner;
     }
 
     // =========================================================
@@ -893,6 +1159,24 @@ public class MammalPickup : MonoBehaviour
     // =========================================================
     // DEBUG
     // =========================================================
+
+    [ContextMenu("Debug - Find Crop Owner")]
+    private void DebugFindCropOwner()
+    {
+        cropOwner =
+            null;
+
+        AutoFindCropOwner();
+
+        Debug.Log(
+            "[MammalPickup] Crop Owner = " +
+            (
+                cropOwner != null
+                    ? cropOwner.name
+                    : "NOT FOUND"
+            )
+        );
+    }
 
     [ContextMenu("Debug - Collect Mammal")]
     private void DebugCollect()

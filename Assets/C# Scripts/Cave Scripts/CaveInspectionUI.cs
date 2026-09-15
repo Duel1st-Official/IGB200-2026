@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,13 +40,31 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private Image caveIcon;
 
     // =========================================================
-    // CONDITION SLIDERS
+    // COLONY STAT SLIDERS
     // =========================================================
 
-    [Header("Condition Sliders")]
+    [Header("Colony Stat Sliders")]
+
+    [Tooltip("Displays the Ghost Bat colony's Health from 0 to 100.")]
     [SerializeField] private Slider healthSlider;
+
+    [Tooltip("Displays the Ghost Bat colony's Food from 0 to 100.")]
     [SerializeField] private Slider foodSlider;
+
+    [Tooltip("Displays the Ghost Bat colony's Water from 0 to 100.")]
     [SerializeField] private Slider waterSlider;
+
+    [Header("Slider Auto Find")]
+
+    [Tooltip(
+        "Automatically finds Health, Food and Water sliders if their Inspector references are missing."
+    )]
+    [SerializeField] private bool autoFindSliders = true;
+
+    [Tooltip(
+        "Prints the sliders and colony values to the Console when the Cave opens."
+    )]
+    [SerializeField] private bool showSliderDebugLogs = true;
 
     // =========================================================
     // BUTTONS
@@ -165,14 +183,12 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     {
         if (mainCamera == null)
         {
-            mainCamera =
-                Camera.main;
+            mainCamera = Camera.main;
         }
 
         if (canvas == null)
         {
-            canvas =
-                GetComponentInParent<Canvas>();
+            canvas = GetComponentInParent<Canvas>();
         }
 
         if (selectionWheel == null)
@@ -186,6 +202,10 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             panel =
                 transform as RectTransform;
         }
+
+        // =====================================================
+        // CANVAS GROUP
+        // =====================================================
 
         if (canvasGroup == null &&
             panel != null)
@@ -206,6 +226,19 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
                 normalAlpha;
         }
 
+        // =====================================================
+        // FIND SLIDERS
+        // =====================================================
+
+        if (autoFindSliders)
+        {
+            FindColonySliders();
+        }
+
+        // =====================================================
+        // SETUP SLIDERS
+        // =====================================================
+
         SetupSlider(
             healthSlider
         );
@@ -218,12 +251,20 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             waterSlider
         );
 
+        // =====================================================
+        // CLOSE BUTTON
+        // =====================================================
+
         if (closeButton != null)
         {
             closeButton.onClick.AddListener(
                 Close
             );
         }
+
+        // =====================================================
+        // START CLOSED
+        // =====================================================
 
         if (panel != null)
         {
@@ -234,7 +275,193 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     }
 
     // =========================================================
-    // SLIDER SETUP
+    // FIND COLONY SLIDERS
+    // =========================================================
+
+    private void FindColonySliders()
+    {
+        Slider[] sliders;
+
+        if (panel != null)
+        {
+            sliders =
+                panel.GetComponentsInChildren<Slider>(
+                    true
+                );
+        }
+        else
+        {
+            sliders =
+                GetComponentsInChildren<Slider>(
+                    true
+                );
+        }
+
+        if (sliders == null ||
+            sliders.Length == 0)
+        {
+            if (showSliderDebugLogs)
+            {
+                Debug.LogWarning(
+                    "[CaveInspectionUI] No Slider components were found inside the Cave HUD."
+                );
+            }
+
+            return;
+        }
+
+        // =====================================================
+        // SEARCH BY NAME
+        // =====================================================
+
+        foreach (Slider slider in sliders)
+        {
+            if (slider == null)
+            {
+                continue;
+            }
+
+            string searchName =
+                BuildSliderSearchName(
+                    slider.transform
+                );
+
+            // -------------------------------------------------
+            // HEALTH
+            // -------------------------------------------------
+
+            if (healthSlider == null &&
+                searchName.Contains("health"))
+            {
+                healthSlider =
+                    slider;
+
+                continue;
+            }
+
+            // -------------------------------------------------
+            // FOOD
+            // -------------------------------------------------
+
+            if (foodSlider == null &&
+                searchName.Contains("food"))
+            {
+                foodSlider =
+                    slider;
+
+                continue;
+            }
+
+            // -------------------------------------------------
+            // WATER
+            // -------------------------------------------------
+
+            if (waterSlider == null &&
+                searchName.Contains("water"))
+            {
+                waterSlider =
+                    slider;
+            }
+        }
+
+        // =====================================================
+        // FALLBACK BY ORDER
+        // =====================================================
+
+        if (healthSlider == null &&
+            sliders.Length >= 1)
+        {
+            healthSlider =
+                sliders[0];
+        }
+
+        if (foodSlider == null &&
+            sliders.Length >= 2)
+        {
+            foodSlider =
+                sliders[1];
+        }
+
+        if (waterSlider == null &&
+            sliders.Length >= 3)
+        {
+            waterSlider =
+                sliders[2];
+        }
+
+        // =====================================================
+        // DEBUG
+        // =====================================================
+
+        if (showSliderDebugLogs)
+        {
+            Debug.Log(
+                "[CaveInspectionUI] Slider search complete." +
+                "\nHealth Slider: " +
+                GetSliderDebugName(healthSlider) +
+                "\nFood Slider: " +
+                GetSliderDebugName(foodSlider) +
+                "\nWater Slider: " +
+                GetSliderDebugName(waterSlider)
+            );
+        }
+    }
+
+    // =========================================================
+    // BUILD SLIDER SEARCH NAME
+    // =========================================================
+
+    private string BuildSliderSearchName(
+        Transform sliderTransform)
+    {
+        if (sliderTransform == null)
+        {
+            return "";
+        }
+
+        string searchName =
+            sliderTransform.name.ToLower();
+
+        Transform currentParent =
+            sliderTransform.parent;
+
+        while (currentParent != null)
+        {
+            searchName +=
+                " " +
+                currentParent.name.ToLower();
+
+            if (panel != null &&
+                currentParent == panel)
+            {
+                break;
+            }
+
+            currentParent =
+                currentParent.parent;
+        }
+
+        return searchName;
+    }
+
+    // =========================================================
+    // GET SLIDER DEBUG NAME
+    // =========================================================
+
+    private string GetSliderDebugName(
+        Slider slider)
+    {
+        if (slider == null)
+        {
+            return "NOT FOUND";
+        }
+
+        return
+            slider.gameObject.name;
+    }
+
+    // =========================================================
+    // SETUP SLIDER
     // =========================================================
 
     private void SetupSlider(
@@ -245,11 +472,17 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        slider.minValue = 0f;
-        slider.maxValue = 100f;
+        slider.minValue =
+            0f;
 
-        // Display only.
-        slider.interactable = false;
+        slider.maxValue =
+            100f;
+
+        slider.wholeNumbers =
+            false;
+
+        slider.interactable =
+            false;
     }
 
     // =========================================================
@@ -275,7 +508,10 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
 
         UpdateDragVisuals();
 
-        // Keeps the HUD live if colony values change.
+        // =====================================================
+        // LIVE COLONY HUD
+        // =====================================================
+
         RefreshUI();
 
         if (closeWhenClickingOutside &&
@@ -359,7 +595,7 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
-        // CLEAR OLD CAVE HIGHLIGHT
+        // CLEAR OLD HIGHLIGHT
         // =====================================================
 
         ClearCurrentCaveHighlight();
@@ -379,11 +615,36 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
-        // CURRENT COLONY
+        // COLONY
         // =====================================================
 
         currentColony =
             colony;
+
+        // =====================================================
+        // RE-FIND SLIDERS
+        //
+        // This is intentional.
+        // If the panel was inactive during Start or the HUD was
+        // changed, opening the Cave gives us another chance.
+        // =====================================================
+
+        if (autoFindSliders)
+        {
+            FindColonySliders();
+        }
+
+        SetupSlider(
+            healthSlider
+        );
+
+        SetupSlider(
+            foodSlider
+        );
+
+        SetupSlider(
+            waterSlider
+        );
 
         // =====================================================
         // FIND INSPECTABLE CAVE
@@ -405,7 +666,7 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
-        // INSPECTED OUTLINE
+        // HIGHLIGHT
         // =====================================================
 
         if (currentInspectableCave != null)
@@ -419,12 +680,20 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         // STATE
         // =====================================================
 
-        isOpen = true;
-        isClosing = false;
-        isDragging = false;
-        manuallyPositioned = false;
+        isOpen =
+            true;
 
-        currentSwayAngle = 0f;
+        isClosing =
+            false;
+
+        isDragging =
+            false;
+
+        manuallyPositioned =
+            false;
+
+        currentSwayAngle =
+            0f;
 
         // =====================================================
         // SHOW PANEL
@@ -444,10 +713,35 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
-        // REFRESH
+        // FORCE SLIDER UPDATE
         // =====================================================
 
         RefreshUI();
+
+        // =====================================================
+        // DEBUG VALUES
+        // =====================================================
+
+        if (showSliderDebugLogs)
+        {
+            Debug.Log(
+                "[CaveInspectionUI] Cave opened." +
+                "\nPopulation: " +
+                currentColony.GetPopulation() +
+                "\nHealth: " +
+                currentColony.GetBatHealth() +
+                "\nFood: " +
+                currentColony.GetBatFood() +
+                "\nWater: " +
+                currentColony.GetBatWater() +
+                "\nHealth Slider: " +
+                GetSliderDebugName(healthSlider) +
+                "\nFood Slider: " +
+                GetSliderDebugName(foodSlider) +
+                "\nWater Slider: " +
+                GetSliderDebugName(waterSlider)
+            );
+        }
 
         // =====================================================
         // POSITION
@@ -494,7 +788,7 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         if (titleText != null)
         {
             titleText.text =
-                "GHOST BAT COLONY";
+                "GHOST BAT\nCOLONY";
         }
 
         // =====================================================
@@ -511,17 +805,39 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
+        // GET COLONY VALUES
+        // =====================================================
+
+        float health =
+            Mathf.Clamp(
+                currentColony.GetBatHealth(),
+                0f,
+                100f
+            );
+
+        float food =
+            Mathf.Clamp(
+                currentColony.GetBatFood(),
+                0f,
+                100f
+            );
+
+        float water =
+            Mathf.Clamp(
+                currentColony.GetBatWater(),
+                0f,
+                100f
+            );
+
+        // =====================================================
         // HEALTH
         // =====================================================
 
         if (healthSlider != null)
         {
-            healthSlider.value =
-                Mathf.Clamp(
-                    currentColony.GetBatHealth(),
-                    0f,
-                    100f
-                );
+            healthSlider.SetValueWithoutNotify(
+                health
+            );
         }
 
         // =====================================================
@@ -530,12 +846,9 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
 
         if (foodSlider != null)
         {
-            foodSlider.value =
-                Mathf.Clamp(
-                    currentColony.GetBatFood(),
-                    0f,
-                    100f
-                );
+            foodSlider.SetValueWithoutNotify(
+                food
+            );
         }
 
         // =====================================================
@@ -544,12 +857,9 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
 
         if (waterSlider != null)
         {
-            waterSlider.value =
-                Mathf.Clamp(
-                    currentColony.GetBatWater(),
-                    0f,
-                    100f
-                );
+            waterSlider.SetValueWithoutNotify(
+                water
+            );
         }
     }
 
@@ -1514,5 +1824,19 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
                 x - 1f,
                 2f
             );
+    }
+
+    // =========================================================
+    // CLEANUP
+    // =========================================================
+
+    private void OnDestroy()
+    {
+        if (closeButton != null)
+        {
+            closeButton.onClick.RemoveListener(
+                Close
+            );
+        }
     }
 }

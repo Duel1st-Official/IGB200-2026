@@ -5,96 +5,171 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
-public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
+public class ToursBuildingInspectionUI :
+    MonoBehaviour,
+    IInspectionPanel
 {
     // =========================================================
     // REFERENCES
     // =========================================================
 
     [Header("References")]
-    [SerializeField] private Camera mainCamera;
-    [SerializeField] private Canvas canvas;
-    [SerializeField] private SelectionWheel selectionWheel;
+
+    [SerializeField]
+    private Camera mainCamera;
+
+    [SerializeField]
+    private Canvas canvas;
+
+    [SerializeField]
+    private SelectionWheel selectionWheel;
 
     [Tooltip("The entire Tours inspection window.")]
-    [SerializeField] private RectTransform panel;
+    [SerializeField]
+    private RectTransform panel;
 
     [Tooltip("The top/header area used to drag the window.")]
-    [SerializeField] private RectTransform dragHandle;
+    [SerializeField]
+    private RectTransform dragHandle;
 
-    [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField]
+    private CanvasGroup canvasGroup;
 
     // =========================================================
     // TEXT
     // =========================================================
 
     [Header("Text")]
-    [SerializeField] private TMP_Text titleText;
-    [SerializeField] private TMP_Text toursCompletedText;
+
+    [SerializeField]
+    private TMP_Text titleText;
+
+    [SerializeField]
+    private TMP_Text toursCompletedText;
+
+    // =========================================================
+    // OPTIONAL TOUR INFORMATION
+    // =========================================================
+
+    [Header("Optional Tour Information")]
+
+    [Tooltip(
+        "Optional text showing the current potential tour quality."
+    )]
+    [SerializeField]
+    private TMP_Text tourQualityText;
+
+    [Tooltip(
+        "Optional text showing the Reputation reward " +
+        "the player would currently receive."
+    )]
+    [SerializeField]
+    private TMP_Text potentialRewardText;
+
+    [Tooltip(
+        "Optional text showing when the next tour becomes available."
+    )]
+    [SerializeField]
+    private TMP_Text tourTimingText;
 
     // =========================================================
     // ICON
     // =========================================================
 
     [Header("Icon")]
-    [SerializeField] private Image toursBuildingIcon;
+
+    [SerializeField]
+    private Image toursBuildingIcon;
 
     // =========================================================
     // REPUTATION
     // =========================================================
 
     [Header("Reputation")]
-    [SerializeField] private Slider reputationSlider;
+
+    [SerializeField]
+    private Slider reputationSlider;
 
     // =========================================================
     // TOUR BUTTON
     // =========================================================
 
     [Header("Tour")]
-    [SerializeField] private Button startTourButton;
 
-    [Tooltip("Temporary reputation reward until the real tour system is added.")]
-    [SerializeField] private float debugTourReputationReward = 5f;
+    [SerializeField]
+    private Button startTourButton;
 
     // =========================================================
     // BUTTONS
     // =========================================================
 
     [Header("Buttons")]
-    [SerializeField] private Button closeButton;
+
+    [SerializeField]
+    private Button closeButton;
 
     // =========================================================
     // POSITION
     // =========================================================
 
     [Header("Tours Building Position")]
-    [SerializeField] private float horizontalOffset = 230f;
-    [SerializeField] private float verticalOffset = 30f;
-    [SerializeField] private float followSpeed = 15f;
-    [SerializeField] private bool automaticallyFlipSide = true;
-    [SerializeField] private float screenEdgePadding = 180f;
+
+    [SerializeField]
+    private float horizontalOffset = 230f;
+
+    [SerializeField]
+    private float verticalOffset = 30f;
+
+    [SerializeField]
+    private float followSpeed = 15f;
+
+    [SerializeField]
+    private bool automaticallyFlipSide = true;
+
+    [SerializeField]
+    private float screenEdgePadding = 180f;
 
     // =========================================================
     // DRAGGING
     // =========================================================
 
     [Header("Dragging")]
-    [SerializeField] private bool allowDragging = true;
-    [SerializeField] private bool stopFollowingAfterDrag = true;
-    [SerializeField] private bool clampToCanvas = true;
-    [SerializeField] private float canvasPadding = 10f;
+
+    [SerializeField]
+    private bool allowDragging = true;
+
+    [SerializeField]
+    private bool stopFollowingAfterDrag = true;
+
+    [SerializeField]
+    private bool clampToCanvas = true;
+
+    [SerializeField]
+    private float canvasPadding = 10f;
 
     // =========================================================
     // DRAG VISUALS
     // =========================================================
 
     [Header("Drag Visuals")]
-    [SerializeField] private float dragScale = 0.92f;
-    [SerializeField] private float dragScaleSpeed = 12f;
-    [SerializeField] private float maxDragSwayAngle = 7f;
-    [SerializeField] private float swayStrength = 0.3f;
-    [SerializeField] private float swaySmoothSpeed = 10f;
-    [SerializeField] private float dropReturnSpeed = 10f;
+
+    [SerializeField]
+    private float dragScale = 0.92f;
+
+    [SerializeField]
+    private float dragScaleSpeed = 12f;
+
+    [SerializeField]
+    private float maxDragSwayAngle = 7f;
+
+    [SerializeField]
+    private float swayStrength = 0.3f;
+
+    [SerializeField]
+    private float swaySmoothSpeed = 10f;
+
+    [SerializeField]
+    private float dropReturnSpeed = 10f;
 
     // =========================================================
     // TRANSPARENCY
@@ -103,62 +178,90 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
     [Header("Transparency")]
 
     [Range(0f, 1f)]
-    [SerializeField] private float normalAlpha = 1f;
+    [SerializeField]
+    private float normalAlpha = 1f;
 
     [Range(0f, 1f)]
-    [SerializeField] private float dragAlpha = 0.7f;
+    [SerializeField]
+    private float dragAlpha = 0.7f;
 
-    [SerializeField] private float alphaSmoothSpeed = 10f;
+    [SerializeField]
+    private float alphaSmoothSpeed = 10f;
 
     // =========================================================
     // OPEN ANIMATION
     // =========================================================
 
     [Header("Open Animation")]
-    [SerializeField] private float startingScale = 0.65f;
-    [SerializeField] private float popScale = 1.08f;
-    [SerializeField] private float normalScale = 1f;
-    [SerializeField] private float popDuration = 0.1f;
-    [SerializeField] private float settleDuration = 0.1f;
+
+    [SerializeField]
+    private float startingScale = 0.65f;
+
+    [SerializeField]
+    private float popScale = 1.08f;
+
+    [SerializeField]
+    private float normalScale = 1f;
+
+    [SerializeField]
+    private float popDuration = 0.1f;
+
+    [SerializeField]
+    private float settleDuration = 0.1f;
 
     // =========================================================
     // CLOSE ANIMATION
     // =========================================================
 
     [Header("Close Animation")]
-    [SerializeField] private float closingScale = 0.65f;
-    [SerializeField] private float closeDuration = 0.14f;
-    [SerializeField] private bool fadeWhileClosing = true;
+
+    [SerializeField]
+    private float closingScale = 0.65f;
+
+    [SerializeField]
+    private float closeDuration = 0.14f;
+
+    [SerializeField]
+    private bool fadeWhileClosing = true;
 
     // =========================================================
     // OUTSIDE CLICK
     // =========================================================
 
     [Header("Outside Click")]
-    [SerializeField] private bool closeWhenClickingOutside = true;
+
+    [SerializeField]
+    private bool closeWhenClickingOutside = true;
 
     // =========================================================
     // MODE BEHAVIOUR
     // =========================================================
 
     [Header("Mode Behaviour")]
-    [SerializeField] private bool closeWhenChangingMode = true;
-    [SerializeField] private bool closeWhenSelectionWheelOpens = true;
+
+    [SerializeField]
+    private bool closeWhenChangingMode = true;
+
+    [SerializeField]
+    private bool closeWhenSelectionWheelOpens = true;
 
     // =========================================================
     // DEBUG
     // =========================================================
 
     [Header("Debug")]
-    [SerializeField] private bool useDebugTourButton = true;
-    [SerializeField] private bool showDebugLogs = false;
+
+    [SerializeField]
+    private bool showDebugLogs = false;
 
     // =========================================================
     // PRIVATE
     // =========================================================
 
     private ToursBuilding currentToursBuilding;
-    private InspectableToursBuilding currentInspectableToursBuilding;
+
+    private InspectableToursBuilding
+        currentInspectableToursBuilding;
 
     private Coroutine animationCoroutine;
 
@@ -212,7 +315,8 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
             if (canvasGroup == null)
             {
                 canvasGroup =
-                    panel.gameObject.AddComponent<CanvasGroup>();
+                    panel.gameObject
+                        .AddComponent<CanvasGroup>();
             }
         }
 
@@ -383,8 +487,7 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
                 animationCoroutine
             );
 
-            animationCoroutine =
-                null;
+            animationCoroutine = null;
         }
 
         // =====================================================
@@ -399,18 +502,23 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
         // =====================================================
 
         currentInspectableToursBuilding =
-            toursBuilding.GetComponent<InspectableToursBuilding>();
+            toursBuilding
+                .GetComponent<InspectableToursBuilding>();
 
         if (currentInspectableToursBuilding == null)
         {
             currentInspectableToursBuilding =
-                toursBuilding.GetComponentInChildren<InspectableToursBuilding>();
+                toursBuilding
+                    .GetComponentInChildren<
+                        InspectableToursBuilding>();
         }
 
         if (currentInspectableToursBuilding == null)
         {
             currentInspectableToursBuilding =
-                toursBuilding.GetComponentInParent<InspectableToursBuilding>();
+                toursBuilding
+                    .GetComponentInParent<
+                        InspectableToursBuilding>();
         }
 
         // =====================================================
@@ -468,8 +576,7 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
         // IGNORE OPENING CLICK
         // =====================================================
 
-        ignoreOutsideClick =
-            true;
+        ignoreOutsideClick = true;
 
         StartCoroutine(
             ResetOutsideClickIgnore()
@@ -512,12 +619,13 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
 
         if (reputationSlider != null)
         {
-            reputationSlider.value =
+            reputationSlider.SetValueWithoutNotify(
                 Mathf.Clamp(
                     currentToursBuilding.GetReputation(),
                     0f,
                     100f
-                );
+                )
+            );
         }
 
         // =====================================================
@@ -533,14 +641,78 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
+        // TOUR QUALITY
+        // =====================================================
+
+        if (tourQualityText != null)
+        {
+            tourQualityText.text =
+                currentToursBuilding
+                    .GetTourQuality();
+        }
+
+        // =====================================================
+        // POTENTIAL REWARD
+        // =====================================================
+
+        if (potentialRewardText != null)
+        {
+            float reward =
+                currentToursBuilding
+                    .CalculateTourReward();
+
+            potentialRewardText.text =
+                "+" +
+                reward.ToString("0") +
+                " REP";
+        }
+
+        // =====================================================
+        // TOUR COOLDOWN TEXT
+        // =====================================================
+
+        if (tourTimingText != null)
+        {
+            if (currentToursBuilding
+                .IsTourRecommended())
+            {
+                tourTimingText.text =
+                    "TOUR READY";
+            }
+            else
+            {
+                int days =
+                    currentToursBuilding
+                        .GetDaysUntilRecommendedTour();
+
+                if (days == 1)
+                {
+                    tourTimingText.text =
+                        "TOUR AVAILABLE IN 1 DAY";
+                }
+                else
+                {
+                    tourTimingText.text =
+                        "TOUR AVAILABLE IN " +
+                        days +
+                        " DAYS";
+                }
+            }
+        }
+
+        // =====================================================
         // START TOUR BUTTON
+        //
+        // HARD COOLDOWN:
+        // Button cannot be pressed until the required number
+        // of days have passed since the previous tour.
         // =====================================================
 
         if (startTourButton != null)
         {
             startTourButton.interactable =
-                currentToursBuilding.GetReputation() <
-                100f;
+                currentToursBuilding
+                    .IsTourRecommended();
         }
     }
 
@@ -555,33 +727,78 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        if (!useDebugTourButton)
+        // -----------------------------------------------------
+        // Extra safety check.
+        //
+        // Even if this method is called from somewhere other
+        // than the Button, a tour cannot happen during cooldown.
+        // -----------------------------------------------------
+
+        if (!currentToursBuilding.IsTourRecommended())
         {
             if (showDebugLogs)
             {
                 Debug.Log(
-                    "Start Tour pressed. Real tour gameplay can be connected here later."
+                    "[TOURS UI] Tour is still on cooldown. " +
+                    "Days remaining: " +
+                    currentToursBuilding
+                        .GetDaysUntilRecommendedTour()
                 );
             }
+
+            RefreshUI();
 
             return;
         }
 
         // =====================================================
-        // TEMPORARY TEST BEHAVIOUR
+        // GET TOUR INFORMATION BEFORE COMPLETION
         // =====================================================
 
-        currentToursBuilding.CompleteTour(
-            debugTourReputationReward
-        );
+        float scoreBeforeTour =
+            currentToursBuilding
+                .CalculateTourScore();
+
+        float rewardBeforeTour =
+            currentToursBuilding
+                .CalculateTourReward();
+
+        string qualityBeforeTour =
+            currentToursBuilding
+                .GetTourQuality();
+
+        // =====================================================
+        // COMPLETE TOUR
+        // =====================================================
+
+        currentToursBuilding.CompleteTour();
+
+        // -----------------------------------------------------
+        // Refresh immediately.
+        //
+        // IsTourRecommended() is now false because the
+        // last tour day was just recorded.
+        //
+        // Therefore the button immediately disables.
+        // -----------------------------------------------------
 
         RefreshUI();
 
         if (showDebugLogs)
         {
             Debug.Log(
-                "Debug tour completed. Reputation reward: " +
-                debugTourReputationReward
+                "[TOURS UI] Tour completed." +
+                "\nQuality: " +
+                qualityBeforeTour +
+                "\nScore: " +
+                scoreBeforeTour.ToString("0.0") +
+                "/100" +
+                "\nReward: +" +
+                rewardBeforeTour.ToString("0.0") +
+                "\nTour button locked for " +
+                currentToursBuilding
+                    .GetRecommendedDaysBetweenTours() +
+                " days."
             );
         }
     }
@@ -623,32 +840,20 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
                 animationCoroutine
             );
 
-            animationCoroutine =
-                null;
+            animationCoroutine = null;
         }
 
         ClearCurrentToursBuildingHighlight();
 
-        isOpen =
-            false;
+        isOpen = false;
+        isClosing = false;
+        isDragging = false;
+        manuallyPositioned = false;
+        ignoreOutsideClick = false;
 
-        isClosing =
-            false;
+        currentToursBuilding = null;
 
-        isDragging =
-            false;
-
-        manuallyPositioned =
-            false;
-
-        ignoreOutsideClick =
-            false;
-
-        currentToursBuilding =
-            null;
-
-        currentSwayAngle =
-            0f;
+        currentSwayAngle = 0f;
 
         if (panel != null)
         {
@@ -715,7 +920,7 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
     }
 
     // =========================================================
-    // POINTER OVER HUD
+    // POINTER OVER UI
     // =========================================================
 
     private bool IsPointerOverInspectionUI()
@@ -725,10 +930,11 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
             return false;
         }
 
-        if (RectTransformUtility.RectangleContainsScreenPoint(
-            panel,
-            Input.mousePosition,
-            GetUICamera()))
+        if (RectTransformUtility
+            .RectangleContainsScreenPoint(
+                panel,
+                Input.mousePosition,
+                GetUICamera()))
         {
             return true;
         }
@@ -797,38 +1003,38 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
         if (Input.GetMouseButtonDown(0))
         {
             bool overHandle =
-                RectTransformUtility.RectangleContainsScreenPoint(
-                    dragHandle,
-                    Input.mousePosition,
-                    uiCamera
-                );
+                RectTransformUtility
+                    .RectangleContainsScreenPoint(
+                        dragHandle,
+                        Input.mousePosition,
+                        uiCamera
+                    );
 
             if (overHandle)
             {
                 RectTransform canvasRect =
-                    canvas.transform as RectTransform;
+                    canvas.transform
+                        as RectTransform;
 
                 if (canvasRect == null)
                 {
                     return;
                 }
 
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    canvasRect,
-                    Input.mousePosition,
-                    uiCamera,
-                    out Vector2 mousePosition
-                );
+                RectTransformUtility
+                    .ScreenPointToLocalPointInRectangle(
+                        canvasRect,
+                        Input.mousePosition,
+                        uiCamera,
+                        out Vector2 mousePosition
+                    );
 
                 dragOffset =
                     panel.anchoredPosition -
                     mousePosition;
 
-                isDragging =
-                    true;
-
-                manuallyPositioned =
-                    true;
+                isDragging = true;
+                manuallyPositioned = true;
 
                 previousMousePosition =
                     Input.mousePosition;
@@ -843,19 +1049,21 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
             Input.GetMouseButton(0))
         {
             RectTransform canvasRect =
-                canvas.transform as RectTransform;
+                canvas.transform
+                    as RectTransform;
 
             if (canvasRect == null)
             {
                 return;
             }
 
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                canvasRect,
-                Input.mousePosition,
-                uiCamera,
-                out Vector2 mousePosition
-            );
+            RectTransformUtility
+                .ScreenPointToLocalPointInRectangle(
+                    canvasRect,
+                    Input.mousePosition,
+                    uiCamera,
+                    out Vector2 mousePosition
+                );
 
             Vector2 newPosition =
                 mousePosition +
@@ -880,8 +1088,7 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
         if (isDragging &&
             Input.GetMouseButtonUp(0))
         {
-            isDragging =
-                false;
+            isDragging = false;
         }
     }
 
@@ -1087,26 +1294,26 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
             canvas == null ||
             panel == null)
         {
-            return panel != null
-                ? panel.anchoredPosition
-                : Vector2.zero;
+            return
+                panel != null
+                    ? panel.anchoredPosition
+                    : Vector2.zero;
         }
 
         Vector3 screenPosition =
             mainCamera.WorldToScreenPoint(
-                currentToursBuilding.transform.position
+                currentToursBuilding
+                    .transform.position
             );
 
-        float direction =
-            1f;
+        float direction = 1f;
 
         if (automaticallyFlipSide &&
             screenPosition.x >
             Screen.width -
             screenEdgePadding)
         {
-            direction =
-                -1f;
+            direction = -1f;
         }
 
         screenPosition.x +=
@@ -1117,19 +1324,21 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
             verticalOffset;
 
         RectTransform canvasRect =
-            canvas.transform as RectTransform;
+            canvas.transform
+                as RectTransform;
 
         if (canvasRect == null)
         {
             return panel.anchoredPosition;
         }
 
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvasRect,
-            screenPosition,
-            GetUICamera(),
-            out Vector2 canvasPosition
-        );
+        RectTransformUtility
+            .ScreenPointToLocalPointInRectangle(
+                canvasRect,
+                screenPosition,
+                GetUICamera(),
+                out Vector2 canvasPosition
+            );
 
         if (clampToCanvas)
         {
@@ -1156,7 +1365,8 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         RectTransform canvasRect =
-            canvas.transform as RectTransform;
+            canvas.transform
+                as RectTransform;
 
         if (canvasRect == null)
         {
@@ -1284,11 +1494,8 @@ public class ToursBuildingInspectionUI : MonoBehaviour, IInspectionPanel
             yield break;
         }
 
-        isClosing =
-            true;
-
-        isDragging =
-            false;
+        isClosing = true;
+        isDragging = false;
 
         ClearCurrentToursBuildingHighlight();
 
