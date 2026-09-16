@@ -788,7 +788,7 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         if (titleText != null)
         {
             titleText.text =
-                "GHOST BAT\nCOLONY";
+                "GHOST BAT COLONY";
         }
 
         // =====================================================
