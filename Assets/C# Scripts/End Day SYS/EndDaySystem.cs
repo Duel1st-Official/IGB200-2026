@@ -14,6 +14,16 @@ public class EndDaySystem : MonoBehaviour
     [SerializeField]
     private TopDayDropdownUI topDayDropdown;
 
+    [Header("Night Report")]
+
+    [Tooltip("System that rolls and applies the nightly event. Auto-found when empty.")]
+    [SerializeField]
+    private EndDayEventSystem endDayEventSystem;
+
+    [Tooltip("UI that displays the rolled event and waits for Continue. Auto-found when empty.")]
+    [SerializeField]
+    private EndDayEventUI endDayEventUI;
+
     [Tooltip(
         "Parent GameObject containing the entire transition UI."
     )]
@@ -249,6 +259,8 @@ public class EndDaySystem : MonoBehaviour
 
     private void Start()
     {
+        AutoAssignNightReportReferences();
+
         if (topDayDropdown == null)
         {
             topDayDropdown =
@@ -774,6 +786,10 @@ public class EndDaySystem : MonoBehaviour
 
         onDayEnded?.Invoke();
 
+        // Keep the current day and closed doors until Continue finishes
+        // closing the report. transitionRunning stays true throughout.
+        yield return PlayNightReportRoutine();
+
         // =====================================================
         // NEXT DAY
         // =====================================================
@@ -826,6 +842,74 @@ public class EndDaySystem : MonoBehaviour
     // =========================================================
     // DAY TEXT
     // =========================================================
+
+    private void AutoAssignNightReportReferences()
+    {
+        if (endDayEventSystem == null)
+        {
+            endDayEventSystem =
+                FindFirstObjectByType<EndDayEventSystem>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        if (endDayEventUI == null)
+        {
+            endDayEventUI =
+                FindFirstObjectByType<EndDayEventUI>(
+                    FindObjectsInactive.Include
+                );
+        }
+    }
+
+    private IEnumerator PlayNightReportRoutine()
+    {
+        AutoAssignNightReportReferences();
+
+        if (endDayEventSystem == null || endDayEventUI == null)
+        {
+            Debug.LogWarning(
+                "[EndDaySystem] Night Report skipped: EndDayEventSystem " +
+                "or EndDayEventUI is missing. Continuing to the next day.",
+                this
+            );
+            yield break;
+        }
+
+        // The UI starts its own animation coroutine, so its host must be active.
+        // Keep the UI component on an active object and assign its panel as uiRoot.
+        if (!endDayEventUI.gameObject.activeInHierarchy)
+        {
+            endDayEventUI.gameObject.SetActive(true);
+        }
+
+        // Awake may hide uiRoot on first activation, including the host itself.
+        if (!endDayEventUI.gameObject.activeInHierarchy)
+        {
+            endDayEventUI.gameObject.SetActive(true);
+        }
+
+        if (!endDayEventUI.gameObject.activeInHierarchy)
+        {
+            Debug.LogWarning(
+                "[EndDaySystem] Night Report has an inactive parent. " +
+                "Continuing to the next day.",
+                this
+            );
+            yield break;
+        }
+
+        // RollRandomEvent applies the effect; do not apply it a second time.
+        endDayEventSystem.RollRandomEvent();
+        endDayEventUI.ShowLastEvent();
+
+        // IsOpen remains true during the closing animation. No timeout or
+        // automatic dismissal: only the report's Continue flow closes it.
+        while (endDayEventUI != null && endDayEventUI.IsOpen())
+        {
+            yield return null;
+        }
+    }
 
     private IEnumerator PlayDayTextAnimation()
     {

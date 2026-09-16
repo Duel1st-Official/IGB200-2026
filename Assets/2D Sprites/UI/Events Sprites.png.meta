@@ -1,0 +1,333 @@
+fileFormatVersion: 2
+guid: ccf8383ae0953734b81cd0ecd6a86d36
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2899513372932027233
+    second: Events Sprites_0
+  - first:
+      213: -675626243570593189
+    second: Events Sprites_1
+  - first:
+      213: 4576265474455886330
+    second: Events Sprites_2
+  - first:
+      213: -8830501539337044916
+    second: Events Sprites_3
+  - first:
+      213: 7489294797600228558
+    second: Events Sprites_4
+  - first:
+      213: 1550553224381359163
+    second: Events Sprites_5
+  - first:
+      213: 8777980695230333048
+    second: Events Sprites_6
+  - first:
+      213: 7059580757771672657
+    second: Events Sprites_7
+  - first:
+      213: -923874459571552621
+    second: Events Sprites_8
+  - first:
+      213: 5907727729144437462
+    second: Events Sprites_9
+  - first:
+      213: 621264463498815315
+    second: Events Sprites_10
+  - first:
+      213: -7691384862739971828
+    second: Events Sprites_11
+  - first:
+      213: 2872498592153541974
+    second: Events Sprites_12
+  - first:
+      213: -8725582135106986058
+    second: Events Sprites_13
+  - first:
+      213: -2348451361855943736
+    second: Events Sprites_14
+  - first:
+      213: -1772001459951153746
+    second: Events Sprites_15
+  - first:
+      213: -4572850341913462868
+    second: Events Sprites_16
+  - first:
+      213: 5437580790853071504
+    second: Events Sprites_17
+  - first:
+      213: 7568348610376266874
+    second: Events Sprites_18
+  - first:
+      213: 6753116465240493509
+    second: Events Sprites_19
+  - first:
+      213: -5784699396900140383
+    second: Events Sprites_20
+  - first:
+      213: -6290120155940177950
+    second: Events Sprites_21
+  - first:
+      213: 5304386512512053833
+    second: Events Sprites_22
+  - first:
+      213: 1427744514180621878
+    second: Events Sprites_23
+  - first:
+      213: -4495229780784323221
+    second: Events Sprites_24
+  - first:
+      213: 7403204943977607990
+    second: Events Sprites_25
+  - first:
+      213: 3423435412079476784
+    second: Events Sprites_26
+  - first:
+      213: -5734578663557399886
+    second: Events Sprites_27
+  - first:
+      213: 6065381150298814277
+    second: Events Sprites_28
+  - first:
+      213: 6060784815926366599
+    second: Events Sprites_29
+  - first:
+      213: -4564384344833249907
+    second: Events Sprites_30
+  - first:
+      213: -422098481851493840
+    second: Events Sprites_31
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Events Sprites_0
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 604
+        width: 521
+        height: 558
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 163bb17ec042d3820800000000000000
+      internalID: 2899513372932027233
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Events Sprites_1
+      rect:
+        serializedVersion: 2
+        x: 667
+        y: 582
+        width: 570
+        height: 589
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b521b07d281bf96f0800000000000000
+      internalID: -675626243570593189
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Events Sprites_2
+      rect:
+        serializedVersion: 2
+        x: 86
+        y: 34
+        width: 523
+        height: 545
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: af9d3d2f339228f30800000000000000
+      internalID: 4576265474455886330
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Events Sprites_3
+      rect:
+        serializedVersion: 2
+        x: 660
+        y: 17
+        width: 523
+        height: 542
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4c764fc2a1c37580800000000000000
+      internalID: -8830501539337044916
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 8c7300a8bc9c492438d7d37b22da3a34
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Events Sprites_0: 2899513372932027233
+      Events Sprites_1: -675626243570593189
+      Events Sprites_10: 621264463498815315
+      Events Sprites_11: -7691384862739971828
+      Events Sprites_12: 2872498592153541974
+      Events Sprites_13: -8725582135106986058
+      Events Sprites_14: -2348451361855943736
+      Events Sprites_15: -1772001459951153746
+      Events Sprites_16: -4572850341913462868
+      Events Sprites_17: 5437580790853071504
+      Events Sprites_18: 7568348610376266874
+      Events Sprites_19: 6753116465240493509
+      Events Sprites_2: 4576265474455886330
+      Events Sprites_20: -5784699396900140383
+      Events Sprites_21: -6290120155940177950
+      Events Sprites_22: 5304386512512053833
+      Events Sprites_23: 1427744514180621878
+      Events Sprites_24: -4495229780784323221
+      Events Sprites_25: 7403204943977607990
+      Events Sprites_26: 3423435412079476784
+      Events Sprites_27: -5734578663557399886
+      Events Sprites_28: 6065381150298814277
+      Events Sprites_29: 6060784815926366599
+      Events Sprites_3: -8830501539337044916
+      Events Sprites_30: -4564384344833249907
+      Events Sprites_31: -422098481851493840
+      Events Sprites_4: 7489294797600228558
+      Events Sprites_5: 1550553224381359163
+      Events Sprites_6: 8777980695230333048
+      Events Sprites_7: 7059580757771672657
+      Events Sprites_8: -923874459571552621
+      Events Sprites_9: 5907727729144437462
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

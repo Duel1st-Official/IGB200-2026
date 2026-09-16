@@ -9,7 +9,8 @@ public class RangerStation : MonoBehaviour
     [Header("References")]
 
     [Tooltip("The Ghost Bat colony affected by the environment.")]
-    [SerializeField] private BatColony batColony;
+    [SerializeField]
+    private BatColony batColony;
 
     // =========================================================
     // ENVIRONMENT STATS
@@ -18,16 +19,20 @@ public class RangerStation : MonoBehaviour
     [Header("Environment Stats")]
 
     [Range(0f, 100f)]
-    [SerializeField] private float preyAvailability = 75f;
+    [SerializeField]
+    private float preyAvailability = 75f;
 
     [Range(0f, 100f)]
-    [SerializeField] private float predatorPressure = 35f;
+    [SerializeField]
+    private float predatorPressure = 35f;
 
     [Range(0f, 100f)]
-    [SerializeField] private float fireRisk = 20f;
+    [SerializeField]
+    private float fireRisk = 20f;
 
     [Range(0f, 100f)]
-    [SerializeField] private float soilHealth = 100f;
+    [SerializeField]
+    private float soilHealth = 100f;
 
     // =========================================================
     // BASE ENVIRONMENT VALUES
@@ -35,17 +40,54 @@ public class RangerStation : MonoBehaviour
 
     [Header("Base Environment Values")]
 
-    [Tooltip("Prey Availability before Farm Plot effects.")]
+    [Tooltip("Prey Availability before Farm Plot and event effects.")]
     [Range(0f, 100f)]
-    [SerializeField] private float basePreyAvailability = 30f;
+    [SerializeField]
+    private float basePreyAvailability = 30f;
 
-    [Tooltip("Predator Pressure before Trap effects.")]
+    [Tooltip("Predator Pressure before Trap and event effects.")]
     [Range(0f, 100f)]
-    [SerializeField] private float basePredatorPressure = 50f;
+    [SerializeField]
+    private float basePredatorPressure = 50f;
 
-    [Tooltip("Fire Risk before Water Plot effects.")]
+    [Tooltip("Fire Risk before Water Plot and event effects.")]
     [Range(0f, 100f)]
-    [SerializeField] private float baseFireRisk = 30f;
+    [SerializeField]
+    private float baseFireRisk = 30f;
+
+    // =========================================================
+    // EVENT MODIFIERS
+    // =========================================================
+
+    [Header("End Day Event Modifiers")]
+
+    [Tooltip(
+        "Persistent Prey Availability modifier caused by events. " +
+        "Positive values increase prey. Negative values reduce prey."
+    )]
+    [SerializeField]
+    private float preyEventModifier = 0f;
+
+    [Tooltip(
+        "Persistent Predator Pressure modifier caused by events. " +
+        "Positive values increase predator pressure."
+    )]
+    [SerializeField]
+    private float predatorEventModifier = 0f;
+
+    [Tooltip(
+        "Persistent Fire Risk modifier caused by events. " +
+        "Positive values increase fire risk."
+    )]
+    [SerializeField]
+    private float fireEventModifier = 0f;
+
+    [Tooltip(
+        "Prevent accumulated event modifiers from becoming excessively large."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float maximumAbsoluteEventModifier = 50f;
 
     // =========================================================
     // FARM PLOT EFFECTS
@@ -56,7 +98,8 @@ public class RangerStation : MonoBehaviour
     [Tooltip(
         "Prey Availability added for every placed Farm Plot."
     )]
-    [SerializeField] private float preyPerFarmPlot = 10f;
+    [SerializeField]
+    private float preyPerFarmPlot = 10f;
 
     // =========================================================
     // WATER PLOT - COLONY WATER
@@ -67,17 +110,20 @@ public class RangerStation : MonoBehaviour
     [Tooltip(
         "Water contributed by a CLEAN Water Plot."
     )]
-    [SerializeField] private float cleanWaterContribution = 20f;
+    [SerializeField]
+    private float cleanWaterContribution = 20f;
 
     [Tooltip(
         "Water contributed by a DIRTY Water Plot."
     )]
-    [SerializeField] private float dirtyWaterContribution = 10f;
+    [SerializeField]
+    private float dirtyWaterContribution = 10f;
 
     [Tooltip(
         "Water contributed by a MURKY Water Plot."
     )]
-    [SerializeField] private float murkyWaterContribution = 0f;
+    [SerializeField]
+    private float murkyWaterContribution = 0f;
 
     // =========================================================
     // WATER PLOT - FIRE RISK
@@ -88,17 +134,20 @@ public class RangerStation : MonoBehaviour
     [Tooltip(
         "Fire Risk removed by a CLEAN Water Plot."
     )]
-    [SerializeField] private float cleanFireRiskReduction = 5f;
+    [SerializeField]
+    private float cleanFireRiskReduction = 5f;
 
     [Tooltip(
         "Fire Risk removed by a DIRTY Water Plot."
     )]
-    [SerializeField] private float dirtyFireRiskReduction = 2.5f;
+    [SerializeField]
+    private float dirtyFireRiskReduction = 2.5f;
 
     [Tooltip(
         "Fire Risk removed by a MURKY Water Plot."
     )]
-    [SerializeField] private float murkyFireRiskReduction = 0f;
+    [SerializeField]
+    private float murkyFireRiskReduction = 0f;
 
     // =========================================================
     // TRAP PLOT EFFECTS
@@ -109,7 +158,8 @@ public class RangerStation : MonoBehaviour
     [Tooltip(
         "Predator Pressure removed for every placed Trap."
     )]
-    [SerializeField] private float predatorReductionPerTrap = 10f;
+    [SerializeField]
+    private float predatorReductionPerTrap = 10f;
 
     // =========================================================
     // SOIL SETTINGS
@@ -120,7 +170,8 @@ public class RangerStation : MonoBehaviour
     [Tooltip(
         "How much Soil Health is lost whenever a crop is planted."
     )]
-    [SerializeField] private float soilDamagePerPlot = 2f;
+    [SerializeField]
+    private float soilDamagePerPlot = 2f;
 
     // =========================================================
     // UPDATE SETTINGS
@@ -132,7 +183,8 @@ public class RangerStation : MonoBehaviour
         "How often the Ranger Station checks plots and their current states."
     )]
     [Min(0.05f)]
-    [SerializeField] private float plotCheckInterval = 0.25f;
+    [SerializeField]
+    private float plotCheckInterval = 0.25f;
 
     // =========================================================
     // DEBUG
@@ -140,16 +192,29 @@ public class RangerStation : MonoBehaviour
 
     [Header("Debug")]
 
-    [SerializeField] private bool showDebugLogs = false;
+    [SerializeField]
+    private bool showDebugLogs = false;
 
-    [SerializeField] private int detectedFarmPlots = 0;
-    [SerializeField] private int detectedWaterPlots = 0;
-    [SerializeField] private int detectedCleanWaterPlots = 0;
-    [SerializeField] private int detectedDirtyWaterPlots = 0;
-    [SerializeField] private int detectedMurkyWaterPlots = 0;
-    [SerializeField] private int detectedTraps = 0;
+    [SerializeField]
+    private int detectedFarmPlots = 0;
 
-    [SerializeField] private float calculatedColonyWater = 0f;
+    [SerializeField]
+    private int detectedWaterPlots = 0;
+
+    [SerializeField]
+    private int detectedCleanWaterPlots = 0;
+
+    [SerializeField]
+    private int detectedDirtyWaterPlots = 0;
+
+    [SerializeField]
+    private int detectedMurkyWaterPlots = 0;
+
+    [SerializeField]
+    private int detectedTraps = 0;
+
+    [SerializeField]
+    private float calculatedColonyWater = 0f;
 
     // =========================================================
     // PRIVATE
@@ -226,10 +291,6 @@ public class RangerStation : MonoBehaviour
     {
         FindBatColony();
 
-        // =====================================================
-        // FIND PLOTS
-        // =====================================================
-
         Plot[] farmPlots =
             FindObjectsByType<Plot>(
                 FindObjectsSortMode.None
@@ -244,10 +305,6 @@ public class RangerStation : MonoBehaviour
             FindObjectsByType<Trap>(
                 FindObjectsSortMode.None
             );
-
-        // =====================================================
-        // COUNTS
-        // =====================================================
 
         detectedFarmPlots =
             farmPlots != null
@@ -264,29 +321,13 @@ public class RangerStation : MonoBehaviour
                 ? traps.Length
                 : 0;
 
-        // =====================================================
-        // FARM PLOTS -> PREY
-        // =====================================================
-
         CalculateFarmPlotEffects();
-
-        // =====================================================
-        // WATER PLOTS -> WATER + FIRE RISK
-        // =====================================================
 
         CalculateWaterPlotEffects(
             waterPlots
         );
 
-        // =====================================================
-        // TRAPS -> PREDATOR PRESSURE
-        // =====================================================
-
         CalculateTrapEffects();
-
-        // =====================================================
-        // DEBUG
-        // =====================================================
 
         if (showDebugLogs)
         {
@@ -310,6 +351,14 @@ public class RangerStation : MonoBehaviour
                 "\n\n--- TRAPS ---" +
                 "\nTraps: " +
                 detectedTraps +
+
+                "\n\n--- EVENT MODIFIERS ---" +
+                "\nPrey: " +
+                preyEventModifier +
+                "\nPredators: " +
+                predatorEventModifier +
+                "\nFire: " +
+                fireEventModifier +
 
                 "\n\n--- ENVIRONMENT ---" +
                 "\nPrey Availability: " +
@@ -339,7 +388,8 @@ public class RangerStation : MonoBehaviour
             (
                 detectedFarmPlots *
                 preyPerFarmPlot
-            );
+            ) +
+            preyEventModifier;
 
         SetPreyAvailability(
             calculatedPrey
@@ -363,9 +413,9 @@ public class RangerStation : MonoBehaviour
         float totalFireReduction =
             0f;
 
-        // =====================================================
+        // -----------------------------------------------------
         // NO WATER PLOTS
-        // =====================================================
+        // -----------------------------------------------------
 
         if (waterPlots == null ||
             waterPlots.Length == 0)
@@ -374,7 +424,8 @@ public class RangerStation : MonoBehaviour
                 0f;
 
             SetFireRisk(
-                baseFireRisk
+                baseFireRisk +
+                fireEventModifier
             );
 
             if (batColony != null)
@@ -387,9 +438,9 @@ public class RangerStation : MonoBehaviour
             return;
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // CHECK EVERY WATER PLOT
-        // =====================================================
+        // -----------------------------------------------------
 
         foreach (WaterPlot waterPlot in waterPlots)
         {
@@ -397,10 +448,6 @@ public class RangerStation : MonoBehaviour
             {
                 continue;
             }
-
-            // =================================================
-            // CLEAN
-            // =================================================
 
             if (waterPlot.IsClean())
             {
@@ -415,10 +462,6 @@ public class RangerStation : MonoBehaviour
                 continue;
             }
 
-            // =================================================
-            // DIRTY
-            // =================================================
-
             if (waterPlot.IsDirty())
             {
                 detectedDirtyWaterPlots++;
@@ -431,10 +474,6 @@ public class RangerStation : MonoBehaviour
 
                 continue;
             }
-
-            // =================================================
-            // MURKY
-            // =================================================
 
             if (waterPlot.IsMurky())
             {
@@ -449,10 +488,6 @@ public class RangerStation : MonoBehaviour
                 continue;
             }
 
-            // =================================================
-            // UNKNOWN STATE FALLBACK
-            // =================================================
-
             detectedMurkyWaterPlots++;
 
             totalWater +=
@@ -462,9 +497,9 @@ public class RangerStation : MonoBehaviour
                 murkyFireRiskReduction;
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // COLONY WATER
-        // =====================================================
+        // -----------------------------------------------------
 
         calculatedColonyWater =
             Mathf.Clamp(
@@ -480,13 +515,14 @@ public class RangerStation : MonoBehaviour
             );
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // FIRE RISK
-        // =====================================================
+        // -----------------------------------------------------
 
         float calculatedFireRisk =
             baseFireRisk -
-            totalFireReduction;
+            totalFireReduction +
+            fireEventModifier;
 
         SetFireRisk(
             calculatedFireRisk
@@ -504,11 +540,172 @@ public class RangerStation : MonoBehaviour
             (
                 detectedTraps *
                 predatorReductionPerTrap
-            );
+            ) +
+            predatorEventModifier;
 
         SetPredatorPressure(
             calculatedPredatorPressure
         );
+    }
+
+    // =========================================================
+    // EVENT MODIFIER HELPERS
+    // =========================================================
+
+    private float ClampEventModifier(
+        float value)
+    {
+        float limit =
+            Mathf.Max(
+                0f,
+                maximumAbsoluteEventModifier
+            );
+
+        return
+            Mathf.Clamp(
+                value,
+                -limit,
+                limit
+            );
+    }
+
+    // =========================================================
+    // PREY EVENT MODIFIER
+    // =========================================================
+
+    public float GetPreyEventModifier()
+    {
+        return preyEventModifier;
+    }
+
+    public void SetPreyEventModifier(
+        float value)
+    {
+        preyEventModifier =
+            ClampEventModifier(
+                value
+            );
+
+        RecalculatePlotEffects();
+    }
+
+    public void AddPreyEventModifier(
+        float amount)
+    {
+        SetPreyEventModifier(
+            preyEventModifier +
+            amount
+        );
+    }
+
+    public void RemovePreyEventModifier(
+        float amount)
+    {
+        SetPreyEventModifier(
+            preyEventModifier -
+            amount
+        );
+    }
+
+    // =========================================================
+    // PREDATOR EVENT MODIFIER
+    // =========================================================
+
+    public float GetPredatorEventModifier()
+    {
+        return predatorEventModifier;
+    }
+
+    public void SetPredatorEventModifier(
+        float value)
+    {
+        predatorEventModifier =
+            ClampEventModifier(
+                value
+            );
+
+        RecalculatePlotEffects();
+    }
+
+    public void AddPredatorEventModifier(
+        float amount)
+    {
+        SetPredatorEventModifier(
+            predatorEventModifier +
+            amount
+        );
+    }
+
+    public void RemovePredatorEventModifier(
+        float amount)
+    {
+        SetPredatorEventModifier(
+            predatorEventModifier -
+            amount
+        );
+    }
+
+    // =========================================================
+    // FIRE EVENT MODIFIER
+    // =========================================================
+
+    public float GetFireEventModifier()
+    {
+        return fireEventModifier;
+    }
+
+    public void SetFireEventModifier(
+        float value)
+    {
+        fireEventModifier =
+            ClampEventModifier(
+                value
+            );
+
+        RecalculatePlotEffects();
+    }
+
+    public void AddFireEventModifier(
+        float amount)
+    {
+        SetFireEventModifier(
+            fireEventModifier +
+            amount
+        );
+    }
+
+    public void RemoveFireEventModifier(
+        float amount)
+    {
+        SetFireEventModifier(
+            fireEventModifier -
+            amount
+        );
+    }
+
+    // =========================================================
+    // CLEAR EVENT MODIFIERS
+    // =========================================================
+
+    public void ClearEventModifiers()
+    {
+        preyEventModifier =
+            0f;
+
+        predatorEventModifier =
+            0f;
+
+        fireEventModifier =
+            0f;
+
+        RecalculatePlotEffects();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[RangerStation] Event modifiers cleared."
+            );
+        }
     }
 
     // =========================================================
@@ -700,7 +897,7 @@ public class RangerStation : MonoBehaviour
     }
 
     // =========================================================
-    // SOIL CONDITION
+    // CONDITIONS
     // =========================================================
 
     public string GetSoilCondition()
@@ -718,10 +915,6 @@ public class RangerStation : MonoBehaviour
         return "Healthy";
     }
 
-    // =========================================================
-    // PREY CONDITION
-    // =========================================================
-
     public string GetPreyCondition()
     {
         if (preyAvailability <= 30f)
@@ -737,10 +930,6 @@ public class RangerStation : MonoBehaviour
         return "Good";
     }
 
-    // =========================================================
-    // PREDATOR CONDITION
-    // =========================================================
-
     public string GetPredatorCondition()
     {
         if (predatorPressure <= 30f)
@@ -755,10 +944,6 @@ public class RangerStation : MonoBehaviour
 
         return "High";
     }
-
-    // =========================================================
-    // FIRE CONDITION
-    // =========================================================
 
     public string GetFireRiskCondition()
     {
@@ -850,5 +1035,11 @@ public class RangerStation : MonoBehaviour
         SetSoilHealth(
             100f
         );
+    }
+
+    [ContextMenu("Debug - Clear Event Modifiers")]
+    private void DebugClearEventModifiers()
+    {
+        ClearEventModifiers();
     }
 }
