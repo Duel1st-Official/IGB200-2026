@@ -35,6 +35,35 @@ public class CropPlot : MonoBehaviour
     [SerializeField]
     private BatColony batColony;
 
+    [Tooltip("Environment stats used for daily prey arrival. Automatically found if empty.")]
+    [SerializeField] private RangerStation rangerStation;
+
+    [Header("Daily Prey Arrival")]
+    [Tooltip("Daily arrival chance at 100 Soil Health and 100 Prey Availability. Checks start the day AFTER maturity.")]
+    [Range(0f, 100f)]
+    [SerializeField] private float maximumDailyPreyChance = 80f;
+
+    public float GetDailyPreyArrivalChance()
+    {
+        if (rangerStation == null)
+            rangerStation = FindFirstObjectByType<RangerStation>();
+        if (rangerStation == null) return 0f;
+        float chance = Mathf.Clamp(maximumDailyPreyChance, 0f, 100f) *
+            Mathf.Clamp01(rangerStation.GetSoilHealth() / 100f) *
+            Mathf.Clamp01(rangerStation.GetPreyAvailability() / 100f);
+        return float.IsNaN(chance) ? 0f : chance;
+    }
+
+    private void TryDailyPreyArrival()
+    {
+        if (!cropActive || !fullyGrown || attractedMammal != null ||
+            !attractMammalWhenFullyGrown) return;
+
+        float chance = GetDailyPreyArrivalChance();
+        if (chance > 0f && (chance >= 100f || Random.value < chance / 100f))
+            SpawnMammal();
+    }
+
     // =========================================================
     // CROP VISUALS
     // =========================================================
@@ -78,7 +107,7 @@ public class CropPlot : MonoBehaviour
     private Transform mammalSpawnPoint;
 
     [Tooltip(
-        "Automatically attract a mammal when the crop becomes fully grown."
+        "Enable daily prey arrival checks after the crop has matured."
     )]
     [SerializeField]
     private bool attractMammalWhenFullyGrown = true;
@@ -333,11 +362,6 @@ public class CropPlot : MonoBehaviour
             return;
         }
 
-        if (fullyGrown)
-        {
-            return;
-        }
-
         // =====================================================
         // MAKE SURE END DAY SYSTEM EXISTS
         // =====================================================
@@ -359,6 +383,13 @@ public class CropPlot : MonoBehaviour
         int currentDay =
             endDaySystem.GetCurrentDay();
 
+        if (currentDay < 1) return;
+        if (lastProcessedDay < 1)
+        {
+            lastProcessedDay = currentDay;
+            return;
+        }
+
         if (currentDay <= lastProcessedDay)
         {
             return;
@@ -372,12 +403,14 @@ public class CropPlot : MonoBehaviour
         {
             lastProcessedDay++;
 
-            GrowOneDay();
-
+            // Choose the branch BEFORE growth: reaching maturity today
+            // cannot also run today's prey check.
             if (fullyGrown)
-            {
-                break;
-            }
+                TryDailyPreyArrival();
+            else
+                GrowOneDay();
+
+            if (!cropActive) break;
         }
     }
 
@@ -552,10 +585,7 @@ public class CropPlot : MonoBehaviour
             );
         }
 
-        if (attractMammalWhenFullyGrown)
-        {
-            SpawnMammal();
-        }
+        // Prey checks begin on the following processed day.
     }
 
     // =========================================================

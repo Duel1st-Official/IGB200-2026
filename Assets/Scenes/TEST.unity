@@ -38787,6 +38787,8 @@ MonoBehaviour:
   poorThreshold: 65
   growingHealthThreshold: 75
   dyingHealthThreshold: 30
+  maximumDailyPopulationChange: 3
+  populationRemainder: 0
   showDebugLogs: 0
   lastProcessedDay: -1
   lastDailyHealthChange: 0

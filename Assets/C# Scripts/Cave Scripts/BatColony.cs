@@ -259,23 +259,50 @@ public class BatColony : MonoBehaviour
     // POPULATION HEALTH THRESHOLDS
     // =========================================================
 
-    [Header("Population Health Thresholds")]
+    // Retained only for compatibility with existing serialized components.
+    [SerializeField, HideInInspector] private float growingHealthThreshold = 75f;
+    [SerializeField, HideInInspector] private float dyingHealthThreshold = 30f;
 
-    [Tooltip(
-        "Health at or above this value is considered " +
-        "healthy enough for future population growth."
-    )]
-    [Range(0f, 100f)]
-    [SerializeField]
-    private float growingHealthThreshold = 75f;
+    [Header("Daily Population Change")]
+    [Tooltip("Maximum bats gained at 100 health or lost at 0 health per day. 50 health is stable. Fractions accumulate across days.")]
+    [Range(0f, 20f)]
+    [SerializeField] private float maximumDailyPopulationChange = 5f;
+    [SerializeField, HideInInspector] private double populationRemainder;
 
-    [Tooltip(
-        "Health at or below this value is considered " +
-        "dangerous enough for future population decline."
-    )]
-    [Range(0f, 100f)]
-    [SerializeField]
-    private float dyingHealthThreshold = 30f;
+    private void CalculateDailyPopulation()
+    {
+        if (colonyPopulation <= 0)
+        {
+            populationRemainder = 0d;
+            return;
+        }
+
+        double distance = (Mathf.Clamp(batHealth, 0f, 100f) - 50d) / 50d;
+        if (double.IsNaN(distance)) return;
+        if (distance == 0d)
+        {
+            populationRemainder = 0d;
+            return;
+        }
+
+        // Old growth credit must not cause births after health falls below 50,
+        // or old decline credit delay recovery after health improves.
+        if (populationRemainder * distance < 0d) populationRemainder = 0d;
+        double rate = maximumDailyPopulationChange;
+        if (double.IsNaN(rate) || double.IsInfinity(rate)) rate = 5d;
+        rate = System.Math.Max(0d, System.Math.Min(20d, rate));
+        populationRemainder += rate * distance * System.Math.Abs(distance);
+
+        int wholeBats = (int)System.Math.Floor(System.Math.Abs(populationRemainder) + 1e-9d);
+        if (wholeBats == 0) return;
+        int change = populationRemainder > 0d ? wholeBats : -wholeBats;
+        long nextPopulation = (long)colonyPopulation + change;
+        colonyPopulation = (int)System.Math.Max(0L, System.Math.Min(int.MaxValue, nextPopulation));
+        populationRemainder -= change;
+        if (System.Math.Abs(populationRemainder) < 1e-9d ||
+            colonyPopulation == 0 || colonyPopulation == int.MaxValue)
+            populationRemainder = 0d;
+    }
 
     // =========================================================
     // DEBUG
@@ -311,6 +338,7 @@ public class BatColony : MonoBehaviour
     private void Awake()
     {
         AutoAssignReferences();
+        UpdatePopulationTrendFromHealth();
     }
 
     // =========================================================
@@ -385,7 +413,9 @@ public class BatColony : MonoBehaviour
         // Initialise day tracker if needed.
         // -----------------------------------------------------
 
-        if (lastProcessedDay < 0)
+        if (currentDay < 1) return;
+
+        if (lastProcessedDay < 1)
         {
             lastProcessedDay =
                 currentDay;
@@ -449,13 +479,10 @@ public class BatColony : MonoBehaviour
         }
 
         // =====================================================
-        // 3. UPDATE POPULATION TREND
-        //
-        // This currently changes the displayed trend only.
-        // Actual population growth/decline can be implemented
-        // separately.
+        // 3. APPLY POPULATION CHANGE USING THE UPDATED HEALTH
         // =====================================================
 
+        CalculateDailyPopulation();
         UpdatePopulationTrendFromHealth();
 
         if (showDebugLogs)
@@ -752,14 +779,12 @@ public class BatColony : MonoBehaviour
 
     private void UpdatePopulationTrendFromHealth()
     {
-        if (batHealth >=
-            growingHealthThreshold)
+        if (batHealth > 50f)
         {
             populationTrend =
                 ColonyTrend.Growing;
         }
-        else if (batHealth <=
-                 dyingHealthThreshold)
+        else if (batHealth < 50f)
         {
             populationTrend =
                 ColonyTrend.Dying;
@@ -788,6 +813,7 @@ public class BatColony : MonoBehaviour
     public void SetPopulation(
         int amount)
     {
+        populationRemainder = 0d;
         colonyPopulation =
             Mathf.Max(
                 0,
@@ -850,6 +876,9 @@ public class BatColony : MonoBehaviour
                 100f
             );
 
+        if ((batHealth - 50f) * populationRemainder <= 0d)
+            populationRemainder = 0d;
+        UpdatePopulationTrendFromHealth();
         DebugState();
     }
 
@@ -1019,12 +1048,12 @@ public class BatColony : MonoBehaviour
 
     public float GetGrowingHealthThreshold()
     {
-        return growingHealthThreshold;
+        return 50f;
     }
 
     public float GetDyingHealthThreshold()
     {
-        return dyingHealthThreshold;
+        return 50f;
     }
 
     // =========================================================
