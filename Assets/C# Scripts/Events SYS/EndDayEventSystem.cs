@@ -45,6 +45,9 @@ public class EndDayEventSystem : MonoBehaviour
         [Tooltip("Optional sprite for the future Night Report UI.")]
         public Sprite icon;
 
+        [Tooltip("Use the burnt report background for an extreme destructive event. Does not change its stats or chance.")]
+        public bool extremeEvent = false;
+
         [Tooltip(
             "Relative chance of this event being selected. " +
             "Higher weight = more common."
@@ -133,6 +136,9 @@ public class EndDayEventSystem : MonoBehaviour
 
     [SerializeField]
     private Sprite lastEventIcon;
+
+    [SerializeField]
+    private bool lastEventExtreme;
 
     [SerializeField]
     private EventTarget lastEventTarget =
@@ -394,6 +400,88 @@ public class EndDayEventSystem : MonoBehaviour
                 " default events."
             );
         }
+    }
+
+    // =========================================================
+    // EXTREME EVENT POOL
+    // =========================================================
+
+    [ContextMenu("Events - Add Missing Extreme Events")]
+    public void AddMissingExtremeEvents()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            UnityEditor.Undo.RecordObject(this, "Add Extreme Events");
+        }
+#endif
+
+        if (events == null)
+        {
+            events = new List<EndDayEvent>();
+        }
+
+        // Append only. Existing event settings and icon assignments are preserved.
+        AddExtremeEventIfMissing(
+            "Bushfire Damage", "BUSHFIRE DAMAGE",
+            "A bushfire swept through part of the reserve, burning vegetation and severely damaging the soil.",
+            EventTarget.SoilHealth, -25f);
+
+        AddExtremeEventIfMissing(
+            "Extreme Heatwave", "EXTREME HEATWAVE",
+            "Intense overnight heat placed the Ghost Bat colony under severe stress, reducing colony health.",
+            EventTarget.BatHealth, -15f);
+
+        AddExtremeEventIfMissing(
+            "Predator Surge", "PREDATOR SURGE",
+            "Camera traps recorded a sudden surge of introduced predators across the reserve's foraging habitat.",
+            EventTarget.PredatorPressure, 30f);
+
+        AddExtremeEventIfMissing(
+            "Prey Collapse", "PREY COLLAPSE",
+            "Ranger surveys recorded a sharp collapse in small-animal activity, leaving far fewer hunting opportunities for the colony.",
+            EventTarget.PreyAvailability, -25f);
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            UnityEditor.EditorUtility.SetDirty(this);
+            if (UnityEditor.PrefabUtility.IsPartOfPrefabInstance(this))
+            {
+                UnityEditor.PrefabUtility.RecordPrefabInstancePropertyModifications(this);
+            }
+        }
+#endif
+
+        if (showDebugLogs)
+        {
+            Debug.Log("[EndDayEventSystem] Extreme events added where missing. Existing events were preserved.", this);
+        }
+    }
+
+    private void AddExtremeEventIfMissing(
+        string eventName, string title, string description,
+        EventTarget target, float amount)
+    {
+        foreach (EndDayEvent existing in events)
+        {
+            if (existing != null && string.Equals(
+                existing.eventName, eventName, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        events.Add(new EndDayEvent
+        {
+            eventName = eventName,
+            title = title,
+            description = description,
+            weight = 0.5f,
+            target = target,
+            amount = amount,
+            extremeEvent = true
+        });
     }
 
     // =========================================================
@@ -836,6 +924,8 @@ public class EndDayEventSystem : MonoBehaviour
     private void StoreLastEvent(
         EndDayEvent eventData)
     {
+        lastEventExtreme = eventData.extremeEvent;
+
         lastEventName =
             eventData.eventName;
 
@@ -895,6 +985,11 @@ public class EndDayEventSystem : MonoBehaviour
             events != null
                 ? events.Count
                 : 0;
+    }
+
+    public bool IsLastEventExtreme()
+    {
+        return lastEventExtreme;
     }
 
     // =========================================================

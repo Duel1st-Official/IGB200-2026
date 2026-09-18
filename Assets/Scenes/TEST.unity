@@ -3402,6 +3402,12 @@ MonoBehaviour:
   backgroundCanvasGroup: {fileID: 1755853376}
   panelCanvasGroup: {fileID: 2145808188}
   reportPanel: {fileID: 2145808187}
+  reportBackgroundImage: {fileID: 1755853374}
+  normalEventBackground: {fileID: 21300000, guid: b21a51f2ac7707a4db0acb1f9de4d32a, type: 3}
+  extremeEventBackground: {fileID: 21300000, guid: 40033f231ddb7a04ab880e208ac59893, type: 3}
+  beneficialEffectColor: {r: 0.16, g: 0.38, b: 0.12, a: 1}
+  harmfulEffectColor: {r: 0.65, g: 0.12, b: 0.09, a: 1}
+  neutralEffectColor: {r: 0.2, g: 0.16, b: 0.12, a: 1}
   headerText: {fileID: 634549327}
   eventTitleText: {fileID: 634549327}
   eventDescriptionText: {fileID: 1619218527}
@@ -13510,7 +13516,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 296.6}
+  m_AnchoredPosition: {x: 0, y: 224.3}
   m_SizeDelta: {x: 1246.2, y: 50.83}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &634549327
@@ -24372,7 +24378,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 150}
+  m_AnchoredPosition: {x: 0, y: 87.10002}
   m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &971020007
@@ -26488,6 +26494,7 @@ MonoBehaviour:
     title: OVERNIGHT RAIN
     description: Rain swept across the reserve overnight, reducing dry conditions.
     icon: {fileID: -2332379822669794800, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 12
     target: 3
     amount: -15
@@ -26495,6 +26502,7 @@ MonoBehaviour:
     title: DRY CONDITIONS
     description: A warm, dry night increased fire danger across the reserve.
     icon: {fileID: -7679154562806728526, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 10
     target: 3
     amount: 10
@@ -26503,6 +26511,7 @@ MonoBehaviour:
     description: Rangers recorded unusually high small-animal activity across Ghost
       Bat foraging habitat.
     icon: {fileID: -2789748989052739038, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 10
     target: 1
     amount: 15
@@ -26510,6 +26519,7 @@ MonoBehaviour:
     title: POOR FORAGING CONDITIONS
     description: Low wildlife activity made hunting more difficult around the reserve.
     icon: {fileID: 1959801532370561471, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 10
     target: 1
     amount: -10
@@ -26518,6 +26528,7 @@ MonoBehaviour:
     description: Camera traps detected a feral cat moving through Ghost Bat foraging
       habitat.
     icon: {fileID: -5541011540849110159, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 8
     target: 2
     amount: 15
@@ -26526,6 +26537,7 @@ MonoBehaviour:
     description: Fresh fox tracks were discovered near wildlife habitat during the
       morning survey.
     icon: {fileID: -675626243570593189, guid: ccf8383ae0953734b81cd0ecd6a86d36, type: 3}
+    extremeEvent: 0
     weight: 8
     target: 2
     amount: 10
@@ -26534,6 +26546,7 @@ MonoBehaviour:
     description: Ranger surveys found fewer signs of introduced predators around
       the reserve.
     icon: {fileID: 1959801532370561471, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 8
     target: 2
     amount: -10
@@ -26542,6 +26555,7 @@ MonoBehaviour:
     description: Native vegetation showed strong overnight recovery around restored
       habitat.
     icon: {fileID: -861708453558541168, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 8
     target: 4
     amount: 10
@@ -26550,6 +26564,7 @@ MonoBehaviour:
     description: Loose soil and disturbed ground reduced habitat quality in part
       of the reserve.
     icon: {fileID: -3849205813412593395, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 8
     target: 4
     amount: -10
@@ -26557,6 +26572,7 @@ MonoBehaviour:
     title: SUCCESSFUL HUNTING NIGHT
     description: The Ghost Bat colony had a productive night of hunting.
     icon: {fileID: -104025231697851404, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 10
     target: 7
     amount: 10
@@ -26565,6 +26581,7 @@ MonoBehaviour:
     description: The colony returned from foraging with fewer successful hunts than
       usual.
     icon: {fileID: -7155757099603143681, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 10
     target: 7
     amount: -10
@@ -26573,6 +26590,7 @@ MonoBehaviour:
     description: Conditions around the roost remained calm and the colony benefited
       from an undisturbed night.
     icon: {fileID: 8603421841838752658, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 7
     target: 6
     amount: 5
@@ -26581,6 +26599,7 @@ MonoBehaviour:
     description: Unexpected activity near the roost disturbed several Ghost Bats
       during the night.
     icon: {fileID: 5571795949272832048, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
     weight: 7
     target: 6
     amount: -5
@@ -26588,6 +26607,7 @@ MonoBehaviour:
     title: A NEW GHOST BAT PUP!
     description: Rangers have confirmed a new Ghost Bat pup within the colony.
     icon: {fileID: 2899513372932027233, guid: ccf8383ae0953734b81cd0ecd6a86d36, type: 3}
+    extremeEvent: 0
     weight: 2
     target: 5
     amount: 1
@@ -26596,15 +26616,62 @@ MonoBehaviour:
     description: The reserve remained calm overnight. Rangers recorded no significant
       changes.
     icon: {fileID: 4576265474455886330, guid: ccf8383ae0953734b81cd0ecd6a86d36, type: 3}
-    weight: 14
+    extremeEvent: 0
+    weight: 21
     target: 0
     amount: 0
-  createDefaultEventsIfEmpty: 1
+  - eventName: Bushfire Damage
+    title: BUSHFIRE DAMAGE
+    description: A bushfire swept through part of the reserve, burning vegetation
+      and leaving exposed soil vulnerable to erosion.
+    icon: {fileID: 3635809400645982854, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
+    extremeEvent: 0
+    weight: 3
+    target: 4
+    amount: -25
+  - eventName: Extreme Heatwave
+    title: EXTREME HEATWAVE
+    description: Prolonged extreme heat placed the Ghost Bat colony under severe
+      stress, reducing colony health.
+    icon: {fileID: -6355717702054350058, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
+    extremeEvent: 1
+    weight: 3
+    target: 6
+    amount: -15
+  - eventName: Predator Surge
+    title: PREDATOR SURGE
+    description: Camera traps recorded a sudden surge of introduced predators throughout
+      the colony's foraging habitat.
+    icon: {fileID: -1964293781481700584, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
+    extremeEvent: 1
+    weight: 3
+    target: 2
+    amount: 30
+  - eventName: Prey Collapse
+    title: PREY COLLAPSE
+    description: 'Ranger surveys recorded a sharp decline in small-animal activity,
+      leaving the colony with far '
+    icon: {fileID: 6830800939038444526, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
+    extremeEvent: 1
+    weight: 3
+    target: 1
+    amount: -25
+  - eventName: Severe Roost Disturbance
+    title: SEVERE ROOST DISTURBANCE
+    description: Unauthorised visitors entered a protected roost, repeatedly disturbing
+      resting Ghost Bats and severely stressing the colony.
+    icon: {fileID: -8169537108714421266, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
+    extremeEvent: 1
+    weight: 3
+    target: 6
+    amount: -20
+  createDefaultEventsIfEmpty: 0
   preventImmediateRepeat: 1
   lastEventName: 
   lastEventTitle: 
   lastEventDescription: 
   lastEventIcon: {fileID: 0}
+  lastEventExtreme: 0
   lastEventTarget: 0
   lastEventAmount: 0
   showDebugLogs: 1
@@ -27288,8 +27355,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -210.8}
-  m_SizeDelta: {x: 1246.2, y: 65.2}
+  m_AnchoredPosition: {x: 0, y: -161}
+  m_SizeDelta: {x: 1168, y: 65.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1262811907
 MonoBehaviour:
@@ -31012,8 +31079,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -69.90005}
-  m_SizeDelta: {x: 1246.2, y: 216.6}
+  m_AnchoredPosition: {x: 0, y: -81.75003}
+  m_SizeDelta: {x: 1168, y: 109.6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1619218527
 MonoBehaviour:
@@ -31752,8 +31819,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -293.3}
-  m_SizeDelta: {x: 1246.2, y: 64.5919}
+  m_AnchoredPosition: {x: 0, y: -228}
+  m_SizeDelta: {x: 1111, y: 64.5919}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1681899658
 MonoBehaviour:
@@ -37839,8 +37906,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: b21a51f2ac7707a4db0acb1f9de4d32a, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -37905,8 +37972,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 140.5, y: 211.1}
-  m_SizeDelta: {x: 30, y: 30}
+  m_AnchoredPosition: {x: 122.5, y: 172.2}
+  m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1765215404
 MonoBehaviour:
@@ -42474,6 +42541,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentWeather: 0
+  sunnyWeatherChance: 60
+  weatherSeed: 0
   rainParticles: {fileID: 1684284947}
   rainTransitionSpeed: 2.5
   rainEmissionMultiplier: 1

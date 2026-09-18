@@ -31,6 +31,20 @@ public class EndDayEventUI : MonoBehaviour
     [SerializeField]
     private RectTransform reportPanel;
 
+    [Header("Event Backgrounds")]
+    [Tooltip("The wooden/parchment panel Image, not the fullscreen dark overlay.")]
+    [SerializeField] private Image reportBackgroundImage;
+    [SerializeField] private Sprite normalEventBackground;
+    [SerializeField] private Sprite extremeEventBackground;
+
+    [Header("Effect Colours")]
+    [SerializeField] private Color beneficialEffectColor = new Color(0.16f, 0.38f, 0.12f, 1f);
+    [SerializeField] private Color harmfulEffectColor = new Color(0.65f, 0.12f, 0.09f, 1f);
+    [SerializeField] private Color neutralEffectColor = new Color(0.20f, 0.16f, 0.12f, 1f);
+
+    private Sprite originalReportBackground;
+    private bool reportBackgroundCached;
+
     // =========================================================
     // TEXT
     // =========================================================
@@ -382,6 +396,8 @@ public class EndDayEventUI : MonoBehaviour
             eventSystem.GetLastEventAmount()
         );
 
+        ApplyReportBackground(eventSystem.IsLastEventExtreme());
+
         Show();
     }
 
@@ -464,6 +480,8 @@ public class EndDayEventUI : MonoBehaviour
 
         if (effectText != null)
         {
+            effectText.color = GetEffectColor(target, amount);
+
             effectText.text =
                 BuildEffectText(
                     target,
@@ -475,6 +493,49 @@ public class EndDayEventUI : MonoBehaviour
     // =========================================================
     // EFFECT TEXT
     // =========================================================
+
+    private void ApplyReportBackground(bool extreme)
+    {
+        if (reportBackgroundImage == null) return;
+
+        if (!reportBackgroundCached)
+        {
+            originalReportBackground = reportBackgroundImage.overrideSprite;
+            reportBackgroundCached = true;
+        }
+
+        Sprite normal = normalEventBackground != null
+            ? normalEventBackground : originalReportBackground;
+        Sprite selected = extreme && extremeEventBackground != null
+            ? extremeEventBackground : normal;
+
+        // Explicitly restore the normal art after an extreme event.
+        // Missing extreme art falls back to normal; existing layout is preserved.
+        reportBackgroundImage.overrideSprite = null;
+        reportBackgroundImage.sprite = selected;
+    }
+
+    private Color GetEffectColor(EndDayEventSystem.EventTarget target, float amount)
+    {
+        if (amount == 0f || float.IsNaN(amount)) return neutralEffectColor;
+
+        switch (target)
+        {
+            case EndDayEventSystem.EventTarget.PredatorPressure:
+            case EndDayEventSystem.EventTarget.FireRisk:
+                return amount < 0f ? beneficialEffectColor : harmfulEffectColor;
+
+            case EndDayEventSystem.EventTarget.PreyAvailability:
+            case EndDayEventSystem.EventTarget.SoilHealth:
+            case EndDayEventSystem.EventTarget.BatPopulation:
+            case EndDayEventSystem.EventTarget.BatHealth:
+            case EndDayEventSystem.EventTarget.BatFood:
+                return amount > 0f ? beneficialEffectColor : harmfulEffectColor;
+
+            default:
+                return neutralEffectColor;
+        }
+    }
 
     private string BuildEffectText(
         EndDayEventSystem.EventTarget target,

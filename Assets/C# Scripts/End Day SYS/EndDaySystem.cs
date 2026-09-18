@@ -127,7 +127,7 @@ public class EndDaySystem : MonoBehaviour
     [Header("New Day Weather")]
 
     [Tooltip(
-        "Choose a new random weather type whenever a new day begins."
+        "Advance the sunny-biased weather pattern whenever a new day begins."
     )]
     [SerializeField]
     private bool randomizeWeatherEachDay = true;
@@ -481,26 +481,7 @@ public class EndDaySystem : MonoBehaviour
             return;
         }
 
-        int randomWeather =
-            Random.Range(
-                0,
-                3
-            );
-
-        switch (randomWeather)
-        {
-            case 0:
-                WeatherManager.Instance.MakeSunny();
-                break;
-
-            case 1:
-                WeatherManager.Instance.MakeRain();
-                break;
-
-            case 2:
-                WeatherManager.Instance.MakeRainAndThunder();
-                break;
-        }
+        WeatherManager.Instance.AdvanceDailyWeather();
 
         if (topDayDropdown != null)
         {

@@ -34,6 +34,45 @@ public class WeatherManager : MonoBehaviour
     private WeatherType currentWeather =
         WeatherType.Sunny;
 
+    [Header("Procedural Daily Weather")]
+    [Tooltip("Approximate percentage of sunny days over time. 90 = mostly sunny, 0 = always wet, 100 = always sunny. Wet days are mostly rain with occasional storms. Weather still forms short spells.")]
+    [Range(0f, 100f)]
+    [SerializeField] private float sunnyWeatherChance = 90f;
+
+    // Preserve the existing seed while keeping the Inspector simple.
+    [SerializeField, HideInInspector] private int weatherSeed = 12345;
+
+    private System.Random dailyWeatherRandom;
+
+    // Called once by EndDaySystem after the Night Report closes.
+    // This is a seeded, state-dependent pattern, not a climate simulation.
+    public void AdvanceDailyWeather()
+    {
+        if (dailyWeatherRandom == null)
+        {
+            dailyWeatherRandom = new System.Random(weatherSeed);
+        }
+
+        SetWeather(ChooseDailyWeather(currentWeather, sunnyWeatherChance,
+            dailyWeatherRandom.NextDouble()));
+    }
+
+    private static WeatherType ChooseDailyWeather(
+        WeatherType previous, float sunnyPercent, double roll)
+    {
+        if (float.IsNaN(sunnyPercent) || float.IsInfinity(sunnyPercent)) sunnyPercent = 90f;
+        double sunny = System.Math.Max(0d, System.Math.Min(100d, sunnyPercent)) / 100d;
+        if (sunny <= 0d) return roll < 0.9d ? WeatherType.Rain : WeatherType.RainAndThunder;
+        if (sunny >= 1d) return WeatherType.Sunny;
+
+        // A little persistence creates spells while retaining the slider's
+        // long-run sunny proportion. The remaining wet days are 90% rain.
+        double nextSunny = 0.75d * sunny + (previous == WeatherType.Sunny ? 0.25d : 0d);
+        if (roll < nextSunny) return WeatherType.Sunny;
+        return roll < nextSunny + (1d - nextSunny) * 0.9d
+            ? WeatherType.Rain : WeatherType.RainAndThunder;
+    }
+
     // =========================================================
     // RAIN
     // =========================================================
@@ -289,14 +328,9 @@ public class WeatherManager : MonoBehaviour
 
     private void Start()
     {
-        WeatherType randomWeather =
-            (WeatherType)Random.Range(
-                0,
-                3
-            );
-
+        // Respect the configured starting weather (Sunny by default).
         SetWeather(
-            randomWeather
+            currentWeather
         );
     }
 
