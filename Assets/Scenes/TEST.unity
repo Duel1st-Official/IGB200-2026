@@ -2777,6 +2777,7 @@ GameObject:
   - component: {fileID: 186385399}
   - component: {fileID: 186385400}
   - component: {fileID: 186385401}
+  - component: {fileID: 186385402}
   m_Layer: 0
   m_Name: Inspection HUD Canvas
   m_TagString: Untagged
@@ -3224,7 +3225,7 @@ MonoBehaviour:
   mainCamera: {fileID: 519420031}
   canvas: {fileID: 186385392}
   selectionWheel: {fileID: 746917061}
-  endDaySystem: {fileID: 0}
+  endDaySystem: {fileID: 186385400}
   panel: {fileID: 259223354}
   dragHandle: {fileID: 972828205}
   canvasGroup: {fileID: 1497884620}
@@ -3237,6 +3238,16 @@ MonoBehaviour:
   reputationSlider: {fileID: 1527387219}
   startTourButton: {fileID: 168508740}
   closeButton: {fileID: 249708554}
+  uiAudioSource: {fileID: 2141893256}
+  openSound: {fileID: 8300000, guid: dfe570a2d89a5054d974f6b634a6eea8, type: 3}
+  closeSound: {fileID: 8300000, guid: 974fefeaf9883b846a23431a5a21fccb, type: 3}
+  buttonHoverSounds:
+  - {fileID: 8300000, guid: 7de3303959607664f869d0c840487b40, type: 3}
+  buttonClickSounds:
+  - {fileID: 8300000, guid: 2deb3ae7097dc2a4ca5c695099e9e84e, type: 3}
+  windowSoundVolume: 0.8
+  buttonHoverVolume: 0.6
+  buttonClickVolume: 0.8
   horizontalOffset: 230
   verticalOffset: 30
   followSpeed: 15
@@ -3385,6 +3396,7 @@ MonoBehaviour:
   onTimeReachedDayEnd:
     m_PersistentCalls:
       m_Calls: []
+  gameEndingSystem: {fileID: 0}
 --- !u!114 &186385401
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3432,6 +3444,46 @@ MonoBehaviour:
   animateReportContent: 1
   contentRevealDuration: 0.28
   contentStagger: 0.07
+--- !u!114 &186385402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 186385388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26b1c202632df9b47a473e2f4f373157, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  endDaySystem: {fileID: 186385400}
+  batColony: {fileID: 1777897967}
+  toursBuilding: {fileID: 1766345117}
+  mainMenuSceneName: 
+  panelBackground: {fileID: 21300000, guid: b21a51f2ac7707a4db0acb1f9de4d32a, type: 3}
+  winBackground: {fileID: 21300000, guid: a1905690e9ff489428052eab0288b981, type: 3}
+  loseBackground: {fileID: 21300000, guid: 1debcc6102242ef4ca831527513c5384, type: 3}
+  backgroundContainsTitle: 1
+  font: {fileID: 11400000, guid: 4bb629fca7e7ca54cb1e0ea0a3ba40f6, type: 2}
+  revealDuration: 0.4
+  disableOnEnding: []
+  onWon:
+    m_PersistentCalls:
+      m_Calls: []
+  onLost:
+    m_PersistentCalls:
+      m_Calls: []
+  uiAudioSource: {fileID: 2141893256}
+  winSound: {fileID: 8300000, guid: 877f5c9703b73a84d898d3d370b63c6f, type: 3}
+  loseSound: {fileID: 8300000, guid: 0f59c099f8a006c4cafc40646c741eff, type: 3}
+  endingVolume: 0.8
+  buttonHoverSounds:
+  - {fileID: 8300000, guid: 7de3303959607664f869d0c840487b40, type: 3}
+  buttonClickSounds:
+  - {fileID: 8300000, guid: 2deb3ae7097dc2a4ca5c695099e9e84e, type: 3}
+  hoverVolume: 0.6
+  clickVolume: 0.8
+  sceneChangeDelay: 0.2
 --- !u!1001 &188079618
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -37112,7 +37164,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 161bd671959156e458bd954d9dbf6086, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  batColony: {fileID: 0}
+  batColony: {fileID: 1777897967}
   preyAvailability: 75
   predatorPressure: 35
   fireRisk: 20
@@ -38760,6 +38812,7 @@ MonoBehaviour:
   endDaySystem: {fileID: 186385400}
   rangerStation: {fileID: 1686625576}
   colonyPopulation: 20
+  maximumPopulation: 100
   populationTrend: 1
   batHealth: 50
   batFood: 30

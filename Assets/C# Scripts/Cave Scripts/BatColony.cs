@@ -44,6 +44,16 @@ public class BatColony : MonoBehaviour
     [SerializeField]
     private int colonyPopulation = 20;
 
+    [Tooltip("Population cap and win target.")]
+    [Min(1)][SerializeField] private int maximumPopulation = 100;
+
+    public int GetMaximumPopulation() { return Mathf.Max(1, maximumPopulation); }
+
+    private int ClampPopulation(long value)
+    {
+        return (int)System.Math.Max(0L, System.Math.Min(GetMaximumPopulation(), value));
+    }
+
     [SerializeField]
     private ColonyTrend populationTrend =
         ColonyTrend.Stable;
@@ -297,10 +307,10 @@ public class BatColony : MonoBehaviour
         if (wholeBats == 0) return;
         int change = populationRemainder > 0d ? wholeBats : -wholeBats;
         long nextPopulation = (long)colonyPopulation + change;
-        colonyPopulation = (int)System.Math.Max(0L, System.Math.Min(int.MaxValue, nextPopulation));
+        colonyPopulation = ClampPopulation(nextPopulation);
         populationRemainder -= change;
         if (System.Math.Abs(populationRemainder) < 1e-9d ||
-            colonyPopulation == 0 || colonyPopulation == int.MaxValue)
+            colonyPopulation == 0 || colonyPopulation == GetMaximumPopulation())
             populationRemainder = 0d;
     }
 
@@ -337,6 +347,7 @@ public class BatColony : MonoBehaviour
 
     private void Awake()
     {
+        colonyPopulation = ClampPopulation(colonyPopulation);
         AutoAssignReferences();
         UpdatePopulationTrendFromHealth();
     }
@@ -395,6 +406,12 @@ public class BatColony : MonoBehaviour
 
     private void Update()
     {
+        ProcessPendingDays();
+    }
+
+    public void ProcessPendingDays()
+    {
+        if (endDaySystem != null && endDaySystem.HasGameEnded()) return;
         if (endDaySystem == null ||
             rangerStation == null)
         {
@@ -814,11 +831,7 @@ public class BatColony : MonoBehaviour
         int amount)
     {
         populationRemainder = 0d;
-        colonyPopulation =
-            Mathf.Max(
-                0,
-                amount
-            );
+        colonyPopulation = ClampPopulation(amount);
 
         DebugState();
     }
@@ -826,12 +839,7 @@ public class BatColony : MonoBehaviour
     public void AddPopulation(
         int amount)
     {
-        colonyPopulation =
-            Mathf.Max(
-                0,
-                colonyPopulation +
-                amount
-            );
+        colonyPopulation = ClampPopulation((long)colonyPopulation + amount);
 
         DebugState();
     }
@@ -839,12 +847,7 @@ public class BatColony : MonoBehaviour
     public void RemovePopulation(
         int amount)
     {
-        colonyPopulation =
-            Mathf.Max(
-                0,
-                colonyPopulation -
-                amount
-            );
+        colonyPopulation = ClampPopulation((long)colonyPopulation - amount);
 
         DebugState();
     }

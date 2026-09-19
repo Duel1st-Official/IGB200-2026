@@ -245,6 +245,22 @@ public class EndDaySystem : MonoBehaviour
 
     private bool transitionRunning = false;
 
+    [Header("Game Ending")]
+    [SerializeField] private GameEndingSystem gameEndingSystem;
+    private bool gameEnded;
+
+    public bool HasGameEnded() { return gameEnded; }
+
+    public void LockForGameEnding()
+    {
+        gameEnded = true;
+        if (topDayDropdown != null)
+        {
+            topDayDropdown.SetEndDayInteractable(false);
+            topDayDropdown.CloseDropdown();
+        }
+    }
+
     private bool doorPositionsCached = false;
 
     private Vector2 leftClosedPosition;
@@ -259,6 +275,11 @@ public class EndDaySystem : MonoBehaviour
 
     private void Start()
     {
+        if (gameEndingSystem == null)
+            gameEndingSystem = FindFirstObjectByType<GameEndingSystem>();
+        if (gameEndingSystem == null)
+            gameEndingSystem = gameObject.AddComponent<GameEndingSystem>();
+        gameEndingSystem.SetEndDaySystem(this);
         AutoAssignNightReportReferences();
 
         if (topDayDropdown == null)
@@ -305,6 +326,7 @@ public class EndDaySystem : MonoBehaviour
 
     private void UpdateGameTime()
     {
+        if (gameEnded) return;
         if (!timeRunsAutomatically)
         {
             return;
@@ -710,6 +732,7 @@ public class EndDaySystem : MonoBehaviour
 
     public void EndDay()
     {
+        if (gameEnded) return;
         if (transitionRunning)
         {
             return;
@@ -782,6 +805,16 @@ public class EndDaySystem : MonoBehaviour
         RandomizeNewDayWeather();
 
         onNewDayStarted?.Invoke();
+
+        // Explicit processing avoids depending on Unity's Update order.
+        // Both components use their day tracker to prevent double processing.
+        if (gameEndingSystem != null && gameEndingSystem.CheckAfterDailyProcessing())
+        {
+            transitionRunning = false;
+            onTransitionFinished?.Invoke();
+            HideTransitionUI();
+            yield break;
+        }
 
         yield return
             PlayDayTextAnimation();
@@ -1253,6 +1286,7 @@ public class EndDaySystem : MonoBehaviour
     public bool IsActionPhaseActive()
     {
         return
+            !gameEnded &&
             !reachedDayEnd &&
             !transitionRunning;
     }

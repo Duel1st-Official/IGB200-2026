@@ -101,6 +101,95 @@ public class ToursBuildingInspectionUI :
     [SerializeField]
     private Button closeButton;
 
+    [Header("UI Sounds")]
+    [Tooltip("Optional dedicated UI AudioSource on an object that stays active when this panel closes. Created automatically if empty.")]
+    [SerializeField] private AudioSource uiAudioSource;
+    [SerializeField] private AudioClip openSound;
+    [SerializeField] private AudioClip closeSound;
+    [SerializeField] private AudioClip[] buttonHoverSounds = new AudioClip[3];
+    [SerializeField] private AudioClip[] buttonClickSounds = new AudioClip[3];
+    [Range(0f, 1f)][SerializeField] private float windowSoundVolume = 0.8f;
+    [Range(0f, 1f)][SerializeField] private float buttonHoverVolume = 0.6f;
+    [Range(0f, 1f)][SerializeField] private float buttonClickVolume = 0.8f;
+
+    private GameObject ownedAudioObject;
+    private readonly List<EventTrigger> audioTriggers = new List<EventTrigger>();
+    private readonly List<EventTrigger.Entry> audioHoverEntries = new List<EventTrigger.Entry>();
+
+    private void PlayUISound(AudioClip clip, float volume)
+    {
+        if (clip == null) return;
+        if (uiAudioSource == null)
+        {
+            // Separate host lets a close sound finish after the panel is hidden.
+            ownedAudioObject = new GameObject("Tours UI Audio");
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(
+                ownedAudioObject, gameObject.scene);
+            uiAudioSource = ownedAudioObject.AddComponent<AudioSource>();
+            uiAudioSource.playOnAwake = false;
+            uiAudioSource.loop = false;
+            uiAudioSource.spatialBlend = 0f;
+        }
+        if (uiAudioSource.isActiveAndEnabled)
+            uiAudioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+
+    private void PlayRandomUISound(AudioClip[] clips, float volume)
+    {
+        if (clips == null) return;
+        int count = 0;
+        foreach (AudioClip clip in clips) if (clip != null) count++;
+        if (count == 0) return;
+        int index = Random.Range(0, count);
+        foreach (AudioClip clip in clips)
+        {
+            if (clip == null) continue;
+            if (index-- == 0)
+            {
+                PlayUISound(clip, volume);
+                return;
+            }
+        }
+    }
+
+    private void SetupButtonHoverSound(Button button)
+    {
+        if (button == null) return;
+        EventTrigger trigger = button.GetComponent<EventTrigger>();
+        if (trigger == null) trigger = button.gameObject.AddComponent<EventTrigger>();
+        if (trigger.triggers == null) trigger.triggers = new List<EventTrigger.Entry>();
+        EventTrigger.Entry entry = new EventTrigger.Entry();
+        entry.eventID = EventTriggerType.PointerEnter;
+        entry.callback.AddListener(data =>
+        {
+            if (isOpen && !isClosing && button != null &&
+                button.isActiveAndEnabled && button.IsInteractable())
+                PlayRandomUISound(buttonHoverSounds, buttonHoverVolume);
+        });
+        trigger.triggers.Add(entry);
+        audioTriggers.Add(trigger);
+        audioHoverEntries.Add(entry);
+    }
+
+    private void HandleCloseButton()
+    {
+        if (!isOpen || isClosing || closeButton == null || !closeButton.IsInteractable()) return;
+        PlayRandomUISound(buttonClickSounds, buttonClickVolume);
+        Close();
+    }
+
+    private void OnDestroy()
+    {
+        if (startTourButton != null) startTourButton.onClick.RemoveListener(StartTour);
+        if (closeButton != null) closeButton.onClick.RemoveListener(HandleCloseButton);
+        for (int i = 0; i < audioTriggers.Count; i++)
+        {
+            if (audioTriggers[i] != null && audioTriggers[i].triggers != null)
+                audioTriggers[i].triggers.Remove(audioHoverEntries[i]);
+        }
+        if (ownedAudioObject != null) Destroy(ownedAudioObject);
+    }
+
     // =========================================================
     // POSITION
     // =========================================================
@@ -275,9 +364,12 @@ public class ToursBuildingInspectionUI :
         {
             closeButton.onClick
                 .AddListener(
-                    Close
+                    HandleCloseButton
                 );
         }
+
+        SetupButtonHoverSound(startTourButton);
+        if (closeButton != startTourButton) SetupButtonHoverSound(closeButton);
 
         if (canvasGroup != null)
             canvasGroup.alpha =
@@ -497,6 +589,8 @@ public class ToursBuildingInspectionUI :
         panel.gameObject
             .SetActive(true);
 
+        PlayUISound(openSound, windowSoundVolume);
+
         panel.localRotation =
             Quaternion.identity;
 
@@ -692,6 +786,7 @@ public class ToursBuildingInspectionUI :
         // COMPLETE
         // =====================================================
 
+        PlayRandomUISound(buttonClickSounds, buttonClickVolume);
         currentToursBuilding
             .CompleteTour();
 
@@ -727,6 +822,8 @@ public class ToursBuildingInspectionUI :
         {
             return;
         }
+
+        PlayUISound(closeSound, windowSoundVolume);
 
         if (animationCoroutine != null)
             StopCoroutine(

@@ -205,6 +205,12 @@ public class ToursBuilding : MonoBehaviour
 
     private void Update()
     {
+        ProcessPendingDays();
+    }
+
+    public void ProcessPendingDays()
+    {
+        if (endDaySystem != null && endDaySystem.HasGameEnded()) return;
         if (endDaySystem == null ||
             rangerStation == null ||
             batColony == null)
@@ -224,7 +230,9 @@ public class ToursBuilding : MonoBehaviour
         // INITIALISE
         // -----------------------------------------------------
 
-        if (lastProcessedDay < 0)
+        if (currentDay < 1) return;
+
+        if (lastProcessedDay < 1)
         {
             lastProcessedDay =
                 currentDay;
@@ -350,6 +358,7 @@ public class ToursBuilding : MonoBehaviour
 
     public void CompleteTour()
     {
+        if (endDaySystem != null && endDaySystem.HasGameEnded()) return;
         FindReferences();
 
         // -----------------------------------------------------
@@ -430,6 +439,7 @@ public class ToursBuilding : MonoBehaviour
     public void CompleteTour(
         float reputationReward)
     {
+        if (endDaySystem != null && endDaySystem.HasGameEnded()) return;
         FindReferences();
 
         toursCompleted++;
