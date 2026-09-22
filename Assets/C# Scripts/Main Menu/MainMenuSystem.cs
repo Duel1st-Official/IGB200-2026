@@ -16,7 +16,6 @@ public class MainMenuSystem : MonoBehaviour
     [SerializeField] private string gameSceneName = "";
     [SerializeField] private string tutorialSceneName = "";
     [Header("Text")]
-    [SerializeField] private string gameTitle = "GHOST BAT RESERVE";
     [SerializeField] private TMP_FontAsset font;
     [System.Serializable]
     public class DeveloperCredit
@@ -50,8 +49,18 @@ public class MainMenuSystem : MonoBehaviour
     [Header("Optional artwork")]
     [Tooltip("Full-screen artwork. Leave empty for a plain dark background.")]
     [SerializeField] private Sprite backgroundSprite;
-    [Tooltip("Use a blank panel without a PAUSED or EVENT title. Leave empty for a plain parchment panel.")]
-    [SerializeField] private Sprite panelSprite;
+    [Header("Credits background transition")]
+    [SerializeField] private Sprite creditsBackgroundSprite;
+    [Tooltip("Assign the MenuBackgroundMotionBlur shader asset here so it is included in builds.")]
+    [SerializeField] private Shader backgroundMotionBlurShader;
+    [SerializeField, Range(0.2f, 2f)] private float creditsTransitionDuration = 0.75f;
+    [SerializeField, Range(0f, 0.03f)] private float motionBlurStrength = 0.012f;
+    [SerializeField, Range(0f, 0.08f)] private float backgroundSlide = 0.025f;
+    private Image creditsBackground;
+    private Material skyMotionMaterial, caveMotionMaterial;
+    private Coroutine backgroundTransitionRoutine;
+    private float backgroundBlend;
+    [SerializeField] private Sprite logoSprite;
     [SerializeField] private Sprite buttonSprite;
     [Header("Optional audio")]
     [SerializeField] private AudioClip musicClip;
@@ -72,7 +81,17 @@ public class MainMenuSystem : MonoBehaviour
     [SerializeField, Range(0.1f, 0.8f)] private float pagePopDuration = 0.3f;
     private Coroutine pageAnimation;
     private GameObject animatedPage;
-    private static readonly Color Ink = new Color(0.23f, 0.13f, 0.06f);
+    private static readonly Color Ink = new Color(1f, 0.97f, 0.86f);
+    private RectTransform backgroundRect, logoRect;
+    private CanvasGroup logoGroup;
+    private CanvasGroup[] homeButtonGroups;
+    private bool introRunning;
+    [Header("Logo and button entrance")]
+    [SerializeField, Range(0.1f, 2f)] private float logoRevealDuration = 0.65f;
+    [SerializeField, Range(0f, 1f)] private float logoHoldDuration = 0.2f;
+    [SerializeField, Range(0.1f, 1f)] private float buttonRevealDuration = 0.35f;
+    [SerializeField, Range(0f, 0.4f)] private float buttonStagger = 0.12f;
+    [SerializeField, Range(1f, 1.1f)] private float backgroundZoom = 1.04f;
 
     [Header("Opening transition")]
     [SerializeField, Range(0.1f, 3f)] private float openingFadeDuration = 0.8f;
@@ -97,35 +116,65 @@ public class MainMenuSystem : MonoBehaviour
         canvasGroup.interactable = false;
         SceneTransition.FadeInOnStart(openingFadeDuration);
         while (SceneTransition.IsTransitioning) yield return null;
-        canvasGroup.interactable = true;
-        Show(home, playButton);
+        yield return Intro();
+    }
+    private IEnumerator Intro()
+    {
+        introRunning = true;
+        home.SetActive(true);
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+        float logoDuration = Mathf.Max(0.1f, logoRevealDuration);
+        float buttonDuration = Mathf.Max(0.1f, buttonRevealDuration);
+        float buttonsStart = logoDuration + logoHoldDuration;
+        float total = buttonsStart + 2f * buttonStagger + buttonDuration;
+        if (!animateMenu) total = 0f;
+        for (float elapsed = 0f; elapsed < total; elapsed += Time.unscaledDeltaTime)
+        {
+            float logoT = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / logoDuration));
+            logoGroup.alpha = logoT;
+            logoRect.localScale = Vector3.one * Mathf.Lerp(0.94f, 1f, logoT);
+            backgroundRect.localScale = Vector3.one * Mathf.Lerp(1f, Mathf.Max(backgroundZoom, 1f + backgroundSlide * 2f + 0.01f),
+                Mathf.SmoothStep(0f, 1f, elapsed / total));
+            for (int i = 0; i < homeButtonGroups.Length; i++)
+            {
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((elapsed - buttonsStart - i * buttonStagger) / buttonDuration));
+                homeButtonGroups[i].alpha = t;
+                homeButtonGroups[i].transform.localScale = Vector3.one * Mathf.Lerp(0.94f, 1f, t);
+            }
+            yield return null;
+        }
+        logoGroup.alpha = 1f; logoRect.localScale = Vector3.one;
+        backgroundRect.localScale = Vector3.one * Mathf.Max(backgroundZoom, 1f + backgroundSlide * 2f + 0.01f);
+        foreach (CanvasGroup group in homeButtonGroups) { group.alpha = 1f; group.transform.localScale = Vector3.one; }
+        introRunning = false; canvasGroup.interactable = true;
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(playButton.gameObject);
     }
 
     public void PlayGame()
     {
-        if (loading) return;
+        if (loading || introRunning || SceneTransition.IsTransitioning) return;
         Click(); Show(question, yesButton);
     }
     public void OpenCredits()
     {
-        if (loading) return;
+        if (loading || introRunning || SceneTransition.IsTransitioning) return;
         Click(); Show(credits, creditsBack);
     }
     public void Back()
     {
-        if (loading) return;
+        if (loading || introRunning || SceneTransition.IsTransitioning) return;
         Click(); Show(home, playButton);
     }
     public void OpenProjectBrief()
     {
-        if (loading) return;
+        if (loading || introRunning || SceneTransition.IsTransitioning) return;
         Click(); Show(brief, briefBack);
     }
     public void StartTutorial() { BeginLoad(tutorialSceneName, "Tutorial Scene Name"); }
     public void StartGame() { BeginLoad(gameSceneName, "Game Scene Name"); }
     private void BeginLoad(string sceneName, string field)
     {
-        if (loading) return;
+        if (loading || introRunning || SceneTransition.IsTransitioning) return;
         Click();
         if (string.IsNullOrWhiteSpace(sceneName) || !Application.CanStreamedLevelBeLoaded(sceneName))
         {
@@ -146,7 +195,7 @@ public class MainMenuSystem : MonoBehaviour
     }
     public void ExitGame()
     {
-        if (loading) return;
+        if (loading || introRunning || SceneTransition.IsTransitioning) return;
         Click(); StartCoroutine(Quit());
     }
     private IEnumerator Quit()
@@ -168,6 +217,7 @@ public class MainMenuSystem : MonoBehaviour
     }
     private void Show(GameObject page, Button selected)
     {
+        TransitionBackground(page == credits || page == brief);
         if (pageAnimation != null) StopCoroutine(pageAnimation);
         if (animatedPage != null)
         {
@@ -214,6 +264,7 @@ public class MainMenuSystem : MonoBehaviour
         TextMeshProUGUI text = Rect("Text", parent, min, max).gameObject.AddComponent<TextMeshProUGUI>();
         if (font != null) text.font = font;
         text.text = value; text.color = color; text.alignment = TextAlignmentOptions.Center;
+        text.outlineColor = new Color(0.08f, 0.17f, 0.23f); text.outlineWidth = 0.18f;
         text.enableAutoSizing = true; text.fontSizeMin = 12f; text.fontSizeMax = size;
         text.raycastTarget = false; return text;
     }
@@ -255,19 +306,42 @@ public class MainMenuSystem : MonoBehaviour
         CanvasScaler scaler = ui.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080); scaler.matchWidthOrHeight = 0.5f;
         Image backdrop = Rect("Background", ui.transform, Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+        backgroundRect = backdrop.rectTransform;
+        backdrop.raycastTarget = false;
+        creditsBackground = Rect("Credits Background", ui.transform, Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+        creditsBackground.sprite = creditsBackgroundSprite;
+        creditsBackground.color = new Color(1f, 1f, 1f, 0f);
+        creditsBackground.raycastTarget = false;
+        creditsBackground.gameObject.SetActive(false);
+        if (backgroundMotionBlurShader != null && backgroundMotionBlurShader.isSupported)
+        {
+            skyMotionMaterial = new Material(backgroundMotionBlurShader);
+            caveMotionMaterial = new Material(backgroundMotionBlurShader);
+            backdrop.material = skyMotionMaterial;
+            creditsBackground.material = caveMotionMaterial;
+        }
         backdrop.sprite = backgroundSprite; backdrop.color = backgroundSprite != null ? Color.white : new Color(0.08f, 0.13f, 0.09f);
         RectTransform bounds = Rect("Bounds", ui.transform, new Vector2(0.10f, 0.08f), new Vector2(0.90f, 0.92f));
-        RectTransform panel = Rect("Panel", bounds, Vector2.zero, Vector2.one);
+        RectTransform panel = Rect("Menu Layout", bounds, Vector2.zero, Vector2.one);
         AspectRatioFitter fit = panel.gameObject.AddComponent<AspectRatioFitter>(); fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-        fit.aspectRatio = panelSprite != null ? panelSprite.rect.width / panelSprite.rect.height : 1.6f;
-        Image paper = panel.gameObject.AddComponent<Image>(); paper.sprite = panelSprite;
-        paper.color = panelSprite != null ? Color.white : new Color(0.90f, 0.81f, 0.63f);
+        fit.aspectRatio = 1.6f;
         home = Page("Home", panel); question = Page("First Time", panel); credits = Page("Credits", panel);
         brief = Page("Project Brief", panel);
-        Text(home.transform, gameTitle, new Vector2(0.1f, 0.72f), new Vector2(0.9f, 0.86f), 52f, Ink);
-        playButton = Button(home.transform, "PLAY GAME", 0.51f, PlayGame);
-        Button(home.transform, "CREDITS", 0.35f, OpenCredits);
-        Button(home.transform, "EXIT GAME", 0.19f, ExitGame);
+        logoRect = Rect("Game Logo", home.transform, new Vector2(0.16f, 0.58f), new Vector2(0.84f, 0.98f));
+        Image logo = logoRect.gameObject.AddComponent<Image>(); logo.sprite = logoSprite;
+        logo.preserveAspect = true; logo.raycastTarget = false; logo.enabled = logoSprite != null;
+        logoGroup = logoRect.gameObject.AddComponent<CanvasGroup>(); logoGroup.alpha = 0f;
+        playButton = Button(home.transform, "PLAY GAME", 0.41f, PlayGame);
+        Button creditsButton = Button(home.transform, "CREDITS", 0.26f, OpenCredits);
+        Button exitButton = Button(home.transform, "EXIT GAME", 0.11f, ExitGame);
+        Button[] homeButtons = { playButton, creditsButton, exitButton };
+        homeButtonGroups = new CanvasGroup[homeButtons.Length];
+        for (int i = 0; i < homeButtons.Length; i++)
+        {
+            // Animate the slot so hover scaling on the child does not fight the entrance.
+            homeButtonGroups[i] = homeButtons[i].transform.parent.gameObject.AddComponent<CanvasGroup>();
+            homeButtonGroups[i].alpha = 0f;
+        }
         Text(question.transform, "Is this your first time playing?", new Vector2(0.1f, 0.69f), new Vector2(0.9f, 0.85f), 40f, Ink);
         yesButton = Button(question.transform, "YES - TUTORIAL", 0.49f, StartTutorial);
         Button(question.transform, "NO - PLAY GAME", 0.33f, StartGame);
@@ -293,6 +367,7 @@ public class MainMenuSystem : MonoBehaviour
         TextMeshProUGUI body = content.gameObject.AddComponent<TextMeshProUGUI>();
         if (font != null) body.font = font;
         body.text = projectBrief; body.fontSize = 28f; body.color = Ink;
+        body.outlineColor = new Color(0.08f, 0.17f, 0.23f); body.outlineWidth = 0.18f;
         body.alignment = TextAlignmentOptions.Top; body.raycastTarget = false;
         ContentSizeFitter size = content.gameObject.AddComponent<ContentSizeFitter>(); size.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         scroll.content = content;
@@ -331,13 +406,52 @@ public class MainMenuSystem : MonoBehaviour
         EventTrigger.Entry entry = new EventTrigger.Entry { eventID = type };
         entry.callback.AddListener(data => action()); trigger.triggers.Add(entry);
     }
+    private void TransitionBackground(bool showCredits)
+    {
+        if (creditsBackground == null || creditsBackgroundSprite == null) return;
+        if (backgroundTransitionRoutine != null) StopCoroutine(backgroundTransitionRoutine);
+        backgroundTransitionRoutine = StartCoroutine(BlendBackground(showCredits ? 1f : 0f));
+    }
+    private IEnumerator BlendBackground(float target)
+    {
+        float start = backgroundBlend;
+        float duration = animateMenu ? Mathf.Max(0.2f, creditsTransitionDuration) : 0f;
+        creditsBackground.gameObject.SetActive(true);
+        // Overscan keeps the moving backgrounds covering every edge of the screen.
+        float zoom = Mathf.Max(backgroundZoom, 1f + backgroundSlide * 2f + 0.01f);
+        for (float elapsed = 0f; elapsed < duration && Mathf.Abs(start - target) > 0.001f; elapsed += Time.unscaledDeltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+            backgroundBlend = Mathf.Lerp(start, target, Mathf.SmoothStep(0f, 1f, t));
+            ApplyBackgroundBlend(zoom, Mathf.Sin(t * Mathf.PI) * motionBlurStrength);
+            yield return null;
+        }
+        backgroundBlend = target; ApplyBackgroundBlend(zoom, 0f);
+        if (target == 0f) creditsBackground.gameObject.SetActive(false);
+        backgroundTransitionRoutine = null;
+    }
+    private void ApplyBackgroundBlend(float zoom, float blur)
+    {
+        backgroundRect.localScale = Vector3.one * zoom;
+        creditsBackground.rectTransform.localScale = Vector3.one * zoom;
+        float distance = ((RectTransform)ui.transform).rect.height * backgroundSlide;
+        backgroundRect.anchoredPosition = new Vector2(0f, distance * backgroundBlend);
+        creditsBackground.rectTransform.anchoredPosition = new Vector2(0f, -distance * (1f - backgroundBlend));
+        creditsBackground.color = new Color(1f, 1f, 1f, backgroundBlend);
+        if (skyMotionMaterial != null) skyMotionMaterial.SetFloat("_BlurStrength", blur);
+        if (caveMotionMaterial != null) caveMotionMaterial.SetFloat("_BlurStrength", blur);
+    }
     private void OnDestroy()
     {
+        if (skyMotionMaterial != null) Destroy(skyMotionMaterial);
+        if (caveMotionMaterial != null) Destroy(caveMotionMaterial);
         if (ui != null) Destroy(ui);
         if (ownedEvents != null) Destroy(ownedEvents);
         if (sounds != null) Destroy(sounds);
         if (music != null) Destroy(music);
     }
 }
+
+
 
 

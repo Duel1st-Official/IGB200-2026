@@ -302,7 +302,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameSceneName: Game
   tutorialSceneName: Tutorial
-  gameTitle: GHOST BAT SANCTUARY
   font: {fileID: 11400000, guid: 4bb629fca7e7ca54cb1e0ea0a3ba40f6, type: 2}
   developers:
   - name: Patrick A
@@ -332,9 +331,14 @@ MonoBehaviour:
 
     Highlight
     how Indigenous rangers protect wildlife'
-  backgroundSprite: {fileID: 0}
-  panelSprite: {fileID: 0}
-  buttonSprite: {fileID: 0}
+  backgroundSprite: {fileID: -324127711504405276, guid: 84e15ed7396755b42a8d6b780b0c4d7f, type: 3}
+  creditsBackgroundSprite: {fileID: 2973992010842448211, guid: f899fe8e353d4024491286493d04468f, type: 3}
+  backgroundMotionBlurShader: {fileID: 4800000, guid: 2597196e3c50a234ea48e196128616d5, type: 3}
+  creditsTransitionDuration: 0.75
+  motionBlurStrength: 0.012
+  backgroundSlide: 0.025
+  logoSprite: {fileID: -7352339073622421304, guid: 5928b8ac9dfcd6643a9a293d8fb4e63d, type: 3}
+  buttonSprite: {fileID: 21300000, guid: 6c3649449e4d4484cae170aa65686c55, type: 3}
   musicClip: {fileID: 8300000, guid: a67a160d3dcfe7b4da9f81b71d5686b8, type: 3}
   clickSound: {fileID: 8300000, guid: 2deb3ae7097dc2a4ca5c695099e9e84e, type: 3}
   hoverSound: {fileID: 8300000, guid: 7de3303959607664f869d0c840487b40, type: 3}
@@ -344,6 +348,11 @@ MonoBehaviour:
   clickDelay: 0.15
   animateMenu: 1
   pagePopDuration: 0.3
+  logoRevealDuration: 0.65
+  logoHoldDuration: 0.2
+  buttonRevealDuration: 0.35
+  buttonStagger: 0.12
+  backgroundZoom: 1.04
   openingFadeDuration: 0.8
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
