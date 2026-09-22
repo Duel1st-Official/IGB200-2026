@@ -59,7 +59,7 @@ public class PauseMenuSystem : MonoBehaviour
     private Button resumeButton;
     private AudioSource menuAudio;
     private AudioSource ownedMusic;
-    private Coroutine animation;
+    private Coroutine pauseAnimationRoutine;
     private bool busy;
     private CursorLockMode savedCursorLock;
     private bool savedCursorVisible;
@@ -97,7 +97,7 @@ public class PauseMenuSystem : MonoBehaviour
 #elif ENABLE_LEGACY_INPUT_MANAGER
         escape = Input.GetKeyDown(KeyCode.Escape);
 #endif
-        if (escape && !busy) { if (IsPaused) Resume(); else Pause(); }
+        if (escape && !busy && !SceneTransition.IsTransitioning) { if (IsPaused) Resume(); else Pause(); }
     }
 
     public void Pause()
@@ -131,8 +131,8 @@ public class PauseMenuSystem : MonoBehaviour
 
     private void StartFade(bool opening)
     {
-        if (animation != null) StopCoroutine(animation);
-        animation = StartCoroutine(Fade(opening));
+        if (pauseAnimationRoutine != null) StopCoroutine(pauseAnimationRoutine);
+        pauseAnimationRoutine = StartCoroutine(Fade(opening));
     }
 
     private IEnumerator Fade(bool opening)
@@ -153,7 +153,7 @@ public class PauseMenuSystem : MonoBehaviour
             if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(resumeButton.gameObject);
         }
         else { root.SetActive(false); RestoreGameplay(); }
-        busy = false; animation = null;
+        busy = false; pauseAnimationRoutine = null;
     }
 
     private void RestoreGameplay()
@@ -180,8 +180,7 @@ public class PauseMenuSystem : MonoBehaviour
     {
         busy = true; group.interactable = false; Play(clickSound); SaveVolumes();
         yield return new WaitForSecondsRealtime(sceneChangeDelay);
-        RestoreGameplay();
-        if (index >= 0) SceneManager.LoadScene(index); else SceneManager.LoadScene(sceneName);
+        if (index >= 0) SceneTransition.Load(index); else SceneTransition.Load(sceneName);
     }
 
     private float[] CaptureVolumes(AudioSource[] sources)
@@ -318,8 +317,8 @@ public class PauseMenuSystem : MonoBehaviour
     }
     private void OnDisable()
     {
-        if (animation != null) StopCoroutine(animation);
-        StopAllCoroutines(); animation = null; busy = false;
+        if (pauseAnimationRoutine != null) StopCoroutine(pauseAnimationRoutine);
+        StopAllCoroutines(); pauseAnimationRoutine = null; busy = false;
         if (root != null) { root.SetActive(false); group.alpha = 0f; }
         if (IsPaused) { SaveVolumes(); RestoreGameplay(); }
     }
@@ -330,3 +329,5 @@ public class PauseMenuSystem : MonoBehaviour
         if (ownedMusic != null) Destroy(ownedMusic);
     }
 }
+
+

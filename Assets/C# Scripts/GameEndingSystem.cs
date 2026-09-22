@@ -201,7 +201,7 @@ public class GameEndingSystem : MonoBehaviour
             typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(CanvasGroup));
         SceneManager.MoveGameObjectToScene(screen, gameObject.scene);
         Canvas canvas = screen.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 32767;
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 32766;
         CanvasScaler scaler = screen.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f); scaler.matchWidthOrHeight = 0.5f;
@@ -288,8 +288,7 @@ public class GameEndingSystem : MonoBehaviour
     private IEnumerator ChangeScene(int index, string sceneName)
     {
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, sceneChangeDelay));
-        RestoreTime();
-        if (index >= 0) SceneManager.LoadScene(index); else SceneManager.LoadScene(sceneName);
+        if (index >= 0) SceneTransition.Load(index); else SceneTransition.Load(sceneName);
     }
 
     private void RestoreTime()
@@ -306,3 +305,4 @@ public class GameEndingSystem : MonoBehaviour
         if (screen != null) Destroy(screen);
     }
 }
+

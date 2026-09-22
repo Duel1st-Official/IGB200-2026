@@ -3460,7 +3460,7 @@ MonoBehaviour:
   endDaySystem: {fileID: 186385400}
   batColony: {fileID: 1777897967}
   toursBuilding: {fileID: 1766345117}
-  mainMenuSceneName: 
+  mainMenuSceneName: Main Menu
   panelBackground: {fileID: 21300000, guid: b21a51f2ac7707a4db0acb1f9de4d32a, type: 3}
   winBackground: {fileID: 21300000, guid: a1905690e9ff489428052eab0288b981, type: 3}
   loseBackground: {fileID: 21300000, guid: 1debcc6102242ef4ca831527513c5384, type: 3}
@@ -3503,7 +3503,7 @@ MonoBehaviour:
   sliderHandleSprite: {fileID: 21300000, guid: 009ddadfd5ae6d1438aa59345d5fde0e, type: 3}
   font: {fileID: 11400000, guid: 4bb629fca7e7ca54cb1e0ea0a3ba40f6, type: 2}
   backgroundContainsTitle: 1
-  mainMenuSceneName: 
+  mainMenuSceneName: Main Menu
   audioMixer: {fileID: 0}
   audioVolumeParameter: 
   musicVolumeParameter: 

@@ -17,8 +17,36 @@ public class MainMenuSystem : MonoBehaviour
     [SerializeField] private string tutorialSceneName = "";
     [Header("Text")]
     [SerializeField] private string gameTitle = "GHOST BAT RESERVE";
-    [TextArea(6, 20)][SerializeField] private string creditsText = "Add your credits in the Inspector.";
     [SerializeField] private TMP_FontAsset font;
+    [System.Serializable]
+    public class DeveloperCredit
+    {
+        public string name;
+        [TextArea(2, 5)] public string contribution;
+        public Sprite characterSprite;
+        public DeveloperCredit(string name, string contribution)
+        { this.name = name; this.contribution = contribution; }
+    }
+    [Header("Credits - assign each developer's character sprite")]
+    [SerializeField]
+    private DeveloperCredit[] developers = new DeveloperCredit[]
+    {
+        new DeveloperCredit("Patrick A", "Artist, programmer, game designer, Audio designer"),
+        new DeveloperCredit("Paul N", "Programmer, game director, Project manager"),
+        new DeveloperCredit("Munkush G", "Artist, concept artist"),
+        new DeveloperCredit("Lucas M", "Game designer, level designer"),
+        new DeveloperCredit("Wenqi W", "Artist, concept artist")
+    };
+    [TextArea(6, 15)]
+    [SerializeField]
+    private string projectBrief =
+        "Teach players about our threatened ghost bats\n\n" +
+        "Show the environmental threats they face\n\n" +
+        "Make learning fun and accessible for students\n\n" +
+        "Highlight how Indigenous rangers protect wildlife";
+    private GameObject brief;
+    private Button briefBack;
+    private TextMeshProUGUI developerDetails;
     [Header("Optional artwork")]
     [Tooltip("Full-screen artwork. Leave empty for a plain dark background.")]
     [SerializeField] private Sprite backgroundSprite;
@@ -28,6 +56,8 @@ public class MainMenuSystem : MonoBehaviour
     [Header("Optional audio")]
     [SerializeField] private AudioClip musicClip;
     [SerializeField] private AudioClip clickSound;
+    [SerializeField] private AudioClip hoverSound;
+    [SerializeField, Range(0, 1)] private float hoverVolume = 0.5f;
     [SerializeField, Range(0, 1)] private float musicVolume = 0.7f;
     [SerializeField, Range(0, 1)] private float clickVolume = 0.8f;
     [SerializeField, Range(0, 1)] private float clickDelay = 0.15f;
@@ -37,9 +67,17 @@ public class MainMenuSystem : MonoBehaviour
     private AudioSource music, sounds;
     private bool loading;
     private CanvasGroup canvasGroup;
+    [Header("Menu animations")]
+    [SerializeField] private bool animateMenu = true;
+    [SerializeField, Range(0.1f, 0.8f)] private float pagePopDuration = 0.3f;
+    private Coroutine pageAnimation;
+    private GameObject animatedPage;
     private static readonly Color Ink = new Color(0.23f, 0.13f, 0.06f);
 
-    private void Start()
+    [Header("Opening transition")]
+    [SerializeField, Range(0.1f, 3f)] private float openingFadeDuration = 0.8f;
+
+    private IEnumerator Start()
     {
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
@@ -53,7 +91,14 @@ public class MainMenuSystem : MonoBehaviour
             music.volume = musicVolume * Mathf.Clamp01(PlayerPrefs.GetFloat("Reserve.MusicVolume", 1f));
             music.Play();
         }
-        BuildUI(); Show(home, playButton);
+        BuildUI();
+        home.SetActive(false); question.SetActive(false);
+        credits.SetActive(false); brief.SetActive(false);
+        canvasGroup.interactable = false;
+        SceneTransition.FadeInOnStart(openingFadeDuration);
+        while (SceneTransition.IsTransitioning) yield return null;
+        canvasGroup.interactable = true;
+        Show(home, playButton);
     }
 
     public void PlayGame()
@@ -70,6 +115,11 @@ public class MainMenuSystem : MonoBehaviour
     {
         if (loading) return;
         Click(); Show(home, playButton);
+    }
+    public void OpenProjectBrief()
+    {
+        if (loading) return;
+        Click(); Show(brief, briefBack);
     }
     public void StartTutorial() { BeginLoad(tutorialSceneName, "Tutorial Scene Name"); }
     public void StartGame() { BeginLoad(gameSceneName, "Game Scene Name"); }
@@ -91,8 +141,8 @@ public class MainMenuSystem : MonoBehaviour
     {
         yield return new WaitForSecondsRealtime(clickDelay);
         Time.timeScale = 1f;
-        AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName);
-        if (operation != null) yield return operation;
+        SceneTransition.Load(sceneName);
+
     }
     public void ExitGame()
     {
@@ -110,11 +160,48 @@ public class MainMenuSystem : MonoBehaviour
 #endif
     }
     private void Click() { if (clickSound != null) sounds.PlayOneShot(clickSound, clickVolume); }
+    private void Hover(Button button)
+    {
+        if (loading || SceneTransition.IsTransitioning || !button.isActiveAndEnabled ||
+            !button.IsInteractable() || hoverSound == null || sounds == null) return;
+        sounds.PlayOneShot(hoverSound, hoverVolume);
+    }
     private void Show(GameObject page, Button selected)
     {
+        if (pageAnimation != null) StopCoroutine(pageAnimation);
+        if (animatedPage != null)
+        {
+            animatedPage.transform.localScale = Vector3.one;
+            CanvasGroup previous = animatedPage.GetComponent<CanvasGroup>();
+            if (previous != null) { previous.alpha = 1f; previous.interactable = true; }
+        }
         home.SetActive(page == home); question.SetActive(page == question); credits.SetActive(page == credits);
+        brief.SetActive(page == brief);
+        if (page == credits) developerDetails.text = "Hover over or select a developer to see their contribution.";
         status.text = "";
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
+        animatedPage = page;
+        if (animateMenu) pageAnimation = StartCoroutine(PopPage(page, selected));
+        else if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(selected.gameObject);
+    }
+    private IEnumerator PopPage(GameObject page, Button selected)
+    {
+        CanvasGroup group = page.GetComponent<CanvasGroup>();
+        if (group == null) group = page.AddComponent<CanvasGroup>();
+        group.interactable = false;
+        float duration = Mathf.Max(0.1f, pagePopDuration);
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+            // A small overshoot gives the page a soft bounce without moving its layout.
+            float eased = 1f + 2.2f * Mathf.Pow(t - 1f, 3f) + 1.2f * Mathf.Pow(t - 1f, 2f);
+            page.transform.localScale = Vector3.one * Mathf.LerpUnclamped(0.90f, 1f, eased);
+            group.alpha = Mathf.Clamp01(t * 2f);
+            yield return null;
+        }
+        page.transform.localScale = Vector3.one; group.alpha = 1f; group.interactable = true;
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(selected.gameObject);
+        pageAnimation = null;
     }
     private RectTransform Rect(string name, Transform parent, Vector2 min, Vector2 max)
     {
@@ -140,7 +227,10 @@ public class MainMenuSystem : MonoBehaviour
         Image image = rect.gameObject.AddComponent<Image>(); image.sprite = buttonSprite;
         image.color = buttonSprite != null ? Color.white : new Color(0.5f, 0.28f, 0.12f);
         Button button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = image;
+        if (animateMenu) rect.gameObject.AddComponent<MenuPopAnimation>();
         button.onClick.AddListener(action);
+        EventTrigger hoverTrigger = rect.gameObject.AddComponent<EventTrigger>();
+        AddCreditEvent(hoverTrigger, EventTriggerType.PointerEnter, () => Hover(button));
         Text(rect, title, new Vector2(0.06f, 0.1f), new Vector2(0.94f, 0.9f), 32f, new Color(1f, 0.95f, 0.8f));
         return button;
     }
@@ -173,6 +263,7 @@ public class MainMenuSystem : MonoBehaviour
         Image paper = panel.gameObject.AddComponent<Image>(); paper.sprite = panelSprite;
         paper.color = panelSprite != null ? Color.white : new Color(0.90f, 0.81f, 0.63f);
         home = Page("Home", panel); question = Page("First Time", panel); credits = Page("Credits", panel);
+        brief = Page("Project Brief", panel);
         Text(home.transform, gameTitle, new Vector2(0.1f, 0.72f), new Vector2(0.9f, 0.86f), 52f, Ink);
         playButton = Button(home.transform, "PLAY GAME", 0.51f, PlayGame);
         Button(home.transform, "CREDITS", 0.35f, OpenCredits);
@@ -182,8 +273,12 @@ public class MainMenuSystem : MonoBehaviour
         Button(question.transform, "NO - PLAY GAME", 0.33f, StartGame);
         Button(question.transform, "BACK", 0.17f, Back);
         Text(credits.transform, "CREDITS", new Vector2(0.1f, 0.76f), new Vector2(0.9f, 0.88f), 44f, Ink);
-        BuildCreditsScroll(credits.transform);
-        creditsBack = Button(credits.transform, "BACK", 0.15f, Back);
+        BuildDevelopers(credits.transform);
+        Button(credits.transform, "PROJECT BRIEF", 0.27f, OpenProjectBrief);
+        creditsBack = Button(credits.transform, "MAIN MENU", 0.13f, Back);
+        Text(brief.transform, "INDUSTRY PARTNER PROJECT BRIEF", new Vector2(0.1f, 0.76f), new Vector2(0.9f, 0.89f), 36f, Ink);
+        BuildCreditsScroll(brief.transform);
+        briefBack = Button(brief.transform, "BACK TO CREDITS", 0.15f, OpenCredits);
         status = Text(panel, "", new Vector2(0.10f, 0.035f), new Vector2(0.90f, 0.12f), 20f, Ink);
     }
     private void BuildCreditsScroll(Transform parent)
@@ -197,10 +292,44 @@ public class MainMenuSystem : MonoBehaviour
         content.pivot = new Vector2(0.5f, 1f);
         TextMeshProUGUI body = content.gameObject.AddComponent<TextMeshProUGUI>();
         if (font != null) body.font = font;
-        body.text = creditsText; body.fontSize = 28f; body.color = Ink;
+        body.text = projectBrief; body.fontSize = 28f; body.color = Ink;
         body.alignment = TextAlignmentOptions.Top; body.raycastTarget = false;
         ContentSizeFitter size = content.gameObject.AddComponent<ContentSizeFitter>(); size.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         scroll.content = content;
+    }
+    private void BuildDevelopers(Transform parent)
+    {
+        developerDetails = Text(parent, "", new Vector2(0.12f, 0.405f), new Vector2(0.88f, 0.515f), 26f, Ink);
+        int count = developers == null ? 0 : developers.Length;
+        for (int i = 0; i < count; i++)
+        {
+            DeveloperCredit dev = developers[i];
+            if (dev == null) continue;
+            float left = 0.10f + 0.80f * i / count;
+            float right = 0.10f + 0.80f * (i + 1) / count;
+            RectTransform tile = Rect(dev.name, parent, new Vector2(left + 0.006f, 0.53f), new Vector2(right - 0.006f, 0.735f));
+            Image hit = tile.gameObject.AddComponent<Image>(); hit.color = new Color(0.55f, 0.35f, 0.15f, 0.12f);
+            Button select = tile.gameObject.AddComponent<Button>(); select.targetGraphic = hit;
+            if (animateMenu) tile.gameObject.AddComponent<MenuPopAnimation>();
+            if (dev.characterSprite != null)
+            {
+                Image portrait = Rect("Character", tile, new Vector2(0.12f, 0.25f), new Vector2(0.88f, 0.95f)).gameObject.AddComponent<Image>();
+                portrait.sprite = dev.characterSprite; portrait.preserveAspect = true; portrait.raycastTarget = false;
+            }
+            else Text(tile, "?", new Vector2(0.12f, 0.25f), new Vector2(0.88f, 0.95f), 40f, Ink);
+            Text(tile, dev.name, new Vector2(0.02f, 0.01f), new Vector2(0.98f, 0.24f), 22f, Ink);
+            UnityAction reveal = () => developerDetails.text = dev.name + "\n" + dev.contribution;
+            select.onClick.AddListener(() => { Click(); reveal(); });
+            EventTrigger trigger = tile.gameObject.AddComponent<EventTrigger>();
+            AddCreditEvent(trigger, EventTriggerType.PointerEnter, reveal);
+            AddCreditEvent(trigger, EventTriggerType.PointerEnter, () => Hover(select));
+            AddCreditEvent(trigger, EventTriggerType.Select, reveal);
+        }
+    }
+    private void AddCreditEvent(EventTrigger trigger, EventTriggerType type, UnityAction action)
+    {
+        EventTrigger.Entry entry = new EventTrigger.Entry { eventID = type };
+        entry.callback.AddListener(data => action()); trigger.triggers.Add(entry);
     }
     private void OnDestroy()
     {
@@ -210,3 +339,5 @@ public class MainMenuSystem : MonoBehaviour
         if (music != null) Destroy(music);
     }
 }
+
+
