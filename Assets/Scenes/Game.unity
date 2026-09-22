@@ -2778,6 +2778,7 @@ GameObject:
   - component: {fileID: 186385400}
   - component: {fileID: 186385401}
   - component: {fileID: 186385402}
+  - component: {fileID: 186385403}
   m_Layer: 0
   m_Name: Inspection HUD Canvas
   m_TagString: Untagged
@@ -3484,6 +3485,46 @@ MonoBehaviour:
   hoverVolume: 0.6
   clickVolume: 0.8
   sceneChangeDelay: 0.2
+--- !u!114 &186385403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 186385388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 002c58ab199b14c4ea9b77c8d807a6ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pauseBackground: {fileID: 21300000, guid: de7cf7a47fabe7743b4fb69c53d1ecaf, type: 3}
+  buttonSprite: {fileID: 21300000, guid: 6c3649449e4d4484cae170aa65686c55, type: 3}
+  sliderTrackSprite: {fileID: 21300000, guid: 92c91c3b4f7c2fb48a99d7417114703b, type: 3}
+  sliderHandleSprite: {fileID: 21300000, guid: 009ddadfd5ae6d1438aa59345d5fde0e, type: 3}
+  font: {fileID: 11400000, guid: 4bb629fca7e7ca54cb1e0ea0a3ba40f6, type: 2}
+  backgroundContainsTitle: 1
+  mainMenuSceneName: 
+  audioMixer: {fileID: 0}
+  audioVolumeParameter: 
+  musicVolumeParameter: 
+  audioSources:
+  - {fileID: 27995926}
+  - {fileID: 2127755724}
+  - {fileID: 940736686}
+  - {fileID: 2141893256}
+  musicSources:
+  - {fileID: 435230144}
+  musicClip: {fileID: 8300000, guid: 3c541d1cad4498a478bd8b2775d7f4ab, type: 3}
+  playMusicOnStart: 1
+  loopMusic: 1
+  musicBaseVolume: 0.7
+  musicOutputGroup: {fileID: 0}
+  openSound: {fileID: 8300000, guid: dfe570a2d89a5054d974f6b634a6eea8, type: 3}
+  closeSound: {fileID: 8300000, guid: 974fefeaf9883b846a23431a5a21fccb, type: 3}
+  clickSound: {fileID: 8300000, guid: 2deb3ae7097dc2a4ca5c695099e9e84e, type: 3}
+  animationDuration: 0.18
+  sceneChangeDelay: 0.2
+  disableWhilePaused: []
 --- !u!1001 &188079618
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11329,6 +11370,135 @@ RectTransform:
   m_AnchoredPosition: {x: -5, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &435230142
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 435230143}
+  - component: {fileID: 435230144}
+  m_Layer: 0
+  m_Name: Music Source
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &435230143
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 435230142}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2141893255}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!82 &435230144
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 435230142}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 0.76
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &445049354
 GameObject:
   m_ObjectHideFlags: 0
@@ -26717,6 +26887,22 @@ MonoBehaviour:
     weight: 3
     target: 6
     amount: -20
+  - eventName: Helping Hand
+    title: HELPING HAND
+    description: Charity workers donate fertilized soil to your colony
+    icon: {fileID: -861708453558541168, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
+    weight: 10
+    target: 4
+    amount: 30
+  - eventName: Bat Frenzy
+    title: BAT FRENZY
+    description: Unusual amounts of bats start to feast
+    icon: {fileID: -104025231697851404, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
+    extremeEvent: 0
+    weight: 10
+    target: 6
+    amount: 10
   createDefaultEventsIfEmpty: 0
   preventImmediateRepeat: 1
   lastEventName: 
@@ -43841,6 +44027,7 @@ Transform:
   - {fileID: 27995925}
   - {fileID: 2127755723}
   - {fileID: 940736685}
+  - {fileID: 435230143}
   m_Father: {fileID: 1173481377}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!82 &2141893256
