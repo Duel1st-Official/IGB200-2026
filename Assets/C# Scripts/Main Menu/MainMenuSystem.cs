@@ -60,6 +60,12 @@ public class MainMenuSystem : MonoBehaviour
     private Material skyMotionMaterial, caveMotionMaterial;
     private Coroutine backgroundTransitionRoutine;
     private float backgroundBlend;
+    [Header("Background heatwave - sky and credits")]
+    [SerializeField] private bool enableHeatwave = true;
+    [SerializeField, Range(0f, 1f)] private float heatwaveIntensity = 0.6f;
+    [SerializeField, Range(0f, 0.02f)] private float heatwaveDistortion = 0.003f;
+    [SerializeField, Range(0f, 4f)] private float heatwaveSpeed = 0.65f;
+    [SerializeField, Range(0f, 1f)] private float heatwaveWarmth = 0.12f;
     [SerializeField] private Sprite logoSprite;
     [SerializeField] private Sprite buttonSprite;
     [Header("Optional audio")]
@@ -319,6 +325,8 @@ public class MainMenuSystem : MonoBehaviour
             caveMotionMaterial = new Material(backgroundMotionBlurShader);
             backdrop.material = skyMotionMaterial;
             creditsBackground.material = caveMotionMaterial;
+            ApplyHeatwave(skyMotionMaterial);
+            ApplyHeatwave(caveMotionMaterial);
         }
         backdrop.sprite = backgroundSprite; backdrop.color = backgroundSprite != null ? Color.white : new Color(0.08f, 0.13f, 0.09f);
         RectTransform bounds = Rect("Bounds", ui.transform, new Vector2(0.10f, 0.08f), new Vector2(0.90f, 0.92f));
@@ -440,6 +448,20 @@ public class MainMenuSystem : MonoBehaviour
         creditsBackground.color = new Color(1f, 1f, 1f, backgroundBlend);
         if (skyMotionMaterial != null) skyMotionMaterial.SetFloat("_BlurStrength", blur);
         if (caveMotionMaterial != null) caveMotionMaterial.SetFloat("_BlurStrength", blur);
+    }
+    private void ApplyHeatwave(Material material)
+    {
+        if (material == null || !material.HasProperty("_HeatIntensity")) return;
+        material.SetFloat("_HeatIntensity", enableHeatwave ? heatwaveIntensity : 0f);
+        material.SetFloat("_HeatDistortion", heatwaveDistortion);
+        material.SetFloat("_HeatSpeed", heatwaveSpeed);
+        material.SetFloat("_HeatWarmth", heatwaveWarmth);
+    }
+    private void Update()
+    {
+        // Allow live tuning in the Inspector during Play Mode.
+        ApplyHeatwave(skyMotionMaterial);
+        ApplyHeatwave(caveMotionMaterial);
     }
     private void OnDestroy()
     {
