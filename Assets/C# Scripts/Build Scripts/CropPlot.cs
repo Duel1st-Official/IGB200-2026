@@ -3,6 +3,7 @@ using UnityEngine.Events;
 
 public class CropPlot : MonoBehaviour
 {
+    public Sprite GetEmptyPlotSprite() { return emptyPlotSprite; }
     // =========================================================
     // REFERENCES
     // =========================================================
@@ -45,6 +46,7 @@ public class CropPlot : MonoBehaviour
 
     public float GetDailyPreyArrivalChance()
     {
+        if (plot != null && plot.IsDestroyed()) return 0f;
         if (rangerStation == null)
             rangerStation = FindFirstObjectByType<RangerStation>();
         if (rangerStation == null) return 0f;
@@ -357,6 +359,7 @@ public class CropPlot : MonoBehaviour
 
     private void Update()
     {
+        if (plot != null) { plot.CheckSoilDamage(); if (plot.IsDestroyed()) return; }
         if (!cropActive)
         {
             return;
@@ -420,6 +423,7 @@ public class CropPlot : MonoBehaviour
 
     public void PlantCrop()
     {
+        if (plot != null && plot.IsDestroyed()) return;
         AutoAssignReferences();
 
         if (growthStageSprites == null ||
@@ -507,6 +511,7 @@ public class CropPlot : MonoBehaviour
 
     public void GrowOneDay()
     {
+        if (plot != null && plot.IsDestroyed()) return;
         if (!cropActive)
         {
             return;
@@ -594,6 +599,7 @@ public class CropPlot : MonoBehaviour
 
     public void SpawnMammal()
     {
+        if (plot != null && plot.IsDestroyed()) return;
         if (!fullyGrown)
         {
             return;
@@ -776,6 +782,7 @@ public class CropPlot : MonoBehaviour
 
     private void GiveBatFoodReward()
     {
+        if (plot != null && plot.IsDestroyed()) return;
         if (!rewardBatFoodOnCollection)
         {
             return;
@@ -931,6 +938,7 @@ public class CropPlot : MonoBehaviour
 
     private void ShowEmptyPlot()
     {
+        if (plot != null && plot.IsDestroyed()) return;
         if (cropRenderer == null)
         {
             return;
@@ -949,6 +957,7 @@ public class CropPlot : MonoBehaviour
 
     private void RefreshCropSprite()
     {
+        if (plot != null && plot.IsDestroyed()) return;
         if (cropRenderer == null)
         {
             return;
@@ -1016,6 +1025,7 @@ public class CropPlot : MonoBehaviour
             return;
         }
 
+        attractedMammal.SetActive(false);
         Destroy(
             attractedMammal
         );
@@ -1163,3 +1173,4 @@ public class CropPlot : MonoBehaviour
         ClearCrop();
     }
 }
+

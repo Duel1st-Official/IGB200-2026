@@ -94,20 +94,46 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 766db7d041dc5534bbae8215130475b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spriteRenderer: {fileID: 2782782784662138916}
+  destroyed: 0
+  debrisSprite: {fileID: 21300000, guid: 2d99ca85ac296d14c99655b71d3557f7, type: 3}
+  debrisRenderer: {fileID: 2782782784662138916}
+  destructionCause: 
+  criticalSoilDays: 0
+  endDaySystem: {fileID: 0}
+  weatherManager: {fileID: 0}
+  waterQuality: 100
+  cleanQualityThreshold: 70
+  murkyQualityThreshold: 30
+  waterState: 0
+  daysPerDeterioration: 2
+  deteriorationAmount: 25
+  deteriorateDaily: 1
+  deteriorationDayProgress: 0
+  weatherAffectsWater: 1
+  deteriorateOnSunnyDays: 1
+  deteriorateOnRainDays: 1
+  deteriorateOnThunderDays: 1
+  waterRenderer: {fileID: 0}
   cleanSprite: {fileID: -5418871830010561904, guid: a7839b886a8c93e4d93c16608a02e08f, type: 3}
   dirtySprite: {fileID: 7972089375667400012, guid: a7839b886a8c93e4d93c16608a02e08f, type: 3}
   murkySprite: {fileID: -1997559865040036895, guid: a7839b886a8c93e4d93c16608a02e08f, type: 3}
-  currentState: 0
-  quality: 100
-  cleanQuality: 100
-  dirtyQuality: 50
-  murkyQuality: 0
-  dirtyThreshold: 65
-  murkyThreshold: 30
-  degradeOverTime: 0
-  degradationRate: 0.25
+  onWaterCleaned:
+    m_PersistentCalls:
+      m_Calls: []
+  onWaterBecameDirty:
+    m_PersistentCalls:
+      m_Calls: []
+  onWaterBecameMurky:
+    m_PersistentCalls:
+      m_Calls: []
+  onWaterStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  onWaterQualityChanged:
+    m_PersistentCalls:
+      m_Calls: []
   showDebugLogs: 0
+  lastProcessedDay: -1
 --- !u!114 &1151079421565626959
 MonoBehaviour:
   m_ObjectHideFlags: 0

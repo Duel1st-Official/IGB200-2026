@@ -2,6 +2,79 @@ using UnityEngine;
 
 public class Plot : MonoBehaviour
 {
+    [Header("Destroyed plot / debris")]
+    [SerializeField] private bool destroyed;
+    [SerializeField] private Sprite debrisSprite;
+    [SerializeField] private SpriteRenderer debrisRenderer;
+    [SerializeField] private string destructionCause;
+    [SerializeField] private int criticalSoilDays;
+    private int soilCheckedDay = -1;
+    public bool IsDestroyed() { return destroyed; }
+    public string GetDestructionCause() { return destructionCause; }
+
+    private void Start()
+    {
+        soilCheckedDay = endDaySystem != null ? endDaySystem.GetCurrentDay() : -1;
+        if (destroyed) { DiscardContents(false); ApplyDebrisVisual(); occupied = true; }
+    }
+    private void Update() { CheckSoilDamage(); }
+    public void CheckSoilDamage()
+    {
+        if (destroyed || endDaySystem == null || endDaySystem.HasGameEnded()) return;
+        int day = endDaySystem.GetCurrentDay();
+        if (day < 1) return;
+        if (soilCheckedDay < 1 || day < soilCheckedDay) { soilCheckedDay = day; criticalSoilDays = 0; return; }
+        if (day == soilCheckedDay) return;
+        soilCheckedDay = day;
+        if (rangerStation == null) rangerStation = FindFirstObjectByType<RangerStation>();
+        if (rangerStation == null) return;
+        PlotDisasterSystem settings = PlotDisasterSystem.GetOrCreate();
+        criticalSoilDays = rangerStation.GetSoilHealth() <= settings.criticalSoilHealth ? criticalSoilDays + 1 : 0;
+        if (criticalSoilDays >= Mathf.Max(1, settings.consecutiveCriticalDays)) DestroyPlot("Critical soil health");
+    }
+    public bool DestroyPlot(string cause)
+    {
+        if (destroyed) return false;
+        AutoAssignReferences();
+        destroyed = true; destructionCause = cause;
+        DiscardContents(false);
+        occupied = true; planted = false;
+        ApplyDebrisVisual();
+        return true;
+    }
+    public void ClearContentsForRemoval()
+    {
+        DiscardContents(true);
+    }
+    private void DiscardContents(bool removing)
+    {
+        AutoAssignReferences();
+        if (cropPlot != null) cropPlot.ClearCrop();
+        foreach (Trap trap in FindObjectsByType<Trap>(FindObjectsSortMode.None))
+            if (trap.GetOwningPlot() == this)
+            {
+                if (removing) trap.RemoveWithPlot(); else trap.DestroyWithPlot();
+            }
+    }
+    private void ApplyDebrisVisual()
+    {
+        if (debrisRenderer == null) debrisRenderer = GetComponent<SpriteRenderer>();
+        if (debrisRenderer == null) debrisRenderer = GetComponentInChildren<SpriteRenderer>();
+        foreach (SpriteRenderer renderer in GetComponentsInChildren<SpriteRenderer>())
+            if (renderer != debrisRenderer) renderer.enabled = false;
+        if (debrisRenderer != null)
+        {
+            if (debrisSprite != null) debrisRenderer.sprite = debrisSprite;
+            else if (cropPlot != null && cropPlot.GetEmptyPlotSprite() != null)
+                debrisRenderer.sprite = cropPlot.GetEmptyPlotSprite();
+            debrisRenderer.color = debrisSprite != null ? Color.white : new Color(0.25f, 0.19f, 0.17f);
+            debrisRenderer.enabled = true;
+        }
+    }
+    [ContextMenu("Debug - Destroy Plot")]
+    private void DebugDestroyPlot() { DestroyPlot("Debug"); }
+
+
     // =========================================================
     // PLOT STATE
     // =========================================================
@@ -118,6 +191,7 @@ public class Plot : MonoBehaviour
 
     public bool CanPerformPlayerAction()
     {
+        if (destroyed) return false;
         if (endDaySystem == null)
         {
             endDaySystem =
@@ -296,7 +370,7 @@ public class Plot : MonoBehaviour
         bool value)
     {
         occupied =
-            value;
+            destroyed || value;
     }
 
     // =========================================================
@@ -310,7 +384,7 @@ public class Plot : MonoBehaviour
 
     public bool IsOccupied()
     {
-        return occupied;
+        return destroyed || occupied;
     }
 
     public CropPlot GetCropPlot()

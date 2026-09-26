@@ -94,6 +94,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 329b9e1ed1008dc40aeb333b7582a923, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  destroyed: 0
+  debrisSprite: {fileID: 21300000, guid: de231039db8411d4abbd545257b68524, type: 3}
+  debrisRenderer: {fileID: 5030070009986527181}
+  destructionCause: 
+  criticalSoilDays: 0
+  owningPlot: {fileID: 0}
   currentState: 0
   startsWithBait: 0
   spriteRenderer: {fileID: 5030070009986527181}
@@ -103,12 +109,16 @@ MonoBehaviour:
   foxCaughtSprite: {fileID: 1018633133331934498, guid: 41ed6c0e91c0bfb40982b654b63629e1, type: 3}
   genericCaughtSprite: {fileID: 2099055159055310883, guid: 41ed6c0e91c0bfb40982b654b63629e1, type: 3}
   endDaySystem: {fileID: 0}
+  rangerStation: {fileID: 0}
   sunnyCaptureChance: 0.7
   rainCaptureChance: 0.5
   thunderCaptureChance: 0.3
   predatorNames:
   - Feral Cat
   - Fox
+  feralCatPredatorReduction: 6
+  foxPredatorReduction: 8
+  genericPredatorReduction: 5
   caughtMammalName: 
   debugMammalName: Bandicoot
   showDebugLogs: 0

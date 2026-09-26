@@ -832,6 +832,7 @@ public class WeatherManager : MonoBehaviour
 
     public void TriggerLightning()
     {
+        if (IsRainAndThunder()) PlotDisasterSystem.GetOrCreate().LightningStrike();
         if (globalLight != null)
         {
             if (lightningFlashRoutine != null)
@@ -1186,3 +1187,4 @@ public class WeatherManager : MonoBehaviour
         }
     }
 }
+

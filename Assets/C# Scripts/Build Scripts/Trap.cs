@@ -2,6 +2,89 @@ using UnityEngine;
 
 public class Trap : MonoBehaviour
 {
+    [Header("Destroyed plot / debris")]
+    [SerializeField] private bool destroyed;
+    [SerializeField] private Sprite debrisSprite;
+    [SerializeField] private SpriteRenderer debrisRenderer;
+    [SerializeField] private string destructionCause;
+    [SerializeField] private int criticalSoilDays;
+    private int soilCheckedDay = -1;
+    public bool IsDestroyed() { return destroyed; }
+    public string GetDestructionCause() { return destructionCause; }
+    public bool DestroyTrap(string cause)
+    {
+        if (destroyed) return false;
+        destroyed = true; destructionCause = cause;
+        hasBait = false; hasCaughtAnimal = false; caughtMammalName = "";
+        currentState = TrapState.Destroyed; dayTrapWasSet = -1;
+        ApplyDebrisVisual();
+        return true;
+    }
+    private void ApplyDebrisVisual()
+    {
+        if (debrisRenderer == null) debrisRenderer = spriteRenderer;
+        if (debrisRenderer == null) debrisRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (debrisRenderer == null) return;
+        if (spriteRenderer != null && spriteRenderer != debrisRenderer) spriteRenderer.enabled = false;
+        debrisRenderer.enabled = true;
+        if (debrisSprite != null) debrisRenderer.sprite = debrisSprite;
+        debrisRenderer.color = debrisSprite != null ? Color.white : new Color(0.25f, 0.19f, 0.17f);
+    }
+    public void RemoveWithPlot()
+    {
+        Plot owner = GetOwningPlot();
+        if (owner != null && (owner.gameObject == gameObject || owner.transform.IsChildOf(transform))) return;
+        gameObject.SetActive(false); Destroy(gameObject);
+    }
+    private void CheckSoilDamage()
+    {
+        if (destroyed || endDaySystem == null || endDaySystem.HasGameEnded()) return;
+        int day = endDaySystem.GetCurrentDay();
+        if (day < 1) return;
+        if (soilCheckedDay < 1 || day < soilCheckedDay) { soilCheckedDay = day; criticalSoilDays = 0; return; }
+        if (day == soilCheckedDay) return;
+        soilCheckedDay = day;
+        if (rangerStation == null) rangerStation = FindFirstObjectByType<RangerStation>();
+        if (rangerStation == null) return;
+        PlotDisasterSystem settings = PlotDisasterSystem.GetOrCreate();
+        criticalSoilDays = rangerStation.GetSoilHealth() <= settings.criticalSoilHealth ? criticalSoilDays + 1 : 0;
+        if (criticalSoilDays >= Mathf.Max(1, settings.consecutiveCriticalDays)) DestroyTrap("Critical soil health");
+    }
+    [ContextMenu("Debug - Destroy Trap")]
+    private void DebugDestroyTrap() { DestroyTrap("Debug"); }
+
+
+    [Header("Plot ownership")]
+    [Tooltip("Optional explicit owner. Otherwise resolves parent Plot, then matching plot grid cell.")]
+    [SerializeField] private Plot owningPlot;
+
+    public Plot GetOwningPlot()
+    {
+        if (owningPlot != null) return owningPlot;
+        owningPlot = GetComponentInParent<Plot>();
+        if (owningPlot != null) return owningPlot;
+        foreach (Plot candidate in FindObjectsByType<Plot>(FindObjectsSortMode.None))
+        {
+            RemovableBuildItem item = candidate.GetComponentInParent<RemovableBuildItem>();
+            if (item != null && item.placementSystem != null)
+            {
+                if (item.placementSystem.GetGridCell(transform.position) == item.gridCell)
+                { owningPlot = candidate; break; }
+            }
+            else if (Vector2.Distance(transform.position, candidate.transform.position) < 0.15f)
+            { owningPlot = candidate; break; }
+        }
+        return owningPlot;
+    }
+    private bool PlotIsDestroyed()
+    {
+        Plot owner = GetOwningPlot();
+        return destroyed || (owner != null && owner.IsDestroyed());
+    }
+    public void DestroyWithPlot()
+    {
+        DestroyTrap("Owning plot destroyed");
+    }
     // =========================================================
     // STATE
     // =========================================================
@@ -10,7 +93,8 @@ public class Trap : MonoBehaviour
     {
         Empty,
         Set,
-        Caught
+        Caught,
+        Destroyed
     }
 
     [Header("Trap State")]
@@ -163,6 +247,8 @@ public class Trap : MonoBehaviour
 
     private void Start()
     {
+        if (destroyed) { currentState = TrapState.Destroyed; hasBait = false; hasCaughtAnimal = false; caughtMammalName = ""; ApplyDebrisVisual(); return; }
+        if (PlotIsDestroyed()) { DestroyWithPlot(); return; }
         FindReferences();
 
         if (endDaySystem != null)
@@ -191,6 +277,7 @@ public class Trap : MonoBehaviour
 
     private void Update()
     {
+        CheckSoilDamage(); if (destroyed) return;
         CheckForNewDay();
     }
 
@@ -219,6 +306,7 @@ public class Trap : MonoBehaviour
 
     public bool CanPerformPlayerAction()
     {
+        if (PlotIsDestroyed()) return false;
         if (endDaySystem == null)
         {
             endDaySystem =
@@ -239,6 +327,7 @@ public class Trap : MonoBehaviour
 
     private void CheckForNewDay()
     {
+        if (PlotIsDestroyed()) { DestroyWithPlot(); return; }
         if (endDaySystem == null)
         {
             endDaySystem =
@@ -479,6 +568,7 @@ public class Trap : MonoBehaviour
 
     private void SetTrapInternal()
     {
+        if (PlotIsDestroyed()) { DestroyWithPlot(); return; }
         hasBait =
             true;
 
@@ -721,6 +811,7 @@ public class Trap : MonoBehaviour
 
     public void MakeEmpty()
     {
+        if (destroyed) return;
         hasCaughtAnimal =
             false;
 
@@ -750,6 +841,8 @@ public class Trap : MonoBehaviour
 
     public void RefreshTrapSprite()
     {
+        if (destroyed) { currentState = TrapState.Destroyed; hasBait = false; hasCaughtAnimal = false; caughtMammalName = ""; ApplyDebrisVisual(); return; }
+        if (PlotIsDestroyed()) { DestroyWithPlot(); return; }
         if (spriteRenderer == null)
         {
             spriteRenderer =
@@ -864,28 +957,33 @@ public class Trap : MonoBehaviour
 
     public bool HasBait()
     {
+        if (PlotIsDestroyed()) return false;
         return hasBait;
     }
 
     public bool HasCaughtAnimal()
     {
+        if (PlotIsDestroyed()) return false;
         return hasCaughtAnimal;
     }
 
     public bool IsEmpty()
     {
+        if (destroyed) return false;
         return currentState ==
                TrapState.Empty;
     }
 
     public bool IsSet()
     {
+        if (PlotIsDestroyed()) return false;
         return currentState ==
                TrapState.Set;
     }
 
     public bool IsCaught()
     {
+        if (PlotIsDestroyed()) return false;
         return currentState ==
                TrapState.Caught;
     }
@@ -919,6 +1017,7 @@ public class Trap : MonoBehaviour
     [ContextMenu("Debug - Catch Feral Cat")]
     private void DebugCatchCat()
     {
+        if (PlotIsDestroyed()) return;
         currentState =
             TrapState.Set;
 
@@ -933,6 +1032,7 @@ public class Trap : MonoBehaviour
     [ContextMenu("Debug - Catch Fox")]
     private void DebugCatchFox()
     {
+        if (PlotIsDestroyed()) return;
         currentState =
             TrapState.Set;
 
@@ -989,3 +1089,5 @@ public class Trap : MonoBehaviour
         );
     }
 }
+
+

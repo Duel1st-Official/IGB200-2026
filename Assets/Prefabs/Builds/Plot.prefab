@@ -95,10 +95,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32632a8980a7ff64e8d50f106fe3a512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  destroyed: 0
+  debrisSprite: {fileID: 21300000, guid: 419147c49db75b54596ff671517a2b68, type: 3}
+  debrisRenderer: {fileID: 1459975408311624994}
+  destructionCause: 
+  criticalSoilDays: 0
   occupied: 0
   planted: 0
-  cropPlot: {fileID: 0}
+  cropPlot: {fileID: 1715616483696070612}
   rangerStation: {fileID: 0}
+  endDaySystem: {fileID: 0}
   showDebugLogs: 0
 --- !u!114 &6376127902706515472
 MonoBehaviour:
@@ -152,6 +158,9 @@ MonoBehaviour:
   plot: {fileID: -358288229963476569}
   cropRenderer: {fileID: 1459975408311624994}
   endDaySystem: {fileID: 0}
+  batColony: {fileID: 0}
+  rangerStation: {fileID: 0}
+  maximumDailyPreyChance: 80
   emptyPlotSprite: {fileID: 7818689757044616098, guid: 5342b90694486c8458f27a3292fe2ba8, type: 3}
   growthStageSprites:
   - {fileID: 1272313374670823227, guid: 5342b90694486c8458f27a3292fe2ba8, type: 3}
@@ -163,6 +172,8 @@ MonoBehaviour:
   - {fileID: 5887916849777056642, guid: 6750760fcc60d094dbf06f77188742ff, type: 3}
   mammalSpawnPoint: {fileID: 682204440209325169}
   attractMammalWhenFullyGrown: 1
+  foodPerMammalCollected: 20
+  rewardBatFoodOnCollection: 1
   onCropPlanted:
     m_PersistentCalls:
       m_Calls: []
@@ -173,6 +184,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   onMammalAttracted:
+    m_PersistentCalls:
+      m_Calls: []
+  onMammalCollected:
     m_PersistentCalls:
       m_Calls: []
   onCropHarvested:

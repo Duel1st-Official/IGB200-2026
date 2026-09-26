@@ -602,6 +602,7 @@ public class PlotPlacementSystem : MonoBehaviour
             newPlot.GetComponent
             <RemovableBuildItem>();
 
+        if (removable == null) removable = newPlot.AddComponent<RemovableBuildItem>();
         if (removable != null)
         {
             removable.Setup(

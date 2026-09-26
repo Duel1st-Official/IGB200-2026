@@ -3360,7 +3360,7 @@ MonoBehaviour:
   rightDoor: {fileID: 1280060433}
   transitionDayText: {fileID: 241304479}
   startingDay: 1
-  actionPhaseDurationSeconds: 200
+  actionPhaseDurationSeconds: 120
   timeRunsAutomatically: 1
   newDayHour: 6
   newDayMinute: 0
@@ -26664,6 +26664,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1173481377}
   - component: {fileID: 1173481379}
+  - component: {fileID: 1173481380}
   m_Layer: 0
   m_Name: Game Manager
   m_TagString: Untagged
@@ -26717,6 +26718,8 @@ MonoBehaviour:
     description: Rain swept across the reserve overnight, reducing dry conditions.
     icon: {fileID: -2332379822669794800, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 12
     target: 3
     amount: -15
@@ -26725,6 +26728,8 @@ MonoBehaviour:
     description: A warm, dry night increased fire danger across the reserve.
     icon: {fileID: -7679154562806728526, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 10
     target: 3
     amount: 10
@@ -26734,6 +26739,8 @@ MonoBehaviour:
       Bat foraging habitat.
     icon: {fileID: -2789748989052739038, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 10
     target: 1
     amount: 15
@@ -26742,6 +26749,8 @@ MonoBehaviour:
     description: Low wildlife activity made hunting more difficult around the reserve.
     icon: {fileID: 1959801532370561471, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 10
     target: 1
     amount: -10
@@ -26751,6 +26760,8 @@ MonoBehaviour:
       habitat.
     icon: {fileID: -5541011540849110159, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 8
     target: 2
     amount: 15
@@ -26760,6 +26771,8 @@ MonoBehaviour:
       morning survey.
     icon: {fileID: -675626243570593189, guid: ccf8383ae0953734b81cd0ecd6a86d36, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 8
     target: 2
     amount: 10
@@ -26769,6 +26782,8 @@ MonoBehaviour:
       the reserve.
     icon: {fileID: 1959801532370561471, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 8
     target: 2
     amount: -10
@@ -26778,6 +26793,8 @@ MonoBehaviour:
       habitat.
     icon: {fileID: -861708453558541168, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 8
     target: 4
     amount: 10
@@ -26787,6 +26804,8 @@ MonoBehaviour:
       of the reserve.
     icon: {fileID: -3849205813412593395, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 8
     target: 4
     amount: -10
@@ -26795,6 +26814,8 @@ MonoBehaviour:
     description: The Ghost Bat colony had a productive night of hunting.
     icon: {fileID: -104025231697851404, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 10
     target: 7
     amount: 10
@@ -26804,6 +26825,8 @@ MonoBehaviour:
       usual.
     icon: {fileID: -7155757099603143681, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 10
     target: 7
     amount: -10
@@ -26813,6 +26836,8 @@ MonoBehaviour:
       from an undisturbed night.
     icon: {fileID: 8603421841838752658, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 7
     target: 6
     amount: 5
@@ -26822,6 +26847,8 @@ MonoBehaviour:
       during the night.
     icon: {fileID: 5571795949272832048, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 7
     target: 6
     amount: -5
@@ -26830,6 +26857,8 @@ MonoBehaviour:
     description: Rangers have confirmed a new Ghost Bat pup within the colony.
     icon: {fileID: 2899513372932027233, guid: ccf8383ae0953734b81cd0ecd6a86d36, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 2
     target: 5
     amount: 1
@@ -26839,6 +26868,8 @@ MonoBehaviour:
       changes.
     icon: {fileID: 4576265474455886330, guid: ccf8383ae0953734b81cd0ecd6a86d36, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 21
     target: 0
     amount: 0
@@ -26848,6 +26879,8 @@ MonoBehaviour:
       and leaving exposed soil vulnerable to erosion.
     icon: {fileID: 3635809400645982854, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 3
     target: 4
     amount: -25
@@ -26857,6 +26890,8 @@ MonoBehaviour:
       stress, reducing colony health.
     icon: {fileID: -6355717702054350058, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
     extremeEvent: 1
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 3
     target: 6
     amount: -15
@@ -26866,6 +26901,8 @@ MonoBehaviour:
       the colony's foraging habitat.
     icon: {fileID: -1964293781481700584, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
     extremeEvent: 1
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 3
     target: 2
     amount: 30
@@ -26875,6 +26912,8 @@ MonoBehaviour:
       leaving the colony with far '
     icon: {fileID: 6830800939038444526, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
     extremeEvent: 1
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 3
     target: 1
     amount: -25
@@ -26884,6 +26923,8 @@ MonoBehaviour:
       resting Ghost Bats and severely stressing the colony.
     icon: {fileID: -8169537108714421266, guid: 87a298e3ec9448a458e98eedd5ef695d, type: 3}
     extremeEvent: 1
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 3
     target: 6
     amount: -20
@@ -26892,6 +26933,8 @@ MonoBehaviour:
     description: Charity workers donate fertilized soil to your colony
     icon: {fileID: -861708453558541168, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 10
     target: 4
     amount: 30
@@ -26900,6 +26943,8 @@ MonoBehaviour:
     description: Unusual amounts of bats start to feast
     icon: {fileID: -104025231697851404, guid: e769a0a2aa2bf9e47bfe837b91cef9f5, type: 3}
     extremeEvent: 0
+    destroysPlots: 0
+    plotsToDestroy: 2
     weight: 10
     target: 6
     amount: 10
@@ -26913,6 +26958,23 @@ MonoBehaviour:
   lastEventTarget: 0
   lastEventAmount: 0
   showDebugLogs: 1
+--- !u!114 &1173481380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1173481376}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23d7f0115e044ca40bfb8f67d13c6371, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  destructionChancePerStrike: 0.03
+  maximumLightningLossesPerDay: 2
+  defaultFirePlotCount: 2
+  criticalSoilHealth: 10
+  consecutiveCriticalDays: 3
 --- !u!1001 &1180537552
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -38824,8 +38886,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: -5
-  m_Sprite: {fileID: 21300000, guid: 6e7dce5b477a4f047a11a7f6062f58cf, type: 3}
-  m_Color: {r: 0.96708614, g: 1, b: 0.70078325, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 6ec19ef805de410429a01c61b4c4e257, type: 3}
+  m_Color: {r: 0.83624065, g: 0.83624065, b: 0.83624065, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -38888,7 +38950,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 3.135, y: 3.135}
+    oldSize: {x: 3, y: 2.588889}
     newSize: {x: 4.18, y: 4.18}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -38948,17 +39010,17 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0.07477045}
+  m_Offset: {x: 0, y: -0.03537762}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 3.135, y: 3.135}
+    oldSize: {x: 3, y: 2.588889}
     newSize: {x: 4.18, y: 4.18}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 2.8560522, y: 2.8195128}
+  m_Size: {x: 2.8560522, y: 2.5992167}
   m_EdgeRadius: 0
 --- !u!114 &1777897966
 MonoBehaviour:
@@ -39026,7 +39088,7 @@ MonoBehaviour:
   poorThreshold: 65
   growingHealthThreshold: 75
   dyingHealthThreshold: 30
-  maximumDailyPopulationChange: 3
+  maximumDailyPopulationChange: 10
   populationRemainder: 0
   showDebugLogs: 0
   lastProcessedDay: -1

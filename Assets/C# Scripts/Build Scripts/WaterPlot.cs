@@ -3,6 +3,52 @@ using UnityEngine.Events;
 
 public class WaterPlot : MonoBehaviour
 {
+    [Header("Destroyed plot / debris")]
+    [SerializeField] private bool destroyed;
+    [SerializeField] private Sprite debrisSprite;
+    [SerializeField] private SpriteRenderer debrisRenderer;
+    [SerializeField] private string destructionCause;
+    [SerializeField] private int criticalSoilDays;
+    private int soilCheckedDay = -1;
+    public bool IsDestroyed() { return destroyed; }
+    public string GetDestructionCause() { return destructionCause; }
+    public bool DestroyWaterPlot(string cause)
+    {
+        if (destroyed) return false;
+        destroyed = true; destructionCause = cause;
+        waterQuality = 0f; waterState = WaterState.Destroyed; deteriorationDayProgress = 0;
+        ApplyDebrisVisual();
+        onWaterQualityChanged?.Invoke(); onWaterStateChanged?.Invoke();
+        return true;
+    }
+    private void ApplyDebrisVisual()
+    {
+        if (debrisRenderer == null) debrisRenderer = waterRenderer;
+        if (debrisRenderer == null) debrisRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (debrisRenderer == null) return;
+        if (waterRenderer != null && waterRenderer != debrisRenderer) waterRenderer.enabled = false;
+        debrisRenderer.enabled = true;
+        if (debrisSprite != null) debrisRenderer.sprite = debrisSprite;
+        debrisRenderer.color = debrisSprite != null ? Color.white : new Color(0.25f, 0.19f, 0.17f);
+    }
+    private void CheckSoilDamage()
+    {
+        if (destroyed || endDaySystem == null || endDaySystem.HasGameEnded()) return;
+        int day = endDaySystem.GetCurrentDay();
+        if (day < 1) return;
+        if (soilCheckedDay < 1 || day < soilCheckedDay) { soilCheckedDay = day; criticalSoilDays = 0; return; }
+        if (day == soilCheckedDay) return;
+        soilCheckedDay = day;
+        RangerStation station = FindFirstObjectByType<RangerStation>();
+        if (station == null) return;
+        PlotDisasterSystem settings = PlotDisasterSystem.GetOrCreate();
+        criticalSoilDays = station.GetSoilHealth() <= settings.criticalSoilHealth ? criticalSoilDays + 1 : 0;
+        if (criticalSoilDays >= Mathf.Max(1, settings.consecutiveCriticalDays)) DestroyWaterPlot("Critical soil health");
+    }
+    [ContextMenu("Debug - Destroy Water Plot")]
+    private void DebugDestroyWaterPlot() { DestroyWaterPlot("Debug"); }
+
+
     // =========================================================
     // WATER STATE
     // =========================================================
@@ -14,7 +60,8 @@ public class WaterPlot : MonoBehaviour
         Murky,
 
         // Legacy compatibility.
-        Polluted = Murky
+        Polluted = Murky,
+        Destroyed = 3
     }
 
     // =========================================================
@@ -214,6 +261,7 @@ public class WaterPlot : MonoBehaviour
 
     private void Update()
     {
+        if (destroyed) return; CheckSoilDamage(); if (destroyed) return;
         if (endDaySystem == null ||
             weatherManager == null)
         {
@@ -286,6 +334,7 @@ public class WaterPlot : MonoBehaviour
 
     public bool CanPerformPlayerAction()
     {
+        if (destroyed) return false;
         if (endDaySystem == null)
         {
             endDaySystem =
@@ -306,6 +355,7 @@ public class WaterPlot : MonoBehaviour
 
     private void ProcessNewDay()
     {
+        if (destroyed) return;
         if (!deteriorateDaily)
         {
             return;
@@ -394,6 +444,7 @@ public class WaterPlot : MonoBehaviour
     public void SetWaterQuality(
         float value)
     {
+        if (destroyed) return;
         float oldQuality =
             waterQuality;
 
@@ -514,6 +565,7 @@ public class WaterPlot : MonoBehaviour
 
     private void MakeCleanInternal()
     {
+        if (destroyed) return;
         deteriorationDayProgress = 0;
 
         SetWaterQuality(
@@ -550,6 +602,7 @@ public class WaterPlot : MonoBehaviour
 
     public void MakePolluted()
     {
+        if (destroyed) return;
         deteriorationDayProgress = 0;
 
         SetWaterQuality(
@@ -573,6 +626,7 @@ public class WaterPlot : MonoBehaviour
     private void UpdateStateFromQuality(
         bool invokeEvents)
     {
+        if (destroyed) { waterQuality = 0f; waterState = WaterState.Destroyed; return; }
         WaterState newState;
 
         if (waterQuality >=
@@ -606,6 +660,8 @@ public class WaterPlot : MonoBehaviour
     public void SetWaterState(
         WaterState newState)
     {
+        if (newState == WaterState.Destroyed) { DestroyWaterPlot("Manual state change"); return; }
+        if (destroyed) return;
         switch (newState)
         {
             case WaterState.Clean:
@@ -697,6 +753,7 @@ public class WaterPlot : MonoBehaviour
 
     public void MakeDirty()
     {
+        if (destroyed) return;
         deteriorationDayProgress = 0;
 
         float dirtyQuality =
@@ -773,6 +830,7 @@ public class WaterPlot : MonoBehaviour
 
     private void UpdateVisuals()
     {
+        if (destroyed) { ApplyDebrisVisual(); return; }
         if (waterRenderer == null)
         {
             return;
@@ -823,11 +881,13 @@ public class WaterPlot : MonoBehaviour
 
     public float GetWaterQuality()
     {
+        if (destroyed) return 0f;
         return waterQuality;
     }
 
     public bool IsClean()
     {
+        if (destroyed) return false;
         return
             waterState ==
             WaterState.Clean;
@@ -835,6 +895,7 @@ public class WaterPlot : MonoBehaviour
 
     public bool IsDirty()
     {
+        if (destroyed) return false;
         return
             waterState ==
             WaterState.Dirty;
@@ -842,6 +903,7 @@ public class WaterPlot : MonoBehaviour
 
     public bool IsMurky()
     {
+        if (destroyed) return false;
         return
             waterState ==
             WaterState.Murky;

@@ -47,6 +47,9 @@ public class EndDayEventSystem : MonoBehaviour
 
         [Tooltip("Use the burnt report background for an extreme destructive event. Does not change its stats or chance.")]
         public bool extremeEvent = false;
+        [Tooltip("Destroy random plots when this event is applied. Enable for custom fire events.")]
+        public bool destroysPlots;
+        [Min(0)] public int plotsToDestroy = 2;
 
         [Tooltip(
             "Relative chance of this event being selected. " +
@@ -821,6 +824,16 @@ public class EndDayEventSystem : MonoBehaviour
                 break;
         }
 
+        int plotsLost = 0;
+        // Exact legacy fire-event name, not FireRisk (risk alone is not a fire).
+        bool legacyFire = string.Equals(eventData.eventName, "Bushfire Damage", StringComparison.OrdinalIgnoreCase);
+        if (eventData.destroysPlots || legacyFire)
+        {
+            PlotDisasterSystem disasters = PlotDisasterSystem.GetOrCreate();
+            int count = eventData.destroysPlots ? eventData.plotsToDestroy : disasters.defaultFirePlotCount;
+            plotsLost = disasters.DestroyRandomPlots(count, "Fire event: " + eventData.title);
+        }
+
         float afterValue =
             GetCurrentTargetValue(
                 eventData.target
@@ -829,6 +842,7 @@ public class EndDayEventSystem : MonoBehaviour
         StoreLastEvent(
             eventData
         );
+        if (plotsLost > 0) lastEventDescription += "\nPlots destroyed: " + plotsLost + ". Clear the debris before rebuilding.";
 
         if (showDebugLogs)
         {
@@ -1242,3 +1256,4 @@ public class EndDayEventSystem : MonoBehaviour
         );
     }
 }
+
