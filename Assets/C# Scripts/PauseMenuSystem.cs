@@ -13,6 +13,34 @@ using UnityEngine.InputSystem.UI;
 // Add ONE instance to an always-active scene object, outside the generated UI.
 public class PauseMenuSystem : MonoBehaviour
 {
+    [Header("Top Day Bar")]
+    [Tooltip("Uses the EndDaySystem with SetShowTopDayBar/GetShowTopDayBar. Auto-found when empty.")]
+    [SerializeField] private EndDaySystem endDaySystem;
+    private Button topDayBarButton;
+    private TMP_Text topDayBarButtonLabel;
+
+    public void ToggleTopDayBar()
+    {
+        if (busy || !IsPaused) return;
+        if (endDaySystem == null) endDaySystem = FindFirstObjectByType<EndDaySystem>();
+        if (endDaySystem == null) return;
+        Play(clickSound);
+        endDaySystem.SetShowTopDayBar(!endDaySystem.GetShowTopDayBar());
+        RefreshTopDayBarButton();
+    }
+
+    private void RefreshTopDayBarButton()
+    {
+        if (topDayBarButton == null) return;
+        if (endDaySystem == null) endDaySystem = FindFirstObjectByType<EndDaySystem>();
+        topDayBarButton.interactable = endDaySystem != null;
+        string label = endDaySystem == null ? "DAY BAR UNAVAILABLE"
+            : endDaySystem.GetShowTopDayBar() ? "Always visible" : "Temporary visible";
+        if (topDayBarButtonLabel != null && topDayBarButtonLabel.text != label)
+            topDayBarButtonLabel.text = label;
+    }
+
+
     [Header("Artwork - drag your sprites here")]
     [SerializeField] private Sprite pauseBackground;
     [SerializeField] private Sprite buttonSprite;
@@ -91,6 +119,7 @@ public class PauseMenuSystem : MonoBehaviour
 
     private void Update()
     {
+        if (IsPaused) RefreshTopDayBarButton();
         bool escape = false;
 #if ENABLE_INPUT_SYSTEM
         escape = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
@@ -118,6 +147,7 @@ public class PauseMenuSystem : MonoBehaviour
             enabledBefore[i] = item.enabled; item.enabled = false;
         }
         priorSelection = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        RefreshTopDayBarButton();
         root.SetActive(true); Play(openSound);
         StartFade(true);
     }
@@ -307,11 +337,14 @@ public class PauseMenuSystem : MonoBehaviour
         fitter.aspectRatio = pauseBackground != null ? pauseBackground.rect.width / pauseBackground.rect.height : 1.6f;
         if (!backgroundContainsTitle || pauseBackground == null)
             Label(panel, "PAUSED", new Vector2(0.25f, 0.79f), new Vector2(0.75f, 0.89f), new Color(0.23f, 0.13f, 0.06f));
-        MakeSlider("MUSIC", 0.61f, musicVolume, value => { musicVolume = value; ApplyMusic(); });
-        resumeButton = MakeButton("RESUME", 0.425f, Resume);
-        Button restart = MakeButton("RESTART", 0.31f, Restart);
+        MakeSlider("MUSIC", 0.66f, musicVolume, value => { musicVolume = value; ApplyMusic(); });
+        topDayBarButton = MakeButton("Always visible", 0.52f, ToggleTopDayBar);
+        topDayBarButtonLabel = topDayBarButton.GetComponentInChildren<TMP_Text>(true);
+        RefreshTopDayBarButton();
+        resumeButton = MakeButton("RESUME", 0.405f, Resume);
+        Button restart = MakeButton("RESTART", 0.29f, Restart);
         restart.interactable = SceneManager.GetActiveScene().buildIndex >= 0;
-        Button menu = MakeButton("MAIN MENU", 0.195f, MainMenu);
+        Button menu = MakeButton("MAIN MENU", 0.175f, MainMenu);
         menu.interactable = !string.IsNullOrWhiteSpace(mainMenuSceneName) && Application.CanStreamedLevelBeLoaded(mainMenuSceneName);
         root.SetActive(false);
     }
@@ -329,5 +362,7 @@ public class PauseMenuSystem : MonoBehaviour
         if (ownedMusic != null) Destroy(ownedMusic);
     }
 }
+
+
 
 

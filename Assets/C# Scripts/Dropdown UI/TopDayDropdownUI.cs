@@ -10,6 +10,46 @@ public class TopDayDropdownUI : MonoBehaviour
     // REFERENCES
     // =========================================================
 
+    [Header("Day Progress Position - Always Visible")]
+    [Tooltip("Optional container for the progress bar and its text. Defaults to Day Progress Visual. Use a separate sibling of Dropdown Panel.")]
+    [SerializeField] private RectTransform dayProgressMoveTarget;
+    [Tooltip("Distance downward in UI units when the top bar is Always visible.")]
+    [Min(0f)][SerializeField] private float alwaysVisibleProgressDrop = 150f;
+    [Min(0.01f)][SerializeField] private float progressMoveSpeed = 15f;
+    private RectTransform cachedProgressMoveTarget;
+    private Vector2 originalProgressPosition;
+
+    private void UpdateProgressPosition()
+    {
+        RectTransform target = dayProgressMoveTarget != null
+            ? dayProgressMoveTarget : dayProgressVisual;
+        if (target == null) return;
+
+        // Never move the dropdown itself, or a shared parent containing it.
+        if (dropdownPanel != null &&
+            (target == dropdownPanel || dropdownPanel.IsChildOf(target))) return;
+
+        if (cachedProgressMoveTarget != target)
+        {
+            if (cachedProgressMoveTarget != null)
+                cachedProgressMoveTarget.anchoredPosition = originalProgressPosition;
+            cachedProgressMoveTarget = target;
+            originalProgressPosition = target.anchoredPosition;
+        }
+
+        bool alwaysVisible = endDaySystem != null &&
+            endDaySystem.GetShowTopDayBar() && !endDaySystem.IsTransitionRunning();
+        Vector2 destination = originalProgressPosition;
+        // Children already inherit the dropdown's slide; avoid doubling it.
+        bool movesWithDropdown = dropdownPanel != null && target.IsChildOf(dropdownPanel);
+        if (alwaysVisible && !movesWithDropdown)
+            destination += Vector2.down * Mathf.Max(0f, alwaysVisibleProgressDrop);
+
+        float blend = 1f - Mathf.Exp(-Mathf.Max(0.01f, progressMoveSpeed) * Time.unscaledDeltaTime);
+        target.anchoredPosition = Vector2.Lerp(target.anchoredPosition, destination, blend);
+    }
+
+
     [Header("References")]
     [SerializeField] private SelectionWheel selectionWheel;
     [SerializeField] private EndDaySystem endDaySystem;
@@ -614,6 +654,20 @@ public class TopDayDropdownUI : MonoBehaviour
             return;
         }
 
+        // The pause-menu preference controls the actual slide position.
+        // Transition handling above still closes the bar while doors/reports run.
+        if (endDaySystem != null && endDaySystem.GetShowTopDayBar())
+        {
+
+            dropdownOpen = true;
+            openTimer = 0f;
+            closeTimer = 0f;
+            UpdateDropdownPosition();
+            UpdateProgressCrossFade(false);
+            UpdateDropdownWiggle(dayFinished && wiggleAtDayEnd);
+            return;
+        }
+
         // =====================================================
         // FORCED END DAY MODE
         // =====================================================
@@ -948,6 +1002,7 @@ public class TopDayDropdownUI : MonoBehaviour
     private void UpdateProgressCrossFade(
         bool hideProgress)
     {
+        UpdateProgressPosition();
         float delta =
             Time.unscaledDeltaTime;
 
@@ -1333,6 +1388,8 @@ public class TopDayDropdownUI : MonoBehaviour
 
     private void HandleEndDayButton()
     {
+        if (Time.timeScale <= 0f || (!CanUseDropdown() && !IsDayFinished())) return;
+
         if (endDayButton == null ||
             !endDayButton.interactable)
         {
@@ -1745,3 +1802,6 @@ public class TopDayDropdownUI : MonoBehaviour
         }
     }
 }
+
+
+

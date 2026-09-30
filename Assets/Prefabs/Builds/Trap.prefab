@@ -94,6 +94,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 329b9e1ed1008dc40aeb333b7582a923, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  showCaughtAlert: 1
+  caughtAlertIcon: {fileID: 21300000, guid: 5f3a9c4e718780a4db6f93660ad1112d, type: 3}
+  caughtAlertColor: {r: 1, g: 1, b: 1, a: 1}
+  caughtAlertOffset: {x: 0, y: 0.2}
+  caughtAlertSize: 0.7
+  caughtAlertBounceHeight: 0.06
+  caughtAlertBounceSpeed: 2
+  caughtAlertSortingOffset: 10
   destroyed: 0
   debrisSprite: {fileID: 21300000, guid: de231039db8411d4abbd545257b68524, type: 3}
   debrisRenderer: {fileID: 5030070009986527181}

@@ -3291,6 +3291,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b55551557d4bd1d478fd3056167e8af9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dayProgressMoveTarget: {fileID: 0}
+  alwaysVisibleProgressDrop: 77
+  progressMoveSpeed: 15
   selectionWheel: {fileID: 746917061}
   endDaySystem: {fileID: 186385400}
   dropdownPanel: {fileID: 194625683}
@@ -3351,6 +3354,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a038e64c35bd7c4881515bda55583d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  showTopDayBar: 1
+  topDayBarRoot: {fileID: 0}
   topDayDropdown: {fileID: 186385399}
   endDayEventSystem: {fileID: 1173481379}
   endDayEventUI: {fileID: 186385401}
@@ -3497,6 +3502,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 002c58ab199b14c4ea9b77c8d807a6ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  endDaySystem: {fileID: 186385400}
   pauseBackground: {fileID: 21300000, guid: de7cf7a47fabe7743b4fb69c53d1ecaf, type: 3}
   buttonSprite: {fileID: 21300000, guid: 6c3649449e4d4484cae170aa65686c55, type: 3}
   sliderTrackSprite: {fileID: 21300000, guid: 92c91c3b4f7c2fb48a99d7417114703b, type: 3}
@@ -38594,6 +38600,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5b3b438dd20e7b4287ca4ea5e143cf9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  showTourReadyAlert: 1
+  tourReadyAlertIcon: {fileID: 21300000, guid: 5f3a9c4e718780a4db6f93660ad1112d, type: 3}
+  tourReadyAlertColor: {r: 1, g: 1, b: 1, a: 1}
+  tourReadyAlertOffset: {x: 0, y: 0.2}
+  tourReadyAlertSize: 0.7
+  tourReadyAlertBounceHeight: 0.06
+  tourReadyAlertBounceSpeed: 2
+  tourReadyAlertSortingOffset: 10
+  buildingRenderer: {fileID: 1766345115}
   rangerStation: {fileID: 1686625576}
   batColony: {fileID: 1777897967}
   endDaySystem: {fileID: 186385400}
@@ -42851,6 +42866,13 @@ MonoBehaviour:
   rainEmissionMultiplier: 1
   globalLight: {fileID: 1781128020}
   lightTransitionSpeed: 2.5
+  enableTimeOfDayLighting: 1
+  endDaySystem: {fileID: 0}
+  timeOfDayStrength: 0.75
+  morningTint: {r: 1, g: 0.86, b: 0.68, a: 1}
+  sunsetTint: {r: 1, g: 0.64, b: 0.48, a: 1}
+  morningBrightness: 0.9
+  sunsetBrightness: 0.75
   sunnyLightColor: {r: 1, g: 1, b: 1, a: 1}
   sunnyLightIntensity: 1
   rainLightColor: {r: 0.65, g: 0.72, b: 0.8, a: 1}

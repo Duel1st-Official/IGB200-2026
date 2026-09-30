@@ -97,6 +97,62 @@ public class WeatherManager : MonoBehaviour
     // SUNNY LIGHT
     // =========================================================
 
+    [Header("Morning and Sunset")]
+    [SerializeField] private bool enableTimeOfDayLighting = true;
+    [SerializeField] private EndDaySystem endDaySystem;
+    [Range(0f, 1f)][SerializeField] private float timeOfDayStrength = 0.75f;
+    [SerializeField] private Color morningTint = new Color(1f, 0.86f, 0.68f, 1f);
+    [SerializeField] private Color sunsetTint = new Color(1f, 0.64f, 0.48f, 1f);
+    [Range(0f, 2f)][SerializeField] private float morningBrightness = 0.9f;
+    [Range(0f, 2f)][SerializeField] private float sunsetBrightness = 0.75f;
+
+    private void RefreshLightingTargets()
+    {
+        // Always rebuild from weather, avoiding accumulated colour multiplication.
+        switch (currentWeather)
+        {
+            case WeatherType.Rain:
+                targetLightColor = rainLightColor;
+                targetLightIntensity = rainLightIntensity;
+                break;
+            case WeatherType.RainAndThunder:
+                targetLightColor = stormLightColor;
+                targetLightIntensity = stormLightIntensity;
+                break;
+            default:
+                targetLightColor = sunnyLightColor;
+                targetLightIntensity = sunnyLightIntensity;
+                break;
+        }
+        if (!enableTimeOfDayLighting) return;
+        if (endDaySystem == null) endDaySystem = FindFirstObjectByType<EndDaySystem>();
+        if (endDaySystem == null) return;
+        float start = endDaySystem.GetDayStartHour() * 60f + endDaySystem.GetDayStartMinute();
+        float end = endDaySystem.GetDayEndHour() * 60f + endDaySystem.GetDayEndMinute();
+        float now = endDaySystem.GetCurrentHour() * 60f + endDaySystem.GetCurrentMinute();
+        if (end <= start) return;
+        float progress = Mathf.InverseLerp(start, end, now);
+        Color tint = Color.white;
+        float brightness = 1f;
+        if (progress < 0.3f)
+        {
+            float blend = Mathf.SmoothStep(0f, 1f, progress / 0.3f);
+            tint = Color.Lerp(morningTint, Color.white, blend);
+            brightness = Mathf.Lerp(morningBrightness, 1f, blend);
+        }
+        else if (progress > 0.65f)
+        {
+            float blend = Mathf.SmoothStep(0f, 1f, (progress - 0.65f) / 0.35f);
+            tint = Color.Lerp(Color.white, sunsetTint, blend);
+            brightness = Mathf.Lerp(1f, sunsetBrightness, blend);
+        }
+        float strength = Mathf.Clamp01(timeOfDayStrength);
+        targetLightColor *= Color.Lerp(Color.white, tint, strength);
+        targetLightColor.a = 1f;
+        targetLightIntensity *= Mathf.Lerp(1f, Mathf.Max(0f, brightness), strength);
+    }
+
+
     [Header("Sunny Lighting")]
     [SerializeField]
     private Color sunnyLightColor =
@@ -482,6 +538,8 @@ public class WeatherManager : MonoBehaviour
                 break;
         }
 
+        RefreshLightingTargets();
+
         if (showDebugLogs)
         {
             Debug.Log(
@@ -567,6 +625,7 @@ public class WeatherManager : MonoBehaviour
 
     private void UpdateGlobalLight()
     {
+        RefreshLightingTargets();
         if (globalLight == null)
         {
             return;
@@ -1187,4 +1246,5 @@ public class WeatherManager : MonoBehaviour
         }
     }
 }
+
 

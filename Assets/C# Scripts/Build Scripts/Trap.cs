@@ -2,6 +2,77 @@ using UnityEngine;
 
 public class Trap : MonoBehaviour
 {
+    [Header("Caught Animal Alert")]
+    [SerializeField] private bool showCaughtAlert = true;
+    [Tooltip("Drag your exclamation-mark icon sprite here. No icon is shown until assigned.")]
+    [SerializeField] private Sprite caughtAlertIcon;
+    [SerializeField] private Color caughtAlertColor = Color.white;
+    [Tooltip("Offset above the top of the trap sprite, in world units.")]
+    [SerializeField] private Vector2 caughtAlertOffset = new Vector2(0f, 0.2f);
+    [Tooltip("Icon height in world units. Aspect ratio is preserved.")]
+    [Min(0.01f)][SerializeField] private float caughtAlertSize = 0.5f;
+    [Min(0f)][SerializeField] private float caughtAlertBounceHeight = 0.06f;
+    [Min(0f)][SerializeField] private float caughtAlertBounceSpeed = 2f;
+    [SerializeField] private int caughtAlertSortingOffset = 10;
+    private SpriteRenderer caughtAlertRenderer;
+
+    private void LateUpdate()
+    {
+        RefreshCaughtAlert();
+    }
+
+    private void RefreshCaughtAlert()
+    {
+        bool visible = showCaughtAlert && caughtAlertIcon != null && !destroyed &&
+            currentState == TrapState.Caught && hasCaughtAnimal && !PlotIsDestroyed();
+        if (!visible)
+        {
+            if (caughtAlertRenderer != null) caughtAlertRenderer.gameObject.SetActive(false);
+            return;
+        }
+
+        if (caughtAlertRenderer == null)
+        {
+            GameObject marker = new GameObject("Caught Animal Icon");
+            marker.layer = gameObject.layer;
+            marker.transform.SetParent(transform, false);
+            caughtAlertRenderer = marker.AddComponent<SpriteRenderer>();
+        }
+
+        caughtAlertRenderer.gameObject.SetActive(true);
+        caughtAlertRenderer.sprite = caughtAlertIcon;
+        caughtAlertRenderer.color = caughtAlertColor;
+        Vector3 basePosition = spriteRenderer != null
+            ? new Vector3(spriteRenderer.bounds.center.x, spriteRenderer.bounds.max.y, transform.position.z)
+            : transform.position;
+        float bounce = Mathf.Sin(Time.time * Mathf.Max(0f, caughtAlertBounceSpeed) * Mathf.PI * 2f)
+            * Mathf.Max(0f, caughtAlertBounceHeight);
+
+        Transform markerTransform = caughtAlertRenderer.transform;
+        markerTransform.rotation = Quaternion.identity;
+        Vector3 scale = transform.lossyScale;
+        float size = Mathf.Max(0.01f, caughtAlertSize) /
+            Mathf.Max(0.0001f, caughtAlertIcon.bounds.size.y);
+        markerTransform.localScale = new Vector3(
+            size / Mathf.Max(0.0001f, Mathf.Abs(scale.x)),
+            size / Mathf.Max(0.0001f, Mathf.Abs(scale.y)), 1f);
+        // Position the visible icon centre consistently even with a non-centred sprite pivot.
+        markerTransform.position = basePosition +
+            new Vector3(caughtAlertOffset.x, caughtAlertOffset.y + bounce, 0f);
+        markerTransform.position -= markerTransform.TransformVector(caughtAlertIcon.bounds.center);
+
+        if (spriteRenderer != null)
+        {
+            caughtAlertRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+            caughtAlertRenderer.sortingOrder = spriteRenderer.sortingOrder + caughtAlertSortingOffset;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (caughtAlertRenderer != null) caughtAlertRenderer.gameObject.SetActive(false);
+    }
+
     [Header("Destroyed plot / debris")]
     [SerializeField] private bool destroyed;
     [SerializeField] private Sprite debrisSprite;
@@ -15,6 +86,7 @@ public class Trap : MonoBehaviour
     {
         if (destroyed) return false;
         destroyed = true; destructionCause = cause;
+        if (caughtAlertRenderer != null) caughtAlertRenderer.gameObject.SetActive(false);
         hasBait = false; hasCaughtAnimal = false; caughtMammalName = "";
         currentState = TrapState.Destroyed; dayTrapWasSet = -1;
         ApplyDebrisVisual();
@@ -841,6 +913,7 @@ public class Trap : MonoBehaviour
 
     public void RefreshTrapSprite()
     {
+        RefreshCaughtAlert();
         if (destroyed) { currentState = TrapState.Destroyed; hasBait = false; hasCaughtAnimal = false; caughtMammalName = ""; ApplyDebrisVisual(); return; }
         if (PlotIsDestroyed()) { DestroyWithPlot(); return; }
         if (spriteRenderer == null)
@@ -1089,5 +1162,7 @@ public class Trap : MonoBehaviour
         );
     }
 }
+
+
 
 

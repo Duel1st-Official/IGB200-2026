@@ -6,6 +6,84 @@ public class ToursBuilding : MonoBehaviour
     // REFERENCES
     // =========================================================
 
+    [Header("Tour Ready Alert")]
+    [SerializeField] private bool showTourReadyAlert = true;
+    [Tooltip("Drag your exclamation-mark icon sprite here. No icon is shown until assigned.")]
+    [SerializeField] private Sprite tourReadyAlertIcon;
+    [SerializeField] private Color tourReadyAlertColor = Color.white;
+    [Tooltip("Offset above the top of the building sprite, in world units.")]
+    [SerializeField] private Vector2 tourReadyAlertOffset = new Vector2(0f, 0.2f);
+    [Tooltip("Icon height in world units. Aspect ratio is preserved.")]
+    [Min(0.01f)][SerializeField] private float tourReadyAlertSize = 0.5f;
+    [Min(0f)][SerializeField] private float tourReadyAlertBounceHeight = 0.06f;
+    [Min(0f)][SerializeField] private float tourReadyAlertBounceSpeed = 2f;
+    [SerializeField] private int tourReadyAlertSortingOffset = 10;
+    [Tooltip("The building artwork used to place and sort the icon. Auto-found if empty.")]
+    [SerializeField] private SpriteRenderer buildingRenderer;
+    private SpriteRenderer tourReadyAlertRenderer;
+
+    private void LateUpdate()
+    {
+        RefreshTourReadyAlert();
+    }
+
+    private void RefreshTourReadyAlert()
+    {
+        if (endDaySystem == null) FindReferences();
+        bool visible = showTourReadyAlert && tourReadyAlertIcon != null &&
+            endDaySystem != null && !endDaySystem.HasGameEnded() &&
+            endDaySystem.IsActionPhaseActive() && IsTourRecommended();
+        if (!visible)
+        {
+            if (tourReadyAlertRenderer != null) tourReadyAlertRenderer.gameObject.SetActive(false);
+            return;
+        }
+
+        if (tourReadyAlertRenderer == null)
+        {
+            if (buildingRenderer == null)
+                buildingRenderer = GetComponentInChildren<SpriteRenderer>();
+            GameObject marker = new GameObject("Tour Ready Icon");
+            marker.layer = gameObject.layer;
+            marker.transform.SetParent(transform, false);
+            tourReadyAlertRenderer = marker.AddComponent<SpriteRenderer>();
+        }
+
+        tourReadyAlertRenderer.gameObject.SetActive(true);
+        tourReadyAlertRenderer.sprite = tourReadyAlertIcon;
+        tourReadyAlertRenderer.color = tourReadyAlertColor;
+        Vector3 basePosition = buildingRenderer != null
+            ? new Vector3(buildingRenderer.bounds.center.x, buildingRenderer.bounds.max.y, transform.position.z)
+            : transform.position;
+        float bounce = Mathf.Sin(Time.time * Mathf.Max(0f, tourReadyAlertBounceSpeed) * Mathf.PI * 2f)
+            * Mathf.Max(0f, tourReadyAlertBounceHeight);
+
+        Transform markerTransform = tourReadyAlertRenderer.transform;
+        markerTransform.rotation = Quaternion.identity;
+        Vector3 scale = transform.lossyScale;
+        float size = Mathf.Max(0.01f, tourReadyAlertSize) /
+            Mathf.Max(0.0001f, tourReadyAlertIcon.bounds.size.y);
+        markerTransform.localScale = new Vector3(
+            size / Mathf.Max(0.0001f, Mathf.Abs(scale.x)),
+            size / Mathf.Max(0.0001f, Mathf.Abs(scale.y)), 1f);
+        // Position the visible icon centre consistently even with a non-centred sprite pivot.
+        markerTransform.position = basePosition +
+            new Vector3(tourReadyAlertOffset.x, tourReadyAlertOffset.y + bounce, 0f);
+        markerTransform.position -= markerTransform.TransformVector(tourReadyAlertIcon.bounds.center);
+
+        if (buildingRenderer != null)
+        {
+            tourReadyAlertRenderer.sortingLayerID = buildingRenderer.sortingLayerID;
+            tourReadyAlertRenderer.sortingOrder = buildingRenderer.sortingOrder + tourReadyAlertSortingOffset;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (tourReadyAlertRenderer != null) tourReadyAlertRenderer.gameObject.SetActive(false);
+    }
+
+
     [Header("References")]
 
     [SerializeField]
@@ -374,6 +452,8 @@ public class ToursBuilding : MonoBehaviour
             );
 
         toursCompleted++;
+        if (tourReadyAlertRenderer != null)
+            tourReadyAlertRenderer.gameObject.SetActive(false);
 
         // -----------------------------------------------------
         // RECORD TOUR DAY
@@ -443,6 +523,8 @@ public class ToursBuilding : MonoBehaviour
         FindReferences();
 
         toursCompleted++;
+        if (tourReadyAlertRenderer != null)
+            tourReadyAlertRenderer.gameObject.SetActive(false);
 
         lastTourReward =
             Mathf.Max(
@@ -862,3 +944,4 @@ public class ToursBuilding : MonoBehaviour
         );
     }
 }
+

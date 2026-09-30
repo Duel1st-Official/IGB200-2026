@@ -9,6 +9,53 @@ public class EndDaySystem : MonoBehaviour
     // REFERENCES
     // =========================================================
 
+    [Header("Top Day Bar Visibility")]
+    [Tooltip("Checked: Always visible. Unchecked: Temporary visible (hover to show). The game clock keeps running.")]
+    [SerializeField] private bool showTopDayBar = true;
+
+    [Tooltip("Assign the Top Day Bar UI object only, not the whole Canvas or transition UI.")]
+    [SerializeField] private GameObject topDayBarRoot;
+
+    private CanvasGroup topDayBarVisibilityGroup;
+
+    public void SetShowTopDayBar(bool visible)
+    {
+        showTopDayBar = visible;
+        ApplyTopDayBarVisibility();
+    }
+
+    public bool GetShowTopDayBar()
+    {
+        return showTopDayBar;
+    }
+
+    private void LateUpdate()
+    {
+        // Apply after normal UI updates without disabling clock or UI scripts.
+        ApplyTopDayBarVisibility();
+    }
+
+    private void ApplyTopDayBarVisibility()
+    {
+        if (topDayBarRoot == null) return;
+
+        if (topDayBarVisibilityGroup == null ||
+            topDayBarVisibilityGroup.gameObject != topDayBarRoot)
+        {
+            topDayBarVisibilityGroup = topDayBarRoot.GetComponent<CanvasGroup>();
+            if (topDayBarVisibilityGroup == null)
+                topDayBarVisibilityGroup = topDayBarRoot.AddComponent<CanvasGroup>();
+        }
+
+        if (!topDayBarRoot.activeSelf)
+            topDayBarRoot.SetActive(true);
+
+        topDayBarVisibilityGroup.alpha = 1f;
+        topDayBarVisibilityGroup.interactable = true;
+        topDayBarVisibilityGroup.blocksRaycasts = true;
+    }
+
+
     [Header("References")]
 
     [SerializeField]
@@ -275,6 +322,7 @@ public class EndDaySystem : MonoBehaviour
 
     private void Start()
     {
+        ApplyTopDayBarVisibility();
         if (gameEndingSystem == null)
             gameEndingSystem = FindFirstObjectByType<GameEndingSystem>();
         if (gameEndingSystem == null)
@@ -1419,3 +1467,5 @@ public class EndDaySystem : MonoBehaviour
         );
     }
 }
+
+
