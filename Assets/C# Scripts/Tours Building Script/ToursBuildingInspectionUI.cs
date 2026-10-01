@@ -622,60 +622,60 @@ public class ToursBuildingInspectionUI :
         if (currentToursBuilding == null)
             return;
 
+        // =====================================================
+        // TITLE
+        // =====================================================
+
         if (titleText != null)
-            titleText.text =
-                "TOURS";
+            titleText.text = "TOURS";
+
+        // =====================================================
+        // REPUTATION
+        // Keep this as the main persistent Tours feedback.
+        // =====================================================
 
         if (reputationSlider != null)
         {
-            reputationSlider
-                .SetValueWithoutNotify(
-                    Mathf.Clamp(
-                        currentToursBuilding
-                            .GetReputation(),
-                        0f,
-                        100f
-                    )
-                );
+            reputationSlider.SetValueWithoutNotify(
+                Mathf.Clamp(
+                    currentToursBuilding.GetReputation(),
+                    0f,
+                    100f
+                )
+            );
         }
+
+        // =====================================================
+        // HIDE EXTRA INFORMATION
+        // =====================================================
 
         if (toursCompletedText != null)
         {
-            toursCompletedText.text =
-                currentToursBuilding
-                    .GetToursCompleted()
-                    .ToString();
+            toursCompletedText.text = "";
+            toursCompletedText.gameObject.SetActive(false);
         }
 
         if (tourQualityText != null)
         {
-            tourQualityText.text =
-                currentToursBuilding
-                    .GetTourQuality();
+            tourQualityText.text = "";
+            tourQualityText.gameObject.SetActive(false);
         }
 
         if (potentialRewardText != null)
         {
-            float reward =
-                currentToursBuilding
-                    .CalculateTourReward();
-
-            potentialRewardText.text =
-                "+" +
-                reward.ToString("0") +
-                " REP";
+            potentialRewardText.text = "";
+            potentialRewardText.gameObject.SetActive(false);
         }
+
+        // =====================================================
+        // TOUR AVAILABILITY
+        // =====================================================
 
         bool actionActive =
             IsActionPhaseActive();
 
         bool cooldownReady =
-            currentToursBuilding
-                .IsTourRecommended();
-
-        // =====================================================
-        // TIMING TEXT
-        // =====================================================
+            currentToursBuilding.IsTourRecommended();
 
         if (tourTimingText != null)
         {
@@ -695,27 +695,27 @@ public class ToursBuildingInspectionUI :
                     currentToursBuilding
                         .GetDaysUntilRecommendedTour();
 
-                if (days == 1)
-                {
-                    tourTimingText.text =
-                        "TOUR AVAILABLE IN 1 DAY";
-                }
-                else
-                {
-                    tourTimingText.text =
-                        "TOUR AVAILABLE IN " +
-                        days +
-                        " DAYS";
-                }
+                tourTimingText.text =
+                    days == 1
+                        ? "READY IN 1 DAY"
+                        : "READY IN " + days + " DAYS";
             }
         }
 
         // =====================================================
-        // BUTTON
+        // START TOUR BUTTON
         // =====================================================
 
         if (startTourButton != null)
         {
+            // Hide the button completely while the tour is on cooldown.
+            // Once the cooldown is ready, show it again.
+            // At day end it stays visible but disabled so the DAY ENDED
+            // state remains clear to the player.
+            startTourButton.gameObject.SetActive(
+                cooldownReady
+            );
+
             startTourButton.interactable =
                 actionActive &&
                 cooldownReady;

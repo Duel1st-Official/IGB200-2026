@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class ToursBuilding : MonoBehaviour
 {
@@ -80,7 +81,10 @@ public class ToursBuilding : MonoBehaviour
 
     private void OnDisable()
     {
-        if (tourReadyAlertRenderer != null) tourReadyAlertRenderer.gameObject.SetActive(false);
+        if (tourReadyAlertRenderer != null)
+            tourReadyAlertRenderer.gameObject.SetActive(false);
+
+        ClearTourCrowd();
     }
 
 
@@ -209,6 +213,38 @@ public class ToursBuilding : MonoBehaviour
     private int lastTourDay = -1;
 
     // =========================================================
+    // TOUR CROWD VISUALS
+    // =========================================================
+
+    [Header("Tour Crowd Visuals")]
+
+    [Tooltip("Visitor prefabs randomly spawned around the Tours building while the 3-day tour period is active.")]
+    [SerializeField] private GameObject[] visitorPrefabs;
+
+    [Tooltip("Possible positions around the building where visitors may appear.")]
+    [SerializeField] private Transform[] visitorSpawnPoints;
+
+    [Tooltip("Minimum visitors that can appear on a tour day.")]
+    [Min(0)]
+    [SerializeField] private int minimumVisitorsPerDay = 4;
+
+    [Tooltip("Maximum visitors that can appear on a tour day.")]
+    [Min(0)]
+    [SerializeField] private int maximumVisitorsPerDay = 10;
+
+    [Tooltip("Optional parent for spawned visitors. If empty, visitors are parented to this ToursBuilding.")]
+    [SerializeField] private Transform visitorParent;
+
+    [Tooltip("Randomly flip visitor sprites horizontally for a little more visual variety.")]
+    [SerializeField] private bool randomlyFlipVisitors = true;
+
+    [Tooltip("Optional sorting-order offset relative to the building renderer.")]
+    [SerializeField] private int visitorSortingOffset = 1;
+
+    private readonly List<GameObject> activeVisitors = new List<GameObject>();
+    private int crowdDay = -1;
+
+    // =========================================================
     // TOUR DISTURBANCE
     // =========================================================
 
@@ -275,6 +311,8 @@ public class ToursBuilding : MonoBehaviour
             lastProcessedDay =
                 endDaySystem.GetCurrentDay();
         }
+
+        RefreshTourCrowd(true);
     }
 
     // =========================================================
@@ -284,6 +322,7 @@ public class ToursBuilding : MonoBehaviour
     private void Update()
     {
         ProcessPendingDays();
+        RefreshTourCrowd(false);
     }
 
     public void ProcessPendingDays()
@@ -436,8 +475,19 @@ public class ToursBuilding : MonoBehaviour
 
     public void CompleteTour()
     {
-        if (endDaySystem != null && endDaySystem.HasGameEnded()) return;
         FindReferences();
+
+        if (endDaySystem != null &&
+            (endDaySystem.HasGameEnded() ||
+             !endDaySystem.IsActionPhaseActive()))
+        {
+            return;
+        }
+
+        if (!IsTourRecommended())
+        {
+            return;
+        }
 
         // -----------------------------------------------------
         // Calculate condition BEFORE visitor disturbance.
@@ -464,6 +514,8 @@ public class ToursBuilding : MonoBehaviour
             lastTourDay =
                 endDaySystem.GetCurrentDay();
         }
+
+        RefreshTourCrowd(true);
 
         // -----------------------------------------------------
         // REPUTATION REWARD
@@ -519,8 +571,19 @@ public class ToursBuilding : MonoBehaviour
     public void CompleteTour(
         float reputationReward)
     {
-        if (endDaySystem != null && endDaySystem.HasGameEnded()) return;
         FindReferences();
+
+        if (endDaySystem != null &&
+            (endDaySystem.HasGameEnded() ||
+             !endDaySystem.IsActionPhaseActive()))
+        {
+            return;
+        }
+
+        if (!IsTourRecommended())
+        {
+            return;
+        }
 
         toursCompleted++;
         if (tourReadyAlertRenderer != null)
@@ -540,6 +603,8 @@ public class ToursBuilding : MonoBehaviour
             lastTourDay =
                 endDaySystem.GetCurrentDay();
         }
+
+        RefreshTourCrowd(true);
 
         AddReputation(
             lastTourReward
@@ -561,6 +626,307 @@ public class ToursBuilding : MonoBehaviour
                 lastTourReward
             );
         }
+    }
+
+    // =========================================================
+    // TOUR CROWD
+    // =========================================================
+
+    /// <summary>
+    /// The crowd is active from the day Start Tour is pressed
+    /// until the normal three-day tour cooldown has finished.
+    /// </summary>
+    public bool IsTourCrowdActive()
+    {
+        if (lastTourDay < 0)
+        {
+            return false;
+        }
+
+        if (endDaySystem == null)
+        {
+            FindReferences();
+        }
+
+        if (endDaySystem == null ||
+            endDaySystem.HasGameEnded())
+        {
+            return false;
+        }
+
+        int daysSinceTour =
+            Mathf.Max(
+                0,
+                endDaySystem.GetCurrentDay() -
+                lastTourDay
+            );
+
+        return
+            daysSinceTour <
+            Mathf.Max(
+                1,
+                recommendedDaysBetweenTours
+            );
+    }
+
+    private void RefreshTourCrowd(bool forceReroll)
+    {
+        if (endDaySystem == null)
+        {
+            FindReferences();
+        }
+
+        if (!IsTourCrowdActive())
+        {
+            if (activeVisitors.Count > 0)
+            {
+                ClearTourCrowd();
+            }
+
+            crowdDay = -1;
+            return;
+        }
+
+        int currentDay =
+            endDaySystem.GetCurrentDay();
+
+        // Keep the same crowd for the entire current day.
+        if (!forceReroll &&
+            crowdDay == currentDay)
+        {
+            return;
+        }
+
+        crowdDay = currentDay;
+        SpawnCrowdForCurrentDay();
+    }
+
+    private void SpawnCrowdForCurrentDay()
+    {
+        ClearTourCrowd();
+
+        if (visitorPrefabs == null ||
+            visitorPrefabs.Length == 0 ||
+            visitorSpawnPoints == null ||
+            visitorSpawnPoints.Length == 0)
+        {
+            return;
+        }
+
+        List<Transform> availablePoints =
+            new List<Transform>();
+
+        for (int i = 0;
+             i < visitorSpawnPoints.Length;
+             i++)
+        {
+            if (visitorSpawnPoints[i] != null)
+            {
+                availablePoints.Add(
+                    visitorSpawnPoints[i]
+                );
+            }
+        }
+
+        if (availablePoints.Count == 0)
+        {
+            return;
+        }
+
+        int minimum =
+            Mathf.Clamp(
+                minimumVisitorsPerDay,
+                0,
+                availablePoints.Count
+            );
+
+        int maximum =
+            Mathf.Clamp(
+                Mathf.Max(
+                    minimumVisitorsPerDay,
+                    maximumVisitorsPerDay
+                ),
+                minimum,
+                availablePoints.Count
+            );
+
+        int visitorCount =
+            Random.Range(
+                minimum,
+                maximum + 1
+            );
+
+        // Shuffle spawn points so each day uses different positions.
+        for (int i = 0;
+             i < availablePoints.Count;
+             i++)
+        {
+            int swapIndex =
+                Random.Range(
+                    i,
+                    availablePoints.Count
+                );
+
+            Transform temporary =
+                availablePoints[i];
+
+            availablePoints[i] =
+                availablePoints[swapIndex];
+
+            availablePoints[swapIndex] =
+                temporary;
+        }
+
+        for (int i = 0;
+             i < visitorCount;
+             i++)
+        {
+            GameObject prefab =
+                GetRandomVisitorPrefab();
+
+            if (prefab == null)
+            {
+                continue;
+            }
+
+            Transform spawnPoint =
+                availablePoints[i];
+
+            Transform parent =
+                visitorParent != null
+                    ? visitorParent
+                    : transform;
+
+            GameObject visitor =
+                Instantiate(
+                    prefab,
+                    spawnPoint.position,
+                    spawnPoint.rotation,
+                    parent
+                );
+
+            activeVisitors.Add(
+                visitor
+            );
+
+            SetupVisitorVisual(
+                visitor
+            );
+        }
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[TOURS] Crowd spawned for Day " +
+                crowdDay +
+                ": " +
+                activeVisitors.Count +
+                " visitors."
+            );
+        }
+    }
+
+    private GameObject GetRandomVisitorPrefab()
+    {
+        if (visitorPrefabs == null ||
+            visitorPrefabs.Length == 0)
+        {
+            return null;
+        }
+
+        // Try a few random entries first so null slots do not
+        // prevent a visitor from spawning.
+        for (int attempt = 0;
+             attempt < visitorPrefabs.Length;
+             attempt++)
+        {
+            GameObject prefab =
+                visitorPrefabs[
+                    Random.Range(
+                        0,
+                        visitorPrefabs.Length
+                    )
+                ];
+
+            if (prefab != null)
+            {
+                return prefab;
+            }
+        }
+
+        for (int i = 0;
+             i < visitorPrefabs.Length;
+             i++)
+        {
+            if (visitorPrefabs[i] != null)
+            {
+                return visitorPrefabs[i];
+            }
+        }
+
+        return null;
+    }
+
+    private void SetupVisitorVisual(GameObject visitor)
+    {
+        if (visitor == null)
+        {
+            return;
+        }
+
+        SpriteRenderer[] renderers =
+            visitor.GetComponentsInChildren<SpriteRenderer>(
+                true
+            );
+
+        for (int i = 0;
+             i < renderers.Length;
+             i++)
+        {
+            SpriteRenderer renderer =
+                renderers[i];
+
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (buildingRenderer != null)
+            {
+                renderer.sortingLayerID =
+                    buildingRenderer.sortingLayerID;
+
+                renderer.sortingOrder =
+                    buildingRenderer.sortingOrder +
+                    visitorSortingOffset;
+            }
+
+            if (randomlyFlipVisitors &&
+                Random.value < 0.5f)
+            {
+                renderer.flipX =
+                    !renderer.flipX;
+            }
+        }
+    }
+
+    private void ClearTourCrowd()
+    {
+        for (int i =
+                 activeVisitors.Count - 1;
+             i >= 0;
+             i--)
+        {
+            GameObject visitor =
+                activeVisitors[i];
+
+            if (visitor != null)
+            {
+                Destroy(visitor);
+            }
+        }
+
+        activeVisitors.Clear();
     }
 
     // =========================================================

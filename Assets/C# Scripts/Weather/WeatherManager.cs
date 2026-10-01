@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
@@ -48,13 +49,43 @@ public class WeatherManager : MonoBehaviour
     // This is a seeded, state-dependent pattern, not a climate simulation.
     public void AdvanceDailyWeather()
     {
+        // Remember the weather for the day that has just finished.
+        // Storm damage is applied AFTER the storm day, when End Day
+        // advances the game into the next morning.
+        WeatherType weatherThatJustEnded =
+            currentWeather;
+
         if (dailyWeatherRandom == null)
         {
             dailyWeatherRandom = new System.Random(weatherSeed);
         }
 
-        SetWeather(ChooseDailyWeather(currentWeather, sunnyWeatherChance,
-            dailyWeatherRandom.NextDouble()));
+        WeatherType nextWeather;
+
+        if (debugOverrideDailyWeather)
+        {
+            nextWeather =
+                debugWeather;
+        }
+        else
+        {
+            nextWeather =
+                ChooseDailyWeather(
+                    currentWeather,
+                    sunnyWeatherChance,
+                    dailyWeatherRandom.NextDouble()
+                );
+        }
+
+        // Damage belongs to the storm day that just finished, not
+        // the new day that is about to begin.
+        if (weatherThatJustEnded ==
+            WeatherType.RainAndThunder)
+        {
+            ApplyLightningStormPlotDamage();
+        }
+
+        SetWeather(nextWeather);
     }
 
     private static WeatherType ChooseDailyWeather(
@@ -71,6 +102,253 @@ public class WeatherManager : MonoBehaviour
         if (roll < nextSunny) return WeatherType.Sunny;
         return roll < nextSunny + (1d - nextSunny) * 0.9d
             ? WeatherType.Rain : WeatherType.RainAndThunder;
+    }
+
+    // =========================================================
+    // LIGHTNING STORM PLOT DAMAGE
+    // =========================================================
+
+    private void ApplyLightningStormPlotDamage()
+    {
+        if (!lightningStormDestroysPlots)
+        {
+            return;
+        }
+
+        List<StormPlotTarget> availableTargets =
+            BuildStormPlotTargetList();
+
+        if (availableTargets.Count <= 0)
+        {
+            if (showStormDamageLogs)
+            {
+                Debug.Log(
+                    "[WeatherManager] Lightning storm found no " +
+                    "available plots to destroy."
+                );
+            }
+
+            return;
+        }
+
+        int minimum =
+            Mathf.Max(
+                0,
+                minimumStormPlotsDestroyed
+            );
+
+        int maximum =
+            Mathf.Max(
+                minimum,
+                maximumStormPlotsDestroyed
+            );
+
+        int requestedCount =
+            Random.Range(
+                minimum,
+                maximum + 1
+            );
+
+        int destroyCount =
+            Mathf.Min(
+                requestedCount,
+                availableTargets.Count
+            );
+
+        // Fisher-Yates partial shuffle. This guarantees every selected
+        // target is unique, so one plot cannot consume two lightning hits.
+        for (int i = 0; i < destroyCount; i++)
+        {
+            int randomIndex =
+                Random.Range(
+                    i,
+                    availableTargets.Count
+                );
+
+            StormPlotTarget temp =
+                availableTargets[i];
+
+            availableTargets[i] =
+                availableTargets[randomIndex];
+
+            availableTargets[randomIndex] =
+                temp;
+
+            StormPlotTarget target =
+                availableTargets[i];
+
+            if (target.Destroy("Lightning storm"))
+            {
+                if (showStormDamageLogs)
+                {
+                    Debug.Log(
+                        "[WeatherManager] Lightning storm destroyed " +
+                        target.DisplayName +
+                        "."
+                    );
+                }
+            }
+        }
+
+        if (showStormDamageLogs)
+        {
+            Debug.Log(
+                "[WeatherManager] Lightning storm damage complete. " +
+                destroyCount +
+                " plot(s) selected from " +
+                availableTargets.Count +
+                " available plot(s)."
+            );
+        }
+    }
+
+    private List<StormPlotTarget> BuildStormPlotTargetList()
+    {
+        List<StormPlotTarget> targets =
+            new List<StormPlotTarget>();
+
+        // ---------------------------------------------------------
+        // FARM / CROP PLOTS
+        // ---------------------------------------------------------
+
+        Plot[] farmPlots =
+            FindObjectsByType<Plot>(
+                FindObjectsSortMode.None
+            );
+
+        foreach (Plot plot in farmPlots)
+        {
+            if (plot == null ||
+                plot.IsDestroyed())
+            {
+                continue;
+            }
+
+            targets.Add(
+                new StormPlotTarget(plot)
+            );
+        }
+
+        // ---------------------------------------------------------
+        // WATER PLOTS
+        // ---------------------------------------------------------
+
+        WaterPlot[] waterPlots =
+            FindObjectsByType<WaterPlot>(
+                FindObjectsSortMode.None
+            );
+
+        foreach (WaterPlot waterPlot in waterPlots)
+        {
+            if (waterPlot == null ||
+                waterPlot.IsDestroyed())
+            {
+                continue;
+            }
+
+            targets.Add(
+                new StormPlotTarget(waterPlot)
+            );
+        }
+
+        // ---------------------------------------------------------
+        // TRAP PLOTS
+        // ---------------------------------------------------------
+        //
+        // If a Trap belongs to a normal Plot, that Plot already owns it.
+        // Destroying the Plot automatically destroys its Trap too.
+        // Therefore only standalone Trap objects are added here. This
+        // prevents the same physical plot from being selected twice.
+
+        Trap[] traps =
+            FindObjectsByType<Trap>(
+                FindObjectsSortMode.None
+            );
+
+        foreach (Trap trap in traps)
+        {
+            if (trap == null ||
+                trap.IsDestroyed())
+            {
+                continue;
+            }
+
+            if (trap.GetOwningPlot() != null)
+            {
+                continue;
+            }
+
+            targets.Add(
+                new StormPlotTarget(trap)
+            );
+        }
+
+        return targets;
+    }
+
+    private sealed class StormPlotTarget
+    {
+        private readonly Plot plot;
+        private readonly WaterPlot waterPlot;
+        private readonly Trap trap;
+
+        public string DisplayName
+        {
+            get
+            {
+                if (plot != null)
+                {
+                    return plot.gameObject.name;
+                }
+
+                if (waterPlot != null)
+                {
+                    return waterPlot.gameObject.name;
+                }
+
+                if (trap != null)
+                {
+                    return trap.gameObject.name;
+                }
+
+                return "Unknown Plot";
+            }
+        }
+
+        public StormPlotTarget(Plot target)
+        {
+            plot = target;
+        }
+
+        public StormPlotTarget(WaterPlot target)
+        {
+            waterPlot = target;
+        }
+
+        public StormPlotTarget(Trap target)
+        {
+            trap = target;
+        }
+
+        public bool Destroy(string cause)
+        {
+            if (plot != null)
+            {
+                return plot.DestroyPlot(cause);
+            }
+
+            if (waterPlot != null)
+            {
+                return waterPlot.DestroyWaterPlot(cause);
+            }
+
+            if (trap != null)
+            {
+                return trap.DestroyTrap(cause);
+            }
+
+            return false;
+        }
     }
 
     // =========================================================
@@ -216,6 +494,26 @@ public class WeatherManager : MonoBehaviour
     [SerializeField] private float secondFlashChance = 0.65f;
 
     // =========================================================
+    // LIGHTNING STORM PLOT DAMAGE
+    // =========================================================
+
+    [Header("Lightning Storm Plot Damage")]
+
+    [Tooltip("When enabled, each new Rain + Thunder day destroys a random number of plots.")]
+    [SerializeField] private bool lightningStormDestroysPlots = true;
+
+    [Tooltip("Minimum number of plots destroyed by a lightning storm.")]
+    [Min(0)]
+    [SerializeField] private int minimumStormPlotsDestroyed = 1;
+
+    [Tooltip("Maximum number of plots destroyed by a lightning storm.")]
+    [Min(0)]
+    [SerializeField] private int maximumStormPlotsDestroyed = 5;
+
+    [Tooltip("Print which plots were destroyed by the storm.")]
+    [SerializeField] private bool showStormDamageLogs = true;
+
+    // =========================================================
     // WEATHER AUDIO SOURCES
     // =========================================================
 
@@ -303,6 +601,28 @@ public class WeatherManager : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
 
+    [Header("Debug Weather Override")]
+    [Tooltip(
+        "FOR TESTING ONLY. When enabled, every new day uses Debug Weather " +
+        "instead of the procedural weather roll."
+    )]
+    [SerializeField] private bool debugOverrideDailyWeather = false;
+
+    [Tooltip(
+        "Weather forced on new days while Debug Override Daily Weather is enabled."
+    )]
+    [SerializeField]
+    private WeatherType debugWeather =
+        WeatherType.Sunny;
+
+    [Tooltip(
+        "Optional: while enabled in Play Mode, changing Debug Weather in the " +
+        "Inspector immediately applies it to the current day too."
+    )]
+    [SerializeField] private bool debugApplyWeatherLive = false;
+
+    private WeatherType lastDebugWeather;
+
     // =========================================================
     // PRIVATE
     // =========================================================
@@ -384,6 +704,9 @@ public class WeatherManager : MonoBehaviour
 
     private void Start()
     {
+        lastDebugWeather =
+            debugWeather;
+
         // Respect the configured starting weather (Sunny by default).
         SetWeather(
             currentWeather
@@ -396,6 +719,19 @@ public class WeatherManager : MonoBehaviour
 
     private void Update()
     {
+        // DEBUG ONLY:
+        // Lets you change Debug Weather from the Inspector during Play Mode.
+        if (debugApplyWeatherLive &&
+            debugWeather != lastDebugWeather)
+        {
+            lastDebugWeather =
+                debugWeather;
+
+            SetWeather(
+                debugWeather
+            );
+        }
+
         UpdateRain();
 
         UpdateGlobalLight();
@@ -1188,6 +1524,52 @@ public class WeatherManager : MonoBehaviour
     public void MakeThunder()
     {
         MakeRainAndThunder();
+    }
+
+    // =========================================================
+    // DEBUG WEATHER CONTROL
+    // =========================================================
+
+    public void ApplyDebugWeatherNow()
+    {
+        SetWeather(
+            debugWeather
+        );
+
+        lastDebugWeather =
+            debugWeather;
+    }
+
+    public void SetDebugWeatherOverride(
+        bool enabled)
+    {
+        debugOverrideDailyWeather =
+            enabled;
+    }
+
+    public bool IsDebugWeatherOverrideEnabled()
+    {
+        return debugOverrideDailyWeather;
+    }
+
+    [ContextMenu("Debug Weather - Apply Selected Weather Now")]
+    private void DebugApplySelectedWeatherNow()
+    {
+        ApplyDebugWeatherNow();
+    }
+
+    [ContextMenu("Debug Weather - Enable Daily Override")]
+    private void DebugEnableWeatherOverride()
+    {
+        debugOverrideDailyWeather =
+            true;
+    }
+
+    [ContextMenu("Debug Weather - Disable Daily Override")]
+    private void DebugDisableWeatherOverride()
+    {
+        debugOverrideDailyWeather =
+            false;
     }
 
     // =========================================================

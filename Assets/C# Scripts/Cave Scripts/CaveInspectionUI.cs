@@ -33,6 +33,23 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private TMP_Text populationText;
 
     // =========================================================
+    // POPULATION SLIDER
+    // =========================================================
+
+    [Header("Population Slider")]
+
+    [Tooltip("Displays the Ghost Bat population from 0 to the colony maximum (normally 100).")]
+    [SerializeField] private Slider populationSlider;
+
+    [Tooltip("Optional trend symbol positioned beside the POPULATION label.")]
+    [SerializeField] private Image populationTrendIcon;
+
+    [SerializeField] private Sprite growingTrendIcon;
+    [SerializeField] private Sprite stableTrendIcon;
+    [SerializeField] private Sprite dyingTrendIcon;
+
+
+    // =========================================================
     // ICON
     // =========================================================
 
@@ -239,6 +256,8 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         // SETUP SLIDERS
         // =====================================================
 
+        SetupPopulationSlider();
+
         SetupSlider(
             healthSlider
         );
@@ -327,6 +346,19 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
                 );
 
             // -------------------------------------------------
+            // POPULATION
+            // -------------------------------------------------
+
+            if (populationSlider == null &&
+                searchName.Contains("population"))
+            {
+                populationSlider =
+                    slider;
+
+                continue;
+            }
+
+            // -------------------------------------------------
             // HEALTH
             // -------------------------------------------------
 
@@ -367,26 +399,60 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         // =====================================================
         // FALLBACK BY ORDER
         // =====================================================
+        //
+        // Only use sliders that have not already been identified.
+        // This prevents the Population slider from accidentally
+        // being assigned as Health/Food/Water.
+
+        List<Slider> unassignedSliders =
+            new List<Slider>();
+
+        foreach (Slider slider in sliders)
+        {
+            if (slider == null ||
+                slider == populationSlider ||
+                slider == healthSlider ||
+                slider == foodSlider ||
+                slider == waterSlider)
+            {
+                continue;
+            }
+
+            unassignedSliders.Add(slider);
+        }
+
+        if (populationSlider == null &&
+            unassignedSliders.Count > 0)
+        {
+            populationSlider =
+                unassignedSliders[0];
+
+            unassignedSliders.RemoveAt(0);
+        }
 
         if (healthSlider == null &&
-            sliders.Length >= 1)
+            unassignedSliders.Count > 0)
         {
             healthSlider =
-                sliders[0];
+                unassignedSliders[0];
+
+            unassignedSliders.RemoveAt(0);
         }
 
         if (foodSlider == null &&
-            sliders.Length >= 2)
+            unassignedSliders.Count > 0)
         {
             foodSlider =
-                sliders[1];
+                unassignedSliders[0];
+
+            unassignedSliders.RemoveAt(0);
         }
 
         if (waterSlider == null &&
-            sliders.Length >= 3)
+            unassignedSliders.Count > 0)
         {
             waterSlider =
-                sliders[2];
+                unassignedSliders[0];
         }
 
         // =====================================================
@@ -397,6 +463,8 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         {
             Debug.Log(
                 "[CaveInspectionUI] Slider search complete." +
+                "\nPopulation Slider: " +
+                GetSliderDebugName(populationSlider) +
                 "\nHealth Slider: " +
                 GetSliderDebugName(healthSlider) +
                 "\nFood Slider: " +
@@ -484,6 +552,28 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         slider.interactable =
             false;
     }
+
+    private void SetupPopulationSlider()
+    {
+        if (populationSlider == null)
+        {
+            return;
+        }
+
+        populationSlider.minValue = 0f;
+
+        populationSlider.maxValue =
+            currentColony != null
+                ? Mathf.Max(
+                    1,
+                    currentColony.GetMaximumPopulation()
+                )
+                : 100f;
+
+        populationSlider.wholeNumbers = true;
+        populationSlider.interactable = false;
+    }
+
 
     // =========================================================
     // UPDATE
@@ -634,6 +724,8 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             FindColonySliders();
         }
 
+        SetupPopulationSlider();
+
         SetupSlider(
             healthSlider
         );
@@ -734,6 +826,8 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
                 currentColony.GetBatFood() +
                 "\nWater: " +
                 currentColony.GetBatWater() +
+                "\nPopulation Slider: " +
+                GetSliderDebugName(populationSlider) +
                 "\nHealth Slider: " +
                 GetSliderDebugName(healthSlider) +
                 "\nFood Slider: " +
@@ -787,8 +881,7 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
 
         if (titleText != null)
         {
-            titleText.text =
-                "GHOST BAT COLONY";
+            titleText.text = "GHOST BAT COLONY";
         }
 
         // =====================================================
@@ -798,14 +891,35 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         if (populationText != null)
         {
             populationText.text =
-                currentColony.GetPopulation() +
-                " (" +
-                currentColony.GetPopulationTrendText() +
+                "Population (" +
+                FormatPopulationTrendTitle(
+                    currentColony.GetPopulationTrendText()
+                ) +
                 ")";
         }
 
+        if (populationSlider != null)
+        {
+            populationSlider.minValue = 0f;
+            populationSlider.maxValue =
+                Mathf.Max(
+                    1,
+                    currentColony.GetMaximumPopulation()
+                );
+
+            populationSlider.SetValueWithoutNotify(
+                Mathf.Clamp(
+                    currentColony.GetPopulation(),
+                    0,
+                    currentColony.GetMaximumPopulation()
+                )
+            );
+        }
+
+        RefreshPopulationTrendIcon();
+
         // =====================================================
-        // GET COLONY VALUES
+        // COLONY VALUES
         // =====================================================
 
         float health =
@@ -829,39 +943,73 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
                 100f
             );
 
-        // =====================================================
-        // HEALTH
-        // =====================================================
-
         if (healthSlider != null)
         {
-            healthSlider.SetValueWithoutNotify(
-                health
-            );
+            healthSlider.SetValueWithoutNotify(health);
         }
-
-        // =====================================================
-        // FOOD
-        // =====================================================
 
         if (foodSlider != null)
         {
-            foodSlider.SetValueWithoutNotify(
-                food
-            );
+            foodSlider.SetValueWithoutNotify(food);
         }
-
-        // =====================================================
-        // WATER
-        // =====================================================
 
         if (waterSlider != null)
         {
-            waterSlider.SetValueWithoutNotify(
-                water
-            );
+            waterSlider.SetValueWithoutNotify(water);
         }
     }
+
+    private string FormatPopulationTrendTitle(string trend)
+    {
+        if (string.IsNullOrEmpty(trend))
+        {
+            return "Stable";
+        }
+
+        trend = trend.ToLowerInvariant();
+
+        return
+            char.ToUpperInvariant(trend[0]) +
+            trend.Substring(1);
+    }
+
+    private void RefreshPopulationTrendIcon()
+    {
+        if (populationTrendIcon == null ||
+            currentColony == null)
+        {
+            return;
+        }
+
+        Sprite targetSprite = null;
+
+        switch (currentColony.GetPopulationTrend())
+        {
+            case BatColony.ColonyTrend.Growing:
+                targetSprite = growingTrendIcon;
+                break;
+
+            case BatColony.ColonyTrend.Dying:
+                targetSprite = dyingTrendIcon;
+                break;
+
+            default:
+                targetSprite = stableTrendIcon;
+                break;
+        }
+
+        populationTrendIcon.sprite = targetSprite;
+        populationTrendIcon.enabled = targetSprite != null;
+        populationTrendIcon.preserveAspect = true;
+    }
+
+    // =========================================================
+    // POPULATION TREND ICON
+    // =========================================================
+
+    // =========================================================
+    // INDIVIDUAL BAT POPULATION ICONS
+    // =========================================================
 
     // =========================================================
     // CLOSE

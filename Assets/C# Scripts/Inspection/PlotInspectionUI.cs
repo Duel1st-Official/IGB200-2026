@@ -46,6 +46,13 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     [Header("Icon")]
     [SerializeField] private Image plotIcon;
 
+    [Tooltip("Only enlarges the UI icon while this plot is destroyed.")]
+    [Min(1f)]
+    [SerializeField] private float destroyedIconScale = 1.25f;
+
+    private Vector3 plotIconNormalScale = Vector3.one;
+    private bool plotIconScaleCaptured = false;
+
     // =========================================================
     // BUTTONS
     // =========================================================
@@ -635,12 +642,40 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     // UI CONTENT
     // =========================================================
 
+    private void RefreshDestroyedIconScale()
+    {
+        if (plotIcon == null)
+        {
+            return;
+        }
+
+        if (!plotIconScaleCaptured)
+        {
+            plotIconNormalScale =
+                plotIcon.rectTransform.localScale;
+
+            plotIconScaleCaptured =
+                true;
+        }
+
+        bool destroyed =
+            currentPlot.IsDestroyed();
+
+        plotIcon.rectTransform.localScale =
+            destroyed
+                ? plotIconNormalScale *
+                  Mathf.Max(1f, destroyedIconScale)
+                : plotIconNormalScale;
+    }
+
     public void RefreshUI()
     {
         if (currentPlot == null)
         {
             return;
         }
+
+        RefreshDestroyedIconScale();
 
         bool actionPhaseActive =
             IsActionPhaseActive();
@@ -651,76 +686,122 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
 
         if (titleText != null)
         {
-            titleText.text =
-                "FARM PLOT";
+            titleText.text = "FARM PLOT";
         }
 
         // =====================================================
-        // GROWING
+        // MATCH EXACT WORLD SPRITE
         // =====================================================
 
-        if (currentPlot.IsPlanted())
+        if (plotIcon != null)
+        {
+            Sprite displayedSprite =
+                currentPlot.GetCurrentDisplayedSprite();
+
+            plotIcon.sprite = displayedSprite;
+            plotIcon.enabled = displayedSprite != null;
+            plotIcon.preserveAspect = true;
+        }
+
+        // =====================================================
+        // DESTROYED
+        // =====================================================
+
+        if (currentPlot.IsDestroyed())
         {
             if (statusText != null)
             {
-                statusText.text =
-                    "GROWING";
+                statusText.text = "DESTROYED";
             }
 
             if (descriptionText != null)
             {
-                descriptionText.text =
-                    "The plant is growing.";
+                descriptionText.text = "";
             }
 
             if (plantButton != null)
             {
-                plantButton.gameObject.SetActive(
-                    false
-                );
-
-                plantButton.interactable =
-                    false;
+                plantButton.gameObject.SetActive(false);
+                plantButton.interactable = false;
             }
+
+            return;
+        }
+
+        // =====================================================
+        // GROWING / READY
+        // =====================================================
+
+        if (currentPlot.IsPlanted())
+        {
+            CropPlot cropPlot =
+                currentPlot.GetCropPlot();
+
+            bool fullyGrown =
+                cropPlot != null &&
+                cropPlot.IsFullyGrown();
+
+            if (statusText != null)
+            {
+                if (fullyGrown)
+                {
+                    statusText.text = "READY!";
+                }
+                else if (cropPlot != null)
+                {
+                    int daysRemaining =
+                        cropPlot.GetDaysUntilFullyGrown();
+
+                    statusText.text =
+                        daysRemaining <= 1
+                            ? "READY IN 1 DAY"
+                            : "READY IN " +
+                              daysRemaining +
+                              " DAYS";
+                }
+                else
+                {
+                    statusText.text = "GROWING";
+                }
+            }
+
+            if (descriptionText != null)
+            {
+                descriptionText.text = "";
+            }
+
+            if (plantButton != null)
+            {
+                plantButton.gameObject.SetActive(false);
+                plantButton.interactable = false;
+            }
+
+            return;
         }
 
         // =====================================================
         // EMPTY
         // =====================================================
 
-        else
+        if (statusText != null)
         {
-            if (statusText != null)
-            {
-                statusText.text =
-                    "PLANT PLOT";
-            }
+            statusText.text =
+                actionPhaseActive
+                    ? "PLANT PLOT"
+                    : "DAY ENDED";
+        }
 
-            if (descriptionText != null)
-            {
-                if (actionPhaseActive)
-                {
-                    descriptionText.text =
-                        "Plant a seed here to attract wildlife.";
-                }
-                else
-                {
-                    descriptionText.text =
-                        "The working day has ended. End the day before planting.";
-                }
-            }
+        if (descriptionText != null)
+        {
+            descriptionText.text = "";
+        }
 
-            if (plantButton != null)
-            {
-                // Keep it visible so the player can see
-                // the action exists, but disable it at day end.
-                plantButton.gameObject.SetActive(
-                    true
-                );
-
-                plantButton.interactable =
-                    actionPhaseActive;
-            }
+        if (plantButton != null)
+        {
+            plantButton.gameObject.SetActive(true);
+            plantButton.interactable =
+                actionPhaseActive &&
+                currentPlot.CanPerformPlayerAction();
         }
     }
 
@@ -747,6 +828,7 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         if (currentPlot == null ||
+            currentPlot.IsDestroyed() ||
             currentPlot.IsPlanted())
         {
             RefreshUI();
@@ -780,7 +862,8 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        if (currentPlot.IsPlanted())
+        if (currentPlot.IsDestroyed() ||
+            currentPlot.IsPlanted())
         {
             RefreshUI();
             return;

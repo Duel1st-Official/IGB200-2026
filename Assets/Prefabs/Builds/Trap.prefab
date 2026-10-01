@@ -102,6 +102,14 @@ MonoBehaviour:
   caughtAlertBounceHeight: 0.06
   caughtAlertBounceSpeed: 2
   caughtAlertSortingOffset: 10
+  showDestroyedWarning: 1
+  destroyedWarningSprite: {fileID: 21300000, guid: 86676fe55fbec7948ad77fcaba019e30, type: 3}
+  destroyedWarningColor: {r: 1, g: 1, b: 1, a: 1}
+  destroyedWarningOffset: {x: 0, y: 0.2}
+  destroyedWarningSize: 0.5
+  destroyedWarningBounceHeight: 0.04
+  destroyedWarningBounceSpeed: 1.5
+  destroyedWarningSortingOffset: 20
   destroyed: 0
   debrisSprite: {fileID: 21300000, guid: de231039db8411d4abbd545257b68524, type: 3}
   debrisRenderer: {fileID: 5030070009986527181}

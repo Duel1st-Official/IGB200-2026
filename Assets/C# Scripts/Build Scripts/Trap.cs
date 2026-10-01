@@ -19,6 +19,7 @@ public class Trap : MonoBehaviour
     private void LateUpdate()
     {
         RefreshCaughtAlert();
+        RefreshDestroyedWarning();
     }
 
     private void RefreshCaughtAlert()
@@ -68,10 +69,130 @@ public class Trap : MonoBehaviour
         }
     }
 
+    private void RefreshDestroyedWarning()
+    {
+        bool visible =
+            showDestroyedWarning &&
+            destroyed &&
+            destroyedWarningSprite != null;
+
+        if (!visible)
+        {
+            if (destroyedWarningRenderer != null)
+            {
+                destroyedWarningRenderer.gameObject.SetActive(false);
+            }
+
+            return;
+        }
+
+        if (destroyedWarningRenderer == null)
+        {
+            GameObject marker =
+                new GameObject("Destroyed Warning Icon");
+
+            marker.layer = gameObject.layer;
+            marker.transform.SetParent(transform, false);
+
+            destroyedWarningRenderer =
+                marker.AddComponent<SpriteRenderer>();
+        }
+
+        destroyedWarningRenderer.gameObject.SetActive(true);
+        destroyedWarningRenderer.sprite = destroyedWarningSprite;
+        destroyedWarningRenderer.color = destroyedWarningColor;
+
+        SpriteRenderer baseRenderer = debrisRenderer != null ? debrisRenderer : spriteRenderer;
+
+        Vector3 basePosition =
+            baseRenderer != null
+                ? new Vector3(
+                    baseRenderer.bounds.center.x,
+                    baseRenderer.bounds.max.y,
+                    transform.position.z)
+                : transform.position;
+
+        float bounce =
+            Mathf.Sin(
+                Time.time *
+                Mathf.Max(0f, destroyedWarningBounceSpeed) *
+                Mathf.PI * 2f) *
+            Mathf.Max(0f, destroyedWarningBounceHeight);
+
+        Transform markerTransform =
+            destroyedWarningRenderer.transform;
+
+        markerTransform.rotation = Quaternion.identity;
+
+        Vector3 objectScale =
+            transform.lossyScale;
+
+        float size =
+            Mathf.Max(0.01f, destroyedWarningSize) /
+            Mathf.Max(
+                0.0001f,
+                destroyedWarningSprite.bounds.size.y);
+
+        markerTransform.localScale =
+            new Vector3(
+                size /
+                Mathf.Max(
+                    0.0001f,
+                    Mathf.Abs(objectScale.x)),
+                size /
+                Mathf.Max(
+                    0.0001f,
+                    Mathf.Abs(objectScale.y)),
+                1f);
+
+        markerTransform.position =
+            basePosition +
+            new Vector3(
+                destroyedWarningOffset.x,
+                destroyedWarningOffset.y + bounce,
+                0f);
+
+        markerTransform.position -=
+            markerTransform.TransformVector(
+                destroyedWarningSprite.bounds.center);
+
+        if (baseRenderer != null)
+        {
+            destroyedWarningRenderer.sortingLayerID =
+                baseRenderer.sortingLayerID;
+
+            destroyedWarningRenderer.sortingOrder =
+                baseRenderer.sortingOrder +
+                destroyedWarningSortingOffset;
+        }
+    }
+
     private void OnDisable()
     {
-        if (caughtAlertRenderer != null) caughtAlertRenderer.gameObject.SetActive(false);
+        if (caughtAlertRenderer != null)
+        {
+            caughtAlertRenderer.gameObject.SetActive(false);
+        }
+
+        if (destroyedWarningRenderer != null)
+        {
+            destroyedWarningRenderer.gameObject.SetActive(false);
+        }
     }
+
+    [Header("Destroyed Warning")]
+    [SerializeField] private bool showDestroyedWarning = true;
+    [Tooltip("Drag the 16x16 warning sprite here.")]
+    [SerializeField] private Sprite destroyedWarningSprite;
+    [SerializeField] private Color destroyedWarningColor = Color.white;
+    [Tooltip("World-space offset above the destroyed plot.")]
+    [SerializeField] private Vector2 destroyedWarningOffset = new Vector2(0f, 0.35f);
+    [Tooltip("Warning icon height in world units. Aspect ratio is preserved.")]
+    [Min(0.01f)][SerializeField] private float destroyedWarningSize = 0.5f;
+    [Min(0f)][SerializeField] private float destroyedWarningBounceHeight = 0.04f;
+    [Min(0f)][SerializeField] private float destroyedWarningBounceSpeed = 1.5f;
+    [SerializeField] private int destroyedWarningSortingOffset = 20;
+    private SpriteRenderer destroyedWarningRenderer;
 
     [Header("Destroyed plot / debris")]
     [SerializeField] private bool destroyed;
@@ -1023,6 +1144,39 @@ public class Trap : MonoBehaviour
         return currentState;
     }
 
+    public Sprite GetCurrentDisplayedSprite()
+    {
+        if (destroyed)
+        {
+            if (debrisRenderer != null && debrisRenderer.sprite != null)
+                return debrisRenderer.sprite;
+
+            return debrisSprite;
+        }
+
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+
+            if (spriteRenderer == null)
+                spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        }
+
+        if (spriteRenderer != null && spriteRenderer.sprite != null)
+            return spriteRenderer.sprite;
+
+        if (IsEmpty())
+            return emptyTrapSprite;
+
+        if (IsSet())
+            return baitedTrapSprite != null ? baitedTrapSprite : emptyTrapSprite;
+
+        if (IsCaught())
+            return GetCaughtPredatorSprite();
+
+        return null;
+    }
+
     public string GetCaughtMammalName()
     {
         return caughtMammalName;
@@ -1162,7 +1316,3 @@ public class Trap : MonoBehaviour
         );
     }
 }
-
-
-
-

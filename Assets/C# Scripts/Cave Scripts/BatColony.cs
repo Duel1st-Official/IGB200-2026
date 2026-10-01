@@ -266,12 +266,12 @@ public class BatColony : MonoBehaviour
     private float poorThreshold = 65f;
 
     // =========================================================
-    // POPULATION HEALTH THRESHOLDS
+    // POPULATION TREND
     // =========================================================
 
-    // Retained only for compatibility with existing serialized components.
-    [SerializeField, HideInInspector] private float growingHealthThreshold = 75f;
-    [SerializeField, HideInInspector] private float dyingHealthThreshold = 30f;
+    [Tooltip("Health above this value means the population is Growing; below it means Dying; exactly equal means Stable.")]
+    [Range(0f, 100f)]
+    [SerializeField] private float stablePopulationHealth = 50f;
 
     [Header("Daily Population Change")]
     [Tooltip("Maximum bats gained at 100 health or lost at 0 health per day. 50 health is stable. Fractions accumulate across days.")]
@@ -287,7 +287,18 @@ public class BatColony : MonoBehaviour
             return;
         }
 
-        double distance = (Mathf.Clamp(batHealth, 0f, 100f) - 50d) / 50d;
+        double stableHealth = Mathf.Clamp(stablePopulationHealth, 0.01f, 99.99f);
+        double clampedHealth = Mathf.Clamp(batHealth, 0f, 100f);
+        double distance;
+
+        if (clampedHealth >= stableHealth)
+        {
+            distance = (clampedHealth - stableHealth) / (100d - stableHealth);
+        }
+        else
+        {
+            distance = (clampedHealth - stableHealth) / stableHealth;
+        }
         if (double.IsNaN(distance)) return;
         if (distance == 0d)
         {
@@ -340,6 +351,44 @@ public class BatColony : MonoBehaviour
 
     [SerializeField]
     private float lastFireHealthChange = 0f;
+
+    // =========================================================
+    // VALIDATION
+    // =========================================================
+
+    private void OnValidate()
+    {
+        maximumPopulation =
+            Mathf.Max(
+                1,
+                maximumPopulation
+            );
+
+        colonyPopulation =
+            ClampPopulation(
+                colonyPopulation
+            );
+
+        stablePopulationHealth =
+            Mathf.Clamp(
+                stablePopulationHealth,
+                0.01f,
+                99.99f
+            );
+
+        batHealth = Mathf.Clamp(batHealth, 0f, 100f);
+        batFood = Mathf.Clamp(batFood, 0f, 100f);
+        batWater = Mathf.Clamp(batWater, 0f, 100f);
+
+        maximumDailyPopulationChange =
+            Mathf.Clamp(
+                maximumDailyPopulationChange,
+                0f,
+                20f
+            );
+
+        UpdatePopulationTrendFromHealth();
+    }
 
     // =========================================================
     // AWAKE
@@ -796,12 +845,12 @@ public class BatColony : MonoBehaviour
 
     private void UpdatePopulationTrendFromHealth()
     {
-        if (batHealth > 50f)
+        if (batHealth > stablePopulationHealth)
         {
             populationTrend =
                 ColonyTrend.Growing;
         }
-        else if (batHealth < 50f)
+        else if (batHealth < stablePopulationHealth)
         {
             populationTrend =
                 ColonyTrend.Dying;
@@ -879,7 +928,7 @@ public class BatColony : MonoBehaviour
                 100f
             );
 
-        if ((batHealth - 50f) * populationRemainder <= 0d)
+        if ((batHealth - stablePopulationHealth) * populationRemainder <= 0d)
             populationRemainder = 0d;
         UpdatePopulationTrendFromHealth();
         DebugState();
@@ -982,6 +1031,17 @@ public class BatColony : MonoBehaviour
         return colonyPopulation;
     }
 
+    public float GetPopulationPercent()
+    {
+        return
+            GetMaximumPopulation() <= 0
+                ? 0f
+                : Mathf.Clamp01(
+                    colonyPopulation /
+                    (float)GetMaximumPopulation()
+                ) * 100f;
+    }
+
     public ColonyTrend GetPopulationTrend()
     {
         return populationTrend;
@@ -1051,12 +1111,12 @@ public class BatColony : MonoBehaviour
 
     public float GetGrowingHealthThreshold()
     {
-        return 50f;
+        return stablePopulationHealth;
     }
 
     public float GetDyingHealthThreshold()
     {
-        return 50f;
+        return stablePopulationHealth;
     }
 
     // =========================================================

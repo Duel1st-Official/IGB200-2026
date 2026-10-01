@@ -58,6 +58,13 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     [Header("Icon")]
     [SerializeField] private Image waterPlotIcon;
 
+    [Tooltip("Only enlarges the UI icon while this plot is destroyed.")]
+    [Min(1f)]
+    [SerializeField] private float destroyedIconScale = 1.25f;
+
+    private Vector3 waterPlotIconNormalScale = Vector3.one;
+    private bool waterPlotIconScaleCaptured = false;
+
     // =========================================================
     // QUALITY
     // =========================================================
@@ -488,27 +495,99 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     // REFRESH UI
     // =========================================================
 
+    private void RefreshDestroyedIconScale()
+    {
+        if (waterPlotIcon == null)
+        {
+            return;
+        }
+
+        if (!waterPlotIconScaleCaptured)
+        {
+            waterPlotIconNormalScale =
+                waterPlotIcon.rectTransform.localScale;
+
+            waterPlotIconScaleCaptured =
+                true;
+        }
+
+        bool destroyed =
+            currentWaterPlot.IsDestroyed();
+
+        waterPlotIcon.rectTransform.localScale =
+            destroyed
+                ? waterPlotIconNormalScale *
+                  Mathf.Max(1f, destroyedIconScale)
+                : waterPlotIconNormalScale;
+    }
+
     public void RefreshUI()
     {
         if (currentWaterPlot == null)
             return;
 
+        // =====================================================
+        // TITLE
+        // =====================================================
+
         if (titleText != null)
             titleText.text = "WATER PLOT";
 
-        float quality =
-            Mathf.Clamp(
-                currentWaterPlot.GetWaterQuality(),
-                0f,
-                100f
-            );
+        // =====================================================
+        // MATCH THE REAL WORLD SPRITE
+        // =====================================================
 
-        if (qualityText != null)
-            qualityText.text =
-                Mathf.RoundToInt(quality) + "%";
+        if (waterPlotIcon != null)
+        {
+            Sprite displayedSprite =
+                currentWaterPlot.GetCurrentDisplayedSprite();
 
-        if (qualitySlider != null)
-            qualitySlider.value = quality;
+            waterPlotIcon.sprite =
+                displayedSprite;
+
+            waterPlotIcon.enabled =
+                displayedSprite != null;
+
+            waterPlotIcon.preserveAspect =
+                true;
+        }
+
+        RefreshDestroyedIconScale();
+
+        // =====================================================
+        // DESTROYED
+        // =====================================================
+
+        if (currentWaterPlot.IsDestroyed())
+        {
+            if (conditionText != null)
+            {
+                conditionText.text = "DESTROYED";
+            }
+
+            if (qualityText != null)
+            {
+                qualityText.text = "";
+                qualityText.gameObject.SetActive(false);
+            }
+
+            if (qualitySlider != null)
+            {
+                qualitySlider.gameObject.SetActive(false);
+            }
+
+            if (cleanButton != null)
+            {
+                cleanButton.gameObject.SetActive(false);
+                cleanButton.interactable = false;
+            }
+
+            return;
+        }
+
+        // =====================================================
+        // SIMPLE CONDITION
+        // =====================================================
 
         if (conditionText != null)
         {
@@ -526,17 +605,39 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
                     conditionText.text = "MURKY";
                     break;
 
+                case WaterPlot.WaterState.Destroyed:
+                    conditionText.text = "DESTROYED";
+                    break;
+
                 default:
-                    conditionText.text = "UNKNOWN";
+                    conditionText.text = "";
                     break;
             }
         }
+
+        // Keep this inspection window visually simple.
+        // The water state already communicates what matters.
+        if (qualityText != null)
+        {
+            qualityText.text = "";
+            qualityText.gameObject.SetActive(false);
+        }
+
+        if (qualitySlider != null)
+        {
+            qualitySlider.gameObject.SetActive(false);
+        }
+
+        // =====================================================
+        // CLEAN BUTTON
+        // =====================================================
 
         bool actionPhaseActive =
             IsActionPhaseActive();
 
         bool waterNeedsCleaning =
-            !currentWaterPlot.IsClean();
+            !currentWaterPlot.IsClean() &&
+            !currentWaterPlot.IsDestroyed();
 
         bool canClean =
             actionPhaseActive &&
@@ -545,9 +646,6 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
 
         if (cleanButton != null)
         {
-            // Keep the button visible whenever maintenance
-            // would normally be possible so the player can see
-            // that it is locked after 5 PM.
             cleanButton.gameObject.SetActive(
                 waterNeedsCleaning || isCleaning
             );
@@ -584,6 +682,7 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     private void HandleCleanButtonClicked()
     {
         if (currentWaterPlot == null ||
+            currentWaterPlot.IsDestroyed() ||
             isCleaning)
         {
             return;

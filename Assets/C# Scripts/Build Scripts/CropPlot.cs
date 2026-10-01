@@ -4,6 +4,22 @@ using UnityEngine.Events;
 public class CropPlot : MonoBehaviour
 {
     public Sprite GetEmptyPlotSprite() { return emptyPlotSprite; }
+
+    public Sprite GetCurrentDisplayedSprite()
+    {
+        if (cropRenderer == null)
+        {
+            AutoAssignReferences();
+        }
+
+        if (cropRenderer != null &&
+            cropRenderer.sprite != null)
+        {
+            return cropRenderer.sprite;
+        }
+
+        return emptyPlotSprite;
+    }
     // =========================================================
     // REFERENCES
     // =========================================================
@@ -1061,6 +1077,37 @@ public class CropPlot : MonoBehaviour
     public bool IsFullyGrown()
     {
         return fullyGrown;
+    }
+
+    // =========================================================
+    // DAYS UNTIL FULLY GROWN
+    // =========================================================
+
+    public int GetDaysUntilFullyGrown()
+    {
+        if (!cropActive)
+        {
+            return 0;
+        }
+
+        if (fullyGrown)
+        {
+            return 0;
+        }
+
+        if (growthStageSprites == null ||
+            growthStageSprites.Length == 0)
+        {
+            return 0;
+        }
+
+        int finalGrowthStage =
+            growthStageSprites.Length - 1;
+
+        return Mathf.Max(
+            0,
+            finalGrowthStage - currentGrowthStage
+        );
     }
 
     public bool HasAttractedMammal()

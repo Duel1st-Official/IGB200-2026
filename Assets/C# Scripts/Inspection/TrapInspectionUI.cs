@@ -42,6 +42,13 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
     [Header("Icon")]
     [SerializeField] private Image trapIcon;
 
+    [Tooltip("Only enlarges the UI icon while this plot is destroyed.")]
+    [Min(1f)]
+    [SerializeField] private float destroyedIconScale = 1.25f;
+
+    private Vector3 trapIconNormalScale = Vector3.one;
+    private bool trapIconScaleCaptured = false;
+
     // =========================================================
     // BUTTONS
     // =========================================================
@@ -713,211 +720,171 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
     // REFRESH UI
     // =========================================================
 
-    public void RefreshUI()
+    private void RefreshDestroyedIconScale()
     {
-        if (currentTrap == null)
+        if (trapIcon == null)
         {
             return;
         }
 
-        bool actionPhaseActive =
-            IsActionPhaseActive();
-
-        if (titleText != null)
+        if (!trapIconScaleCaptured)
         {
-            titleText.text =
-                "PREDATOR TRAP";
+            trapIconNormalScale =
+                trapIcon.rectTransform.localScale;
+
+            trapIconScaleCaptured =
+                true;
         }
 
-        // =====================================================
-        // EMPTY
-        // =====================================================
+        bool destroyed =
+            currentTrap.IsDestroyed();
+
+        trapIcon.rectTransform.localScale =
+            destroyed
+                ? trapIconNormalScale *
+                  Mathf.Max(1f, destroyedIconScale)
+                : trapIconNormalScale;
+    }
+
+    public void RefreshUI()
+    {
+        if (currentTrap == null)
+            return;
+
+        bool actionPhaseActive = IsActionPhaseActive();
+
+        if (titleText != null)
+            titleText.text = "PREDATOR TRAP";
+
+        // Match the inspection icon to the exact sprite currently
+        // displayed by the real trap in the world.
+        if (trapIcon != null)
+        {
+            Sprite displayedSprite = currentTrap.GetCurrentDisplayedSprite();
+            trapIcon.sprite = displayedSprite;
+            trapIcon.enabled = displayedSprite != null;
+            trapIcon.preserveAspect = true;
+        }
+
+        RefreshDestroyedIconScale();
+
+        // Keep the panel simple like the Farm and Water plot UIs.
+        if (descriptionText != null)
+            descriptionText.text = "";
+
+        if (currentTrap.IsDestroyed())
+        {
+            if (statusText != null)
+                statusText.text = "DESTROYED";
+
+            if (predatorText != null)
+                predatorText.text = "";
+
+            if (setTrapButton != null)
+            {
+                setTrapButton.gameObject.SetActive(false);
+                setTrapButton.interactable = false;
+            }
+
+            if (relocateButton != null)
+            {
+                relocateButton.gameObject.SetActive(false);
+                relocateButton.interactable = false;
+            }
+
+            return;
+        }
 
         if (currentTrap.IsEmpty())
         {
             if (statusText != null)
-            {
-                statusText.text =
-                    "EMPTY";
-            }
+                statusText.text = actionPhaseActive ? "EMPTY" : "DAY ENDED";
 
             if (predatorText != null)
-            {
-                predatorText.text =
-                    "";
-            }
-
-            if (descriptionText != null)
-            {
-                if (actionPhaseActive)
-                {
-                    descriptionText.text =
-                        "Set and bait the trap to monitor nearby predators.";
-                }
-                else
-                {
-                    descriptionText.text =
-                        "The working day has ended. End the day before setting this trap.";
-                }
-            }
+                predatorText.text = "";
 
             if (setTrapButton != null)
             {
-                setTrapButton.gameObject.SetActive(
-                    true
-                );
-
-                setTrapButton.interactable =
-                    actionPhaseActive;
+                setTrapButton.gameObject.SetActive(true);
+                setTrapButton.interactable = actionPhaseActive;
             }
 
             if (relocateButton != null)
             {
-                relocateButton.gameObject.SetActive(
-                    false
-                );
-
-                relocateButton.interactable =
-                    false;
+                relocateButton.gameObject.SetActive(false);
+                relocateButton.interactable = false;
             }
 
             return;
         }
-
-        // =====================================================
-        // SET
-        // =====================================================
 
         if (currentTrap.IsSet())
         {
             if (statusText != null)
-            {
-                statusText.text =
-                    "SET";
-            }
+                statusText.text = "SET";
 
             if (predatorText != null)
-            {
-                predatorText.text =
-                    "";
-            }
-
-            if (descriptionText != null)
-            {
-                descriptionText.text =
-                    "The trap is baited and ready. Check again tomorrow.";
-            }
+                predatorText.text = "";
 
             if (setTrapButton != null)
             {
-                setTrapButton.gameObject.SetActive(
-                    false
-                );
-
-                setTrapButton.interactable =
-                    false;
+                setTrapButton.gameObject.SetActive(false);
+                setTrapButton.interactable = false;
             }
 
             if (relocateButton != null)
             {
-                relocateButton.gameObject.SetActive(
-                    false
-                );
-
-                relocateButton.interactable =
-                    false;
+                relocateButton.gameObject.SetActive(false);
+                relocateButton.interactable = false;
             }
 
             return;
         }
-
-        // =====================================================
-        // CAUGHT
-        // =====================================================
 
         if (currentTrap.IsCaught())
         {
             if (statusText != null)
-            {
-                statusText.text =
-                    "CAUGHT";
-            }
+                statusText.text = "CAUGHT";
 
             if (predatorText != null)
             {
-                string predator =
-                    currentTrap.GetCaughtMammalName();
-
-                if (string.IsNullOrWhiteSpace(
-                    predator))
-                {
-                    predator =
-                        "PREDATOR";
-                }
-
-                predatorText.text =
-                    predator.ToUpper();
-            }
-
-            if (descriptionText != null)
-            {
-                if (actionPhaseActive)
-                {
-                    descriptionText.text =
-                        "A predator has been safely captured. Relocate it away from the conservation area.";
-                }
-                else
-                {
-                    descriptionText.text =
-                        "A predator has been safely captured. End the day before relocating it.";
-                }
+                string predator = currentTrap.GetCaughtMammalName();
+                predatorText.text = string.IsNullOrWhiteSpace(predator)
+                    ? "PREDATOR"
+                    : predator.ToUpper();
             }
 
             if (setTrapButton != null)
             {
-                setTrapButton.gameObject.SetActive(
-                    false
-                );
-
-                setTrapButton.interactable =
-                    false;
+                setTrapButton.gameObject.SetActive(false);
+                setTrapButton.interactable = false;
             }
 
             if (relocateButton != null)
             {
-                relocateButton.gameObject.SetActive(
-                    true
-                );
-
-                relocateButton.interactable =
-                    actionPhaseActive;
+                relocateButton.gameObject.SetActive(true);
+                relocateButton.interactable = actionPhaseActive;
             }
 
             return;
         }
 
-        // =====================================================
-        // FALLBACK
-        // =====================================================
+        if (statusText != null)
+            statusText.text = "";
+
+        if (predatorText != null)
+            predatorText.text = "";
 
         if (setTrapButton != null)
         {
-            setTrapButton.gameObject.SetActive(
-                false
-            );
-
-            setTrapButton.interactable =
-                false;
+            setTrapButton.gameObject.SetActive(false);
+            setTrapButton.interactable = false;
         }
 
         if (relocateButton != null)
         {
-            relocateButton.gameObject.SetActive(
-                false
-            );
-
-            relocateButton.interactable =
-                false;
+            relocateButton.gameObject.SetActive(false);
+            relocateButton.interactable = false;
         }
     }
 
@@ -927,6 +894,13 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
 
     private void HandleSetTrapButton()
     {
+        if (currentTrap == null ||
+            currentTrap.IsDestroyed())
+        {
+            RefreshUI();
+            return;
+        }
+
         if (currentTrap == null)
         {
             return;
@@ -986,8 +960,10 @@ public class TrapInspectionUI : MonoBehaviour, IInspectionPanel
 
     private void HandleRelocateButton()
     {
-        if (currentTrap == null)
+        if (currentTrap == null ||
+            currentTrap.IsDestroyed())
         {
+            RefreshUI();
             return;
         }
 
