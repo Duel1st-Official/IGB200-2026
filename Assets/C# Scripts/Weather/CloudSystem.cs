@@ -233,7 +233,7 @@ public class CloudSystem : MonoBehaviour
     [SerializeField] private int frontSortingBoost = 100;
 
     // =========================================================
-    // SUNNY CLOUD SHADOWS
+    // WEATHER CLOUD SHADOWS
     // =========================================================
 
     [Header("Sunny Cloud Shadows")]
@@ -272,6 +272,13 @@ public class CloudSystem : MonoBehaviour
     [Tooltip("How quickly shadows fade in/out when weather changes.")]
     [Min(0.01f)]
     [SerializeField] private float shadowTransitionSpeed = 1.5f;
+
+    [Header("Storm Cloud Shadows")]
+    [SerializeField] private bool enableStormCloudShadows = true;
+    [SerializeField] private Color stormShadowColour = new Color(0.035f, 0.045f, 0.065f, 0.18f);
+    [SerializeField] private Vector2 stormShadowOffset = new Vector2(0.18f, -0.22f);
+    [Range(0.5f, 2.5f)][SerializeField] private float stormShadowScale = 1.18f;
+    [Range(0f, 2f)][SerializeField] private float stormShadowStrength = 1f;
 
     // =========================================================
     // PIXEL ART
@@ -608,7 +615,7 @@ public class CloudSystem : MonoBehaviour
         // -----------------------------------------------------
 
         GameObject shadowObject =
-            new GameObject("Sunny Shadow");
+            new GameObject("Cloud Shadow");
 
         shadowObject.layer =
             cloudObject.layer;
@@ -911,7 +918,7 @@ public class CloudSystem : MonoBehaviour
             // SUNNY SHADOW
             // -------------------------------------------------
 
-            UpdateSunnyShadow(
+            UpdateWeatherShadow(
                 cloud,
                 delta
             );
@@ -1263,81 +1270,42 @@ public class CloudSystem : MonoBehaviour
     // SUNNY SHADOW
     // =========================================================
 
-    private void UpdateSunnyShadow(
-        CloudInstance cloud,
-        float delta)
+    private void UpdateWeatherShadow(CloudInstance cloud, float delta)
     {
-        if (cloud == null ||
-            cloud.shadowRenderer == null)
+        if (cloud == null || cloud.shadowRenderer == null || activeSettings == null) return;
+        bool sunny = IsSunnyWeather();
+        bool storm = IsStormWeather();
+        Color wantedColour = sunnyShadowColour;
+        Vector2 wantedOffset = sunnyShadowOffset;
+        float wantedScale = sunnyShadowScale;
+        float wantedBaseAlpha = 0f;
+
+        if (storm && enableStormCloudShadows && cloud.wanted)
         {
-            return;
+            wantedColour = stormShadowColour;
+            wantedOffset = stormShadowOffset;
+            wantedScale = stormShadowScale;
+            wantedBaseAlpha = Mathf.Clamp01(stormShadowColour.a * stormShadowStrength);
+        }
+        else if (sunny && enableSunnyCloudShadows && cloud.wanted)
+        {
+            wantedBaseAlpha = Mathf.Clamp01(sunnyShadowColour.a);
         }
 
-        bool sunny =
-            IsSunnyWeather();
-
-        float targetShadowAlpha =
-            enableSunnyCloudShadows &&
-            sunny &&
-            cloud.wanted
-                ? Mathf.Clamp01(
-                    sunnyShadowColour.a
-                ) *
-                Mathf.Clamp01(
-                    cloud.currentAlpha /
-                    Mathf.Max(
-                        0.001f,
-                        activeSettings.opacity
-                    )
-                )
-                : 0f;
-
-        Color current =
-            cloud.shadowRenderer.color;
-
-        Color target =
-            sunnyShadowColour;
-
-        target.a =
-            targetShadowAlpha;
-
-        float transition =
-            1f -
-            Mathf.Exp(
-                -shadowTransitionSpeed *
-                delta
-            );
-
-        cloud.shadowRenderer.color =
-            Color.Lerp(
-                current,
-                target,
-                transition
-            );
-
-        cloud.shadowRenderer.sprite =
-            cloud.renderer.sprite;
-
-        cloud.shadowRenderer.sortingLayerName =
-            shadowSortingLayerName;
-
-        cloud.shadowRenderer.sortingOrder =
-            shadowSortingOrder;
-
-        cloud.shadowRenderer.transform.localPosition =
-            new Vector3(
-                sunnyShadowOffset.x,
-                sunnyShadowOffset.y,
-                0f
-            );
-
-        cloud.shadowRenderer.transform.localScale =
-            Vector3.one *
-            sunnyShadowScale;
-
-        cloud.shadowRenderer.enabled =
-            cloud.shadowRenderer.color.a >
-            0.001f;
+        float visibleFraction = Mathf.Clamp01(cloud.currentAlpha / Mathf.Max(0.001f, activeSettings.opacity));
+        Color target = wantedColour;
+        target.a = wantedBaseAlpha * visibleFraction;
+        float transition = 1f - Mathf.Exp(-shadowTransitionSpeed * delta);
+        cloud.shadowRenderer.color = Color.Lerp(cloud.shadowRenderer.color, target, transition);
+        cloud.shadowRenderer.sprite = cloud.renderer.sprite;
+        cloud.shadowRenderer.sortingLayerName = shadowSortingLayerName;
+        cloud.shadowRenderer.sortingOrder = shadowSortingOrder;
+        cloud.shadowRenderer.transform.localPosition = Vector3.Lerp(
+            cloud.shadowRenderer.transform.localPosition,
+            new Vector3(wantedOffset.x, wantedOffset.y, 0f), transition);
+        cloud.shadowRenderer.transform.localScale = Vector3.Lerp(
+            cloud.shadowRenderer.transform.localScale, Vector3.one * wantedScale, transition);
+        cloud.shadowRenderer.enabled = cloud.shadowRenderer.color.a > 0.001f;
     }
 
     private bool IsSunnyWeather()
@@ -1358,6 +1326,15 @@ public class CloudSystem : MonoBehaviour
                     "Sunny",
                     System.StringComparison.OrdinalIgnoreCase
                 );
+    }
+
+    private bool IsStormWeather()
+    {
+        string weatherName = GetWeatherName();
+        if (string.IsNullOrWhiteSpace(weatherName)) return false;
+        string normalized = weatherName.Trim().ToLowerInvariant();
+        return normalized == "rainandthunder" || normalized == "thunder" ||
+               normalized == "storm" || normalized == "lightningstorm";
     }
 
     // =========================================================
@@ -1530,6 +1507,9 @@ public class CloudSystem : MonoBehaviour
                 0.01f,
                 shadowTransitionSpeed
             );
+
+        stormShadowScale = Mathf.Clamp(stormShadowScale, 0.5f, 2.5f);
+        stormShadowStrength = Mathf.Clamp(stormShadowStrength, 0f, 2f);
 
         ValidateSettings(
             sunnySettings

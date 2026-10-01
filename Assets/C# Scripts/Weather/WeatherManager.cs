@@ -493,6 +493,35 @@ public class WeatherManager : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float secondFlashChance = 0.65f;
 
+    [Header("Realistic Lightning Flash")]
+    [Tooltip("How long the first bright flash takes to fade back toward the storm lighting.")]
+    [Min(0.01f)]
+    [SerializeField] private float lightningFadeDuration = 0.22f;
+
+    [Tooltip("Minimum brightness multiplier used for the optional secondary flicker.")]
+    [Range(0.1f, 1f)]
+    [SerializeField] private float secondaryFlashMinStrength = 0.45f;
+
+    [Tooltip("Maximum brightness multiplier used for the optional secondary flicker.")]
+    [Range(0.1f, 1f)]
+    [SerializeField] private float secondaryFlashMaxStrength = 0.8f;
+
+    [Tooltip("How long the secondary flicker fades back into the storm.")]
+    [Min(0.01f)]
+    [SerializeField] private float secondaryFlashFadeDuration = 0.28f;
+
+    [Tooltip("Adds a tiny random variation to each lightning flash so strikes do not look identical.")]
+    [Range(0f, 0.25f)]
+    [SerializeField] private float lightningBrightnessVariation = 0.12f;
+
+    [Tooltip("Chance that a strike gets a very quick initial pre-flash before the main flash.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float preFlashChance = 0.30f;
+
+    [Tooltip("Duration of the subtle pre-flash.")]
+    [Min(0.005f)]
+    [SerializeField] private float preFlashDuration = 0.025f;
+
     // =========================================================
     // LIGHTNING STORM PLOT DAMAGE
     // =========================================================
@@ -1257,57 +1286,217 @@ public class WeatherManager : MonoBehaviour
             yield break;
         }
 
-        lightningActive =
-            true;
+        lightningActive = true;
 
-        globalLight.color =
-            lightningColor;
+        // Refresh first so the flash always returns to the correct
+        // storm + time-of-day lighting, even late in the day.
+        RefreshLightingTargets();
 
-        globalLight.intensity =
-            lightningIntensity;
+        Color baseColor = targetLightColor;
+        float baseIntensity = targetLightIntensity;
+
+        float variation =
+            Random.Range(
+                1f - lightningBrightnessVariation,
+                1f + lightningBrightnessVariation
+            );
+
+        float mainPeak =
+            Mathf.Max(
+                baseIntensity,
+                lightningIntensity * variation
+            );
+
+        // A small pre-flash makes some strikes feel like the sky is
+        // illuminating just before the main electrical discharge.
+        if (Random.value <= preFlashChance)
+        {
+            float preStrength =
+                Random.Range(0.25f, 0.45f);
+
+            globalLight.color =
+                Color.Lerp(
+                    baseColor,
+                    lightningColor,
+                    preStrength
+                );
+
+            globalLight.intensity =
+                Mathf.Lerp(
+                    baseIntensity,
+                    mainPeak,
+                    preStrength
+                );
+
+            yield return
+                new WaitForSeconds(
+                    preFlashDuration
+                );
+
+            globalLight.color = baseColor;
+            globalLight.intensity = baseIntensity;
+
+            yield return
+                new WaitForSeconds(
+                    Random.Range(0.015f, 0.045f)
+                );
+        }
+
+        // Main flash.
+        globalLight.color = lightningColor;
+        globalLight.intensity = mainPeak;
 
         yield return
             new WaitForSeconds(
-                lightningFlashDuration
+                Mathf.Max(
+                    0.01f,
+                    lightningFlashDuration
+                )
             );
 
-        globalLight.color =
-            targetLightColor;
+        // Instead of snapping straight back to the storm colour,
+        // smoothly fade the light down.
+        yield return
+            FadeLightningToBase(
+                lightningColor,
+                mainPeak,
+                baseColor,
+                baseIntensity,
+                lightningFadeDuration
+            );
 
-        globalLight.intensity =
-            targetLightIntensity;
-
-        if (Random.value <=
-            secondFlashChance)
+        // Many real lightning discharges pulse several times through
+        // the same channel. Keep the existing second-flash chance,
+        // but vary its strength so it is not a mechanical duplicate.
+        if (Random.value <= secondFlashChance)
         {
             yield return
                 new WaitForSeconds(
-                    lightningSecondFlashDelay
+                    Mathf.Max(
+                        0f,
+                        lightningSecondFlashDelay +
+                        Random.Range(-0.025f, 0.035f)
+                    )
                 );
 
-            globalLight.color =
-                lightningColor;
+            float minSecondary =
+                Mathf.Min(
+                    secondaryFlashMinStrength,
+                    secondaryFlashMaxStrength
+                );
 
-            globalLight.intensity =
-                lightningIntensity;
+            float maxSecondary =
+                Mathf.Max(
+                    secondaryFlashMinStrength,
+                    secondaryFlashMaxStrength
+                );
+
+            float secondaryStrength =
+                Random.Range(
+                    minSecondary,
+                    maxSecondary
+                );
+
+            float secondaryPeak =
+                Mathf.Lerp(
+                    baseIntensity,
+                    mainPeak,
+                    secondaryStrength
+                );
+
+            Color secondaryColor =
+                Color.Lerp(
+                    baseColor,
+                    lightningColor,
+                    Mathf.Lerp(
+                        0.7f,
+                        1f,
+                        secondaryStrength
+                    )
+                );
+
+            globalLight.color = secondaryColor;
+            globalLight.intensity = secondaryPeak;
 
             yield return
                 new WaitForSeconds(
-                    lightningFlashDuration
+                    Mathf.Max(
+                        0.015f,
+                        lightningFlashDuration *
+                        Random.Range(0.45f, 0.8f)
+                    )
+                );
+
+            yield return
+                FadeLightningToBase(
+                    secondaryColor,
+                    secondaryPeak,
+                    baseColor,
+                    baseIntensity,
+                    secondaryFlashFadeDuration
+                );
+        }
+
+        // Final exact restoration prevents tiny floating-point differences
+        // from accumulating between strikes.
+        globalLight.color = baseColor;
+        globalLight.intensity = baseIntensity;
+
+        lightningActive = false;
+        lightningFlashRoutine = null;
+    }
+
+    private IEnumerator FadeLightningToBase(
+        Color startColor,
+        float startIntensity,
+        Color baseColor,
+        float baseIntensity,
+        float duration)
+    {
+        duration =
+            Mathf.Max(
+                0.01f,
+                duration
+            );
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    elapsed / duration
+                );
+
+            // Fast initial drop with a softer tail looks less like a UI flash.
+            float smoothT =
+                1f -
+                Mathf.Pow(
+                    1f - t,
+                    2.5f
                 );
 
             globalLight.color =
-                targetLightColor;
+                Color.Lerp(
+                    startColor,
+                    baseColor,
+                    smoothT
+                );
 
             globalLight.intensity =
-                targetLightIntensity;
+                Mathf.Lerp(
+                    startIntensity,
+                    baseIntensity,
+                    smoothT
+                );
+
+            yield return null;
         }
 
-        lightningActive =
-            false;
-
-        lightningFlashRoutine =
-            null;
+        globalLight.color = baseColor;
+        globalLight.intensity = baseIntensity;
     }
 
     // =========================================================
