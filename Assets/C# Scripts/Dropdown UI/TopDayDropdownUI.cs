@@ -169,53 +169,44 @@ public class TopDayDropdownUI : MonoBehaviour
 
     [Header("End Day Attention")]
 
-    [Tooltip(
-        "When the action phase reaches its end, automatically open " +
-        "the dropdown and keep it open until End Day is pressed."
-    )]
-    [SerializeField]
-    private bool forceDropdownOpenAtDayEnd = true;
+    [SerializeField] private bool forceDropdownOpenAtDayEnd = true;
 
-    [Tooltip(
-        "Make the dropdown wiggle while waiting for the player " +
-        "to press End Day."
-    )]
-    [SerializeField]
-    private bool wiggleAtDayEnd = true;
+    [Tooltip("Pulse the top day bar when the day has finished. No shaking or rotation is used.")]
+    [SerializeField] private bool pulseAtDayEnd = true;
 
-    [Tooltip(
-        "Optional visual child inside Dropdown Panel that will wiggle. " +
-        "Recommended so the wiggle does not fight the dropdown slide. " +
-        "If left empty, the script will use Dropdown Panel itself."
-    )]
-    [SerializeField]
-    private RectTransform dropdownWiggleVisual;
+    [Tooltip("Visual that pulses at day end. If empty, Dropdown Panel is used.")]
+    [SerializeField] private RectTransform dropdownWiggleVisual;
 
-    [Tooltip(
-        "Maximum left/right rotation during the end-day wiggle."
-    )]
-    [Range(0f, 15f)]
-    [SerializeField]
-    private float wiggleAngle = 2.5f;
+    [Range(1f, 1.3f)]
+    [SerializeField] private float wigglePulseScale = 1.06f;
 
-    [Tooltip(
-        "Speed of the end-day wiggle."
-    )]
-    [SerializeField]
-    private float wiggleSpeed = 5f;
+    [Min(0.01f)]
+    [SerializeField] private float wiggleSpeed = 1.8f;
 
-    [Tooltip(
-        "Maximum scale reached during the attention pulse."
-    )]
-    [Range(1f, 1.2f)]
-    [SerializeField]
-    private float wigglePulseScale = 1.03f;
+    [Min(0.01f)]
+    [SerializeField] private float wiggleReturnSpeed = 12f;
 
-    [Tooltip(
-        "How smoothly the wiggle returns to normal."
-    )]
-    [SerializeField]
-    private float wiggleReturnSpeed = 12f;
+    [Header("End Day Button Attention")]
+
+    [SerializeField] private bool enlargeEndDayButtonNearDayEnd = true;
+
+    [Tooltip("0.85 means the button begins growing during the final 15% of the day.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float endDayButtonGrowStartProgress = 0.85f;
+
+    [Tooltip("Final scale of the button when the day reaches 100%.")]
+    [Range(1f, 3f)]
+    [SerializeField] private float endDayButtonFinishedScale = 1.8f;
+
+    [Tooltip("Extra scale added by the pulse after the day has finished.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float endDayButtonPulseAmount = 0.22f;
+
+    [Min(0.01f)]
+    [SerializeField] private float endDayButtonPulseSpeed = 2.2f;
+
+    [Min(0.01f)]
+    [SerializeField] private float endDayButtonScaleSpeed = 10f;
 
     // =========================================================
     // WEATHER
@@ -345,6 +336,9 @@ public class TopDayDropdownUI : MonoBehaviour
 
     private bool wasDayFinishedLastFrame;
 
+    private RectTransform endDayButtonRect;
+    private Vector3 endDayButtonBaseScale = Vector3.one;
+
     // =========================================================
     // START
     // =========================================================
@@ -372,6 +366,15 @@ public class TopDayDropdownUI : MonoBehaviour
             );
 
             SetupEndDayButtonHover();
+
+            endDayButtonRect =
+                endDayButton.transform as RectTransform;
+
+            if (endDayButtonRect != null)
+            {
+                endDayButtonBaseScale =
+                    endDayButtonRect.localScale;
+            }
         }
 
         SetupProgressBar();
@@ -609,6 +612,8 @@ public class TopDayDropdownUI : MonoBehaviour
 
         RefreshDayProgress();
 
+        UpdateEndDayButtonAttention();
+
         UpdateWeatherTimer();
 
         bool dayFinished =
@@ -629,6 +634,8 @@ public class TopDayDropdownUI : MonoBehaviour
 
             closeTimer =
                 0f;
+
+            ResetEndDayButtonAttentionImmediately();
         }
 
         wasDayFinishedLastFrame =
@@ -651,6 +658,8 @@ public class TopDayDropdownUI : MonoBehaviour
                 false
             );
 
+            ResetEndDayButtonAttentionImmediately();
+
             return;
         }
 
@@ -664,7 +673,7 @@ public class TopDayDropdownUI : MonoBehaviour
             closeTimer = 0f;
             UpdateDropdownPosition();
             UpdateProgressCrossFade(false);
-            UpdateDropdownWiggle(dayFinished && wiggleAtDayEnd);
+            UpdateDropdownWiggle(dayFinished && pulseAtDayEnd);
             return;
         }
 
@@ -880,7 +889,7 @@ public class TopDayDropdownUI : MonoBehaviour
         // -----------------------------------------------------
 
         UpdateDropdownWiggle(
-            wiggleAtDayEnd
+            pulseAtDayEnd
         );
     }
 
@@ -889,92 +898,49 @@ public class TopDayDropdownUI : MonoBehaviour
     // =========================================================
 
     private void UpdateDropdownWiggle(
-        bool shouldWiggle)
+        bool shouldPulse)
     {
         if (dropdownWiggleVisual == null)
         {
             return;
         }
 
-        float delta =
-            Time.unscaledDeltaTime;
+        // Explicitly remove all rotation/shaking.
+        dropdownWiggleVisual.localRotation =
+            Quaternion.identity;
 
-        if (!shouldWiggle)
+        float targetScale = 1f;
+
+        if (shouldPulse)
         {
-            float returnAmount =
-                1f -
-                Mathf.Exp(
-                    -Mathf.Max(
-                        0.01f,
-                        wiggleReturnSpeed
-                    ) *
-                    delta
-                );
+            float pulse =
+                (Mathf.Sin(
+                    Time.unscaledTime *
+                    Mathf.Max(0.01f, wiggleSpeed) *
+                    Mathf.PI * 2f
+                ) + 1f) * 0.5f;
 
-            dropdownWiggleVisual.localRotation =
-                Quaternion.Lerp(
-                    dropdownWiggleVisual.localRotation,
-                    Quaternion.identity,
-                    returnAmount
+            targetScale =
+                Mathf.Lerp(
+                    1f,
+                    wigglePulseScale,
+                    pulse
                 );
-
-            dropdownWiggleVisual.localScale =
-                Vector3.Lerp(
-                    dropdownWiggleVisual.localScale,
-                    Vector3.one,
-                    returnAmount
-                );
-
-            return;
         }
 
-        float time =
-            Time.unscaledTime *
-            Mathf.Max(
-                0.01f,
-                wiggleSpeed
-            );
-
-        // -----------------------------------------------------
-        // ROTATION
-        // -----------------------------------------------------
-
-        float rotation =
-            Mathf.Sin(
-                time * Mathf.PI * 2f
-            ) *
-            wiggleAngle;
-
-        dropdownWiggleVisual.localRotation =
-            Quaternion.Euler(
-                0f,
-                0f,
-                rotation
-            );
-
-        // -----------------------------------------------------
-        // SCALE PULSE
-        // -----------------------------------------------------
-
-        float pulse =
-            (
-                Mathf.Sin(
-                    time * Mathf.PI * 2f
-                ) +
-                1f
-            ) *
-            0.5f;
-
-        float scale =
-            Mathf.Lerp(
-                1f,
-                wigglePulseScale,
-                pulse
+        float smoothing =
+            1f -
+            Mathf.Exp(
+                -Mathf.Max(0.01f, wiggleReturnSpeed) *
+                Time.unscaledDeltaTime
             );
 
         dropdownWiggleVisual.localScale =
-            Vector3.one *
-            scale;
+            Vector3.Lerp(
+                dropdownWiggleVisual.localScale,
+                Vector3.one * targetScale,
+                smoothing
+            );
     }
 
     // =========================================================
@@ -993,6 +959,115 @@ public class TopDayDropdownUI : MonoBehaviour
 
         dropdownWiggleVisual.localScale =
             Vector3.one;
+    }
+
+    // =========================================================
+    // END DAY BUTTON ATTENTION
+    // =========================================================
+
+    private void UpdateEndDayButtonAttention()
+    {
+        if (endDayButton == null)
+        {
+            return;
+        }
+
+        if (endDayButtonRect == null)
+        {
+            endDayButtonRect =
+                endDayButton.transform as RectTransform;
+
+            if (endDayButtonRect == null)
+            {
+                return;
+            }
+
+            endDayButtonBaseScale =
+                endDayButtonRect.localScale;
+        }
+
+        float targetMultiplier = 1f;
+
+        if (enlargeEndDayButtonNearDayEnd &&
+            endDaySystem != null &&
+            !endDaySystem.IsTransitionRunning())
+        {
+            float progress =
+                Mathf.Clamp01(
+                    endDaySystem.GetDayProgress()
+                );
+
+            float start =
+                Mathf.Clamp01(
+                    endDayButtonGrowStartProgress
+                );
+
+            if (progress >= start)
+            {
+                float growT =
+                    Mathf.InverseLerp(
+                        start,
+                        1f,
+                        progress
+                    );
+
+                growT =
+                    growT * growT *
+                    (3f - 2f * growT);
+
+                targetMultiplier =
+                    Mathf.Lerp(
+                        1f,
+                        endDayButtonFinishedScale,
+                        growT
+                    );
+            }
+
+            if (IsDayFinished())
+            {
+                float pulse =
+                    (Mathf.Sin(
+                        Time.unscaledTime *
+                        Mathf.Max(
+                            0.01f,
+                            endDayButtonPulseSpeed
+                        ) *
+                        Mathf.PI * 2f
+                    ) + 1f) * 0.5f;
+
+                targetMultiplier =
+                    endDayButtonFinishedScale +
+                    pulse *
+                    endDayButtonPulseAmount;
+            }
+        }
+
+        float smoothing =
+            1f -
+            Mathf.Exp(
+                -Mathf.Max(
+                    0.01f,
+                    endDayButtonScaleSpeed
+                ) *
+                Time.unscaledDeltaTime
+            );
+
+        endDayButtonRect.localScale =
+            Vector3.Lerp(
+                endDayButtonRect.localScale,
+                endDayButtonBaseScale *
+                targetMultiplier,
+                smoothing
+            );
+    }
+
+    private void ResetEndDayButtonAttentionImmediately()
+    {
+        if (endDayButtonRect != null)
+        {
+            endDayButtonRect.localScale =
+                endDayButtonBaseScale;
+        }
     }
 
     // =========================================================
@@ -1414,8 +1489,9 @@ public class TopDayDropdownUI : MonoBehaviour
 
         PlayButtonClickSound();
 
-        // Stop the attention effect immediately.
+        // Stop the attention effects immediately.
         ResetDropdownWiggleImmediately();
+        ResetEndDayButtonAttentionImmediately();
 
         dropdownOpen =
             false;

@@ -36,12 +36,8 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     // POPULATION SLIDER
     // =========================================================
 
-    [Header("Population Slider")]
-
-    [Tooltip("Displays the Ghost Bat population from 0 to the colony maximum (normally 100).")]
-    [SerializeField] private Slider populationSlider;
-
-    [Tooltip("Optional trend symbol positioned beside the POPULATION label.")]
+    [Header("Population Trend Icon")]
+    [Tooltip("Optional trend symbol positioned beside the population text.")]
     [SerializeField] private Image populationTrendIcon;
 
     [SerializeField] private Sprite growingTrendIcon;
@@ -57,31 +53,56 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private Image caveIcon;
 
     // =========================================================
-    // COLONY STAT SLIDERS
+    // RADIAL COLONY STATS
     // =========================================================
 
-    [Header("Colony Stat Sliders")]
+    [Header("Radial Colony Stats")]
+    [Tooltip("The coloured Population arc Image.")]
+    [SerializeField] private Image populationRadialFill;
 
-    [Tooltip("Displays the Ghost Bat colony's Health from 0 to 100.")]
-    [SerializeField] private Slider healthSlider;
+    [Tooltip("The coloured Health arc Image.")]
+    [SerializeField] private Image healthRadialFill;
 
-    [Tooltip("Displays the Ghost Bat colony's Food from 0 to 100.")]
-    [SerializeField] private Slider foodSlider;
+    [Tooltip("The coloured Food arc Image.")]
+    [SerializeField] private Image foodRadialFill;
 
-    [Tooltip("Displays the Ghost Bat colony's Water from 0 to 100.")]
-    [SerializeField] private Slider waterSlider;
+    [Tooltip("The coloured Water arc Image.")]
+    [SerializeField] private Image waterRadialFill;
 
-    [Header("Slider Auto Find")]
+    [Header("Radial Arc Shader")]
+    [Tooltip("Material using GhostBat/UI/QuarterArcFill. A separate runtime copy is made for each stat.")]
+    [SerializeField] private Material radialArcMaterial;
 
-    [Tooltip(
-        "Automatically finds Health, Food and Water sliders if their Inspector references are missing."
-    )]
-    [SerializeField] private bool autoFindSliders = true;
+    [Header("Radial Arc Angles")]
+    [Range(0f, 360f)][SerializeField] private float populationStartAngle = 180f;
+    [Range(0f, 360f)][SerializeField] private float healthStartAngle = 90f;
+    [Range(0f, 360f)][SerializeField] private float foodStartAngle = 0f;
+    [Range(0f, 360f)][SerializeField] private float waterStartAngle = 270f;
+    [Range(1f, 180f)][SerializeField] private float radialArcAngle = 90f;
+    [SerializeField] private bool fillClockwise = true;
 
-    [Tooltip(
-        "Prints the sliders and colony values to the Console when the Cave opens."
-    )]
-    [SerializeField] private bool showSliderDebugLogs = true;
+    [Header("Radial Stat Text")]
+    [SerializeField] private TMP_Text healthRadialText;
+    [SerializeField] private TMP_Text foodRadialText;
+    [SerializeField] private TMP_Text waterRadialText;
+
+    [Header("Radial Animation")]
+    [SerializeField] private bool animateRadialStats = true;
+    [Min(0.01f)][SerializeField] private float radialFillSpeed = 8f;
+
+    [Header("Radial Hover")]
+    [SerializeField] private bool enableRadialHover = true;
+    [Tooltip("Assign an UNMASKED parent containing the mask + fill for each quarter. This lets the whole quarter grow without being clipped.")]
+    [SerializeField] private RectTransform populationHoverRoot;
+    [SerializeField] private RectTransform healthHoverRoot;
+    [SerializeField] private RectTransform foodHoverRoot;
+    [SerializeField] private RectTransform waterHoverRoot;
+    [Min(1f)][SerializeField] private float hoveredArcScale = 1.15f;
+    [Min(1f)][SerializeField] private float hoveredIconScale = 1.18f;
+    [Min(0.01f)][SerializeField] private float hoverScaleSpeed = 14f;
+    [Range(0f, 1f)][SerializeField] private float nonHoveredSaturation = 0f;
+    [Tooltip("Optional shared hover label. If empty, Health/Food/Water use their existing percentage text.")]
+    [SerializeField] private TMP_Text hoverStatText;
 
     // =========================================================
     // BUTTONS
@@ -148,6 +169,62 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private float popDuration = 0.1f;
     [SerializeField] private float settleDuration = 0.1f;
 
+    [Header("Detailed Open Animation")]
+    [SerializeField] private bool animateContentsOnOpen = true;
+    [Min(0f)][SerializeField] private float contentStartDelay = 0.015f;
+    [Min(0.01f)][SerializeField] private float contentFadeDuration = 0.10f;
+    [Min(0.01f)][SerializeField] private float contentPopDuration = 0.13f;
+    [Range(0.1f, 1f)][SerializeField] private float contentStartingScale = 0.65f;
+    [Min(1f)][SerializeField] private float contentOvershootScale = 1.12f;
+    [Min(0f)][SerializeField] private float itemStagger = 0.025f;
+    [Min(0.01f)][SerializeField] private float arcSweepDuration = 0.24f;
+
+    [Header("Open Animation Objects")]
+    [Tooltip("Optional. If left empty the script uses Title Text.")]
+    [SerializeField] private RectTransform animatedTitle;
+
+    [Tooltip("Usually the cave Image in the centre of the radial ring.")]
+    [SerializeField] private RectTransform animatedCaveIcon;
+
+    [Tooltip("Optional brown/background ring. Assign this if you want it to pop in separately.")]
+    [SerializeField] private RectTransform animatedRingBackground;
+
+    [Tooltip("Circular Population/Bat icon.")]
+    [SerializeField] private RectTransform animatedPopulationIcon;
+
+    [Tooltip("Circular Health/Heart icon.")]
+    [SerializeField] private RectTransform animatedHealthIcon;
+
+    [Tooltip("Circular Food icon.")]
+    [SerializeField] private RectTransform animatedFoodIcon;
+
+    [Tooltip("Circular Water icon.")]
+    [SerializeField] private RectTransform animatedWaterIcon;
+
+    [Tooltip("Optional. If left empty the script uses Population Text.")]
+    [SerializeField] private RectTransform animatedPopulationText;
+
+    private void RestoreOpenAnimationVisuals()
+    {
+        RestoreAnimatedObject(animatedTitle);
+        RestoreAnimatedObject(animatedCaveIcon);
+        RestoreAnimatedObject(animatedRingBackground);
+        RestoreAnimatedObject(animatedPopulationIcon);
+        RestoreAnimatedObject(animatedHealthIcon);
+        RestoreAnimatedObject(animatedFoodIcon);
+        RestoreAnimatedObject(animatedWaterIcon);
+        RestoreAnimatedObject(animatedPopulationText);
+
+        SetGraphicAlpha(healthRadialText, 1f);
+        SetGraphicAlpha(foodRadialText, 1f);
+        SetGraphicAlpha(waterRadialText, 1f);
+
+        if (populationTrendIcon != null)
+        {
+            SetGraphicAlpha(populationTrendIcon, 1f);
+        }
+    }
+
     // =========================================================
     // CLOSE ANIMATION
     // =========================================================
@@ -191,6 +268,36 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     private Vector2 previousMousePosition;
 
     private float currentSwayAngle;
+
+    private float displayedPopulationFill;
+    private float displayedHealthFill;
+    private float displayedFoodFill;
+    private float displayedWaterFill;
+    private bool radialValuesInitialised;
+
+    private Material populationRadialMaterial;
+    private Material healthRadialMaterial;
+    private Material foodRadialMaterial;
+    private Material waterRadialMaterial;
+
+    private int hoveredRadialStat = -1;
+    private Vector3 populationHoverBaseScale = Vector3.one;
+    private Vector3 healthHoverBaseScale = Vector3.one;
+    private Vector3 foodHoverBaseScale = Vector3.one;
+    private Vector3 waterHoverBaseScale = Vector3.one;
+    private Vector3 populationIconHoverBaseScale = Vector3.one;
+    private Vector3 healthIconHoverBaseScale = Vector3.one;
+    private Vector3 foodIconHoverBaseScale = Vector3.one;
+    private Vector3 waterIconHoverBaseScale = Vector3.one;
+
+    private bool contentOpenAnimationPlaying;
+    private float openingPopulationTarget;
+    private float openingHealthTarget;
+    private float openingFoodTarget;
+    private float openingWaterTarget;
+
+    private readonly Dictionary<RectTransform, Vector3> openAnimationOriginalScales =
+        new Dictionary<RectTransform, Vector3>();
 
     // =========================================================
     // START
@@ -244,33 +351,6 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
-        // FIND SLIDERS
-        // =====================================================
-
-        if (autoFindSliders)
-        {
-            FindColonySliders();
-        }
-
-        // =====================================================
-        // SETUP SLIDERS
-        // =====================================================
-
-        SetupPopulationSlider();
-
-        SetupSlider(
-            healthSlider
-        );
-
-        SetupSlider(
-            foodSlider
-        );
-
-        SetupSlider(
-            waterSlider
-        );
-
-        // =====================================================
         // CLOSE BUTTON
         // =====================================================
 
@@ -280,6 +360,12 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
                 Close
             );
         }
+
+        SetupRadialMaterials();
+        SetupRadialHoverEvents();
+        CacheDefaultAnimationObjects();
+        CacheOpenAnimationOriginalScales();
+        CacheRadialHoverBaseScales();
 
         // =====================================================
         // START CLOSED
@@ -292,288 +378,6 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             );
         }
     }
-
-    // =========================================================
-    // FIND COLONY SLIDERS
-    // =========================================================
-
-    private void FindColonySliders()
-    {
-        Slider[] sliders;
-
-        if (panel != null)
-        {
-            sliders =
-                panel.GetComponentsInChildren<Slider>(
-                    true
-                );
-        }
-        else
-        {
-            sliders =
-                GetComponentsInChildren<Slider>(
-                    true
-                );
-        }
-
-        if (sliders == null ||
-            sliders.Length == 0)
-        {
-            if (showSliderDebugLogs)
-            {
-                Debug.LogWarning(
-                    "[CaveInspectionUI] No Slider components were found inside the Cave HUD."
-                );
-            }
-
-            return;
-        }
-
-        // =====================================================
-        // SEARCH BY NAME
-        // =====================================================
-
-        foreach (Slider slider in sliders)
-        {
-            if (slider == null)
-            {
-                continue;
-            }
-
-            string searchName =
-                BuildSliderSearchName(
-                    slider.transform
-                );
-
-            // -------------------------------------------------
-            // POPULATION
-            // -------------------------------------------------
-
-            if (populationSlider == null &&
-                searchName.Contains("population"))
-            {
-                populationSlider =
-                    slider;
-
-                continue;
-            }
-
-            // -------------------------------------------------
-            // HEALTH
-            // -------------------------------------------------
-
-            if (healthSlider == null &&
-                searchName.Contains("health"))
-            {
-                healthSlider =
-                    slider;
-
-                continue;
-            }
-
-            // -------------------------------------------------
-            // FOOD
-            // -------------------------------------------------
-
-            if (foodSlider == null &&
-                searchName.Contains("food"))
-            {
-                foodSlider =
-                    slider;
-
-                continue;
-            }
-
-            // -------------------------------------------------
-            // WATER
-            // -------------------------------------------------
-
-            if (waterSlider == null &&
-                searchName.Contains("water"))
-            {
-                waterSlider =
-                    slider;
-            }
-        }
-
-        // =====================================================
-        // FALLBACK BY ORDER
-        // =====================================================
-        //
-        // Only use sliders that have not already been identified.
-        // This prevents the Population slider from accidentally
-        // being assigned as Health/Food/Water.
-
-        List<Slider> unassignedSliders =
-            new List<Slider>();
-
-        foreach (Slider slider in sliders)
-        {
-            if (slider == null ||
-                slider == populationSlider ||
-                slider == healthSlider ||
-                slider == foodSlider ||
-                slider == waterSlider)
-            {
-                continue;
-            }
-
-            unassignedSliders.Add(slider);
-        }
-
-        if (populationSlider == null &&
-            unassignedSliders.Count > 0)
-        {
-            populationSlider =
-                unassignedSliders[0];
-
-            unassignedSliders.RemoveAt(0);
-        }
-
-        if (healthSlider == null &&
-            unassignedSliders.Count > 0)
-        {
-            healthSlider =
-                unassignedSliders[0];
-
-            unassignedSliders.RemoveAt(0);
-        }
-
-        if (foodSlider == null &&
-            unassignedSliders.Count > 0)
-        {
-            foodSlider =
-                unassignedSliders[0];
-
-            unassignedSliders.RemoveAt(0);
-        }
-
-        if (waterSlider == null &&
-            unassignedSliders.Count > 0)
-        {
-            waterSlider =
-                unassignedSliders[0];
-        }
-
-        // =====================================================
-        // DEBUG
-        // =====================================================
-
-        if (showSliderDebugLogs)
-        {
-            Debug.Log(
-                "[CaveInspectionUI] Slider search complete." +
-                "\nPopulation Slider: " +
-                GetSliderDebugName(populationSlider) +
-                "\nHealth Slider: " +
-                GetSliderDebugName(healthSlider) +
-                "\nFood Slider: " +
-                GetSliderDebugName(foodSlider) +
-                "\nWater Slider: " +
-                GetSliderDebugName(waterSlider)
-            );
-        }
-    }
-
-    // =========================================================
-    // BUILD SLIDER SEARCH NAME
-    // =========================================================
-
-    private string BuildSliderSearchName(
-        Transform sliderTransform)
-    {
-        if (sliderTransform == null)
-        {
-            return "";
-        }
-
-        string searchName =
-            sliderTransform.name.ToLower();
-
-        Transform currentParent =
-            sliderTransform.parent;
-
-        while (currentParent != null)
-        {
-            searchName +=
-                " " +
-                currentParent.name.ToLower();
-
-            if (panel != null &&
-                currentParent == panel)
-            {
-                break;
-            }
-
-            currentParent =
-                currentParent.parent;
-        }
-
-        return searchName;
-    }
-
-    // =========================================================
-    // GET SLIDER DEBUG NAME
-    // =========================================================
-
-    private string GetSliderDebugName(
-        Slider slider)
-    {
-        if (slider == null)
-        {
-            return "NOT FOUND";
-        }
-
-        return
-            slider.gameObject.name;
-    }
-
-    // =========================================================
-    // SETUP SLIDER
-    // =========================================================
-
-    private void SetupSlider(
-        Slider slider)
-    {
-        if (slider == null)
-        {
-            return;
-        }
-
-        slider.minValue =
-            0f;
-
-        slider.maxValue =
-            100f;
-
-        slider.wholeNumbers =
-            false;
-
-        slider.interactable =
-            false;
-    }
-
-    private void SetupPopulationSlider()
-    {
-        if (populationSlider == null)
-        {
-            return;
-        }
-
-        populationSlider.minValue = 0f;
-
-        populationSlider.maxValue =
-            currentColony != null
-                ? Mathf.Max(
-                    1,
-                    currentColony.GetMaximumPopulation()
-                )
-                : 100f;
-
-        populationSlider.wholeNumbers = true;
-        populationSlider.interactable = false;
-    }
-
 
     // =========================================================
     // UPDATE
@@ -597,6 +401,7 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         HandleDragging();
 
         UpdateDragVisuals();
+        UpdateRadialHoverVisuals();
 
         // =====================================================
         // LIVE COLONY HUD
@@ -712,33 +517,6 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             colony;
 
         // =====================================================
-        // RE-FIND SLIDERS
-        //
-        // This is intentional.
-        // If the panel was inactive during Start or the HUD was
-        // changed, opening the Cave gives us another chance.
-        // =====================================================
-
-        if (autoFindSliders)
-        {
-            FindColonySliders();
-        }
-
-        SetupPopulationSlider();
-
-        SetupSlider(
-            healthSlider
-        );
-
-        SetupSlider(
-            foodSlider
-        );
-
-        SetupSlider(
-            waterSlider
-        );
-
-        // =====================================================
         // FIND INSPECTABLE CAVE
         // =====================================================
 
@@ -805,37 +583,15 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // =====================================================
-        // FORCE SLIDER UPDATE
+        // FORCE UI UPDATE
         // =====================================================
 
+        SetupRadialMaterials();
+        SetupRadialHoverEvents();
+        CacheRadialHoverBaseScales();
+        hoveredRadialStat = -1;
+        ResetRadialAnimation();
         RefreshUI();
-
-        // =====================================================
-        // DEBUG VALUES
-        // =====================================================
-
-        if (showSliderDebugLogs)
-        {
-            Debug.Log(
-                "[CaveInspectionUI] Cave opened." +
-                "\nPopulation: " +
-                currentColony.GetPopulation() +
-                "\nHealth: " +
-                currentColony.GetBatHealth() +
-                "\nFood: " +
-                currentColony.GetBatFood() +
-                "\nWater: " +
-                currentColony.GetBatWater() +
-                "\nPopulation Slider: " +
-                GetSliderDebugName(populationSlider) +
-                "\nHealth Slider: " +
-                GetSliderDebugName(healthSlider) +
-                "\nFood Slider: " +
-                GetSliderDebugName(foodSlider) +
-                "\nWater Slider: " +
-                GetSliderDebugName(waterSlider)
-            );
-        }
 
         // =====================================================
         // POSITION
@@ -891,29 +647,13 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         if (populationText != null)
         {
             populationText.text =
-                "Population (" +
+                "Population: " +
+                currentColony.GetPopulation() +
+                " (" +
                 FormatPopulationTrendTitle(
                     currentColony.GetPopulationTrendText()
                 ) +
                 ")";
-        }
-
-        if (populationSlider != null)
-        {
-            populationSlider.minValue = 0f;
-            populationSlider.maxValue =
-                Mathf.Max(
-                    1,
-                    currentColony.GetMaximumPopulation()
-                );
-
-            populationSlider.SetValueWithoutNotify(
-                Mathf.Clamp(
-                    currentColony.GetPopulation(),
-                    0,
-                    currentColony.GetMaximumPopulation()
-                )
-            );
         }
 
         RefreshPopulationTrendIcon();
@@ -943,20 +683,7 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
                 100f
             );
 
-        if (healthSlider != null)
-        {
-            healthSlider.SetValueWithoutNotify(health);
-        }
-
-        if (foodSlider != null)
-        {
-            foodSlider.SetValueWithoutNotify(food);
-        }
-
-        if (waterSlider != null)
-        {
-            waterSlider.SetValueWithoutNotify(water);
-        }
+        RefreshRadialStats(health, food, water);
     }
 
     private string FormatPopulationTrendTitle(string trend)
@@ -1008,8 +735,381 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     // =========================================================
 
     // =========================================================
-    // INDIVIDUAL BAT POPULATION ICONS
+    // RADIAL COLONY STATS
     // =========================================================
+
+    private void RefreshRadialStats(float health, float food, float water)
+    {
+        if (currentColony == null) return;
+
+        if (contentOpenAnimationPlaying)
+        {
+            UpdateRadialHoverText(health, food, water);
+            return;
+        }
+
+        float populationTarget = Mathf.Clamp01(
+            currentColony.GetPopulation() /
+            (float)Mathf.Max(1, currentColony.GetMaximumPopulation()));
+
+        float healthTarget = Mathf.Clamp01(health / 100f);
+        float foodTarget = Mathf.Clamp01(food / 100f);
+        float waterTarget = Mathf.Clamp01(water / 100f);
+
+        if (!radialValuesInitialised || !animateRadialStats)
+        {
+            displayedPopulationFill = populationTarget;
+            displayedHealthFill = healthTarget;
+            displayedFoodFill = foodTarget;
+            displayedWaterFill = waterTarget;
+            radialValuesInitialised = true;
+        }
+        else
+        {
+            float smoothing = 1f - Mathf.Exp(
+                -Mathf.Max(0.01f, radialFillSpeed) * Time.unscaledDeltaTime);
+
+            displayedPopulationFill = Mathf.Lerp(displayedPopulationFill, populationTarget, smoothing);
+            displayedHealthFill = Mathf.Lerp(displayedHealthFill, healthTarget, smoothing);
+            displayedFoodFill = Mathf.Lerp(displayedFoodFill, foodTarget, smoothing);
+            displayedWaterFill = Mathf.Lerp(displayedWaterFill, waterTarget, smoothing);
+        }
+
+        SetArcFill(
+            populationRadialMaterial,
+            displayedPopulationFill
+        );
+
+        SetArcFill(
+            healthRadialMaterial,
+            displayedHealthFill
+        );
+
+        SetArcFill(
+            foodRadialMaterial,
+            displayedFoodFill
+        );
+
+        SetArcFill(
+            waterRadialMaterial,
+            displayedWaterFill
+        );
+
+        UpdateRadialHoverText(health, food, water);
+    }
+
+
+    private void UpdateRadialHoverText(float health, float food, float water)
+    {
+        int population = currentColony != null ? currentColony.GetPopulation() : 0;
+
+        if (healthRadialText != null)
+            healthRadialText.text =
+                hoveredRadialStat == 1 && hoverStatText == null
+                    ? Mathf.RoundToInt(health) + "% Health"
+                    : Mathf.RoundToInt(health) + "%";
+
+        if (foodRadialText != null)
+            foodRadialText.text =
+                hoveredRadialStat == 2 && hoverStatText == null
+                    ? Mathf.RoundToInt(food) + "% Food"
+                    : Mathf.RoundToInt(food) + "%";
+
+        if (waterRadialText != null)
+            waterRadialText.text =
+                hoveredRadialStat == 3 && hoverStatText == null
+                    ? Mathf.RoundToInt(water) + "% Water"
+                    : Mathf.RoundToInt(water) + "%";
+
+        if (hoverStatText == null) return;
+
+        switch (hoveredRadialStat)
+        {
+            case 0:
+                hoverStatText.text = population + " Population";
+                break;
+            case 1:
+                hoverStatText.text = Mathf.RoundToInt(health) + "% Health";
+                break;
+            case 2:
+                hoverStatText.text = Mathf.RoundToInt(food) + "% Food";
+                break;
+            case 3:
+                hoverStatText.text = Mathf.RoundToInt(water) + "% Water";
+                break;
+            default:
+                hoverStatText.text = "";
+                break;
+        }
+    }
+
+    private void SetupRadialHoverEvents()
+    {
+        SetupHoverEvent(populationRadialFill, 0);
+        SetupHoverEvent(healthRadialFill, 1);
+        SetupHoverEvent(foodRadialFill, 2);
+        SetupHoverEvent(waterRadialFill, 3);
+    }
+
+    private void SetupHoverEvent(Image image, int statIndex)
+    {
+        if (image == null) return;
+
+        image.raycastTarget = true;
+
+        CaveRadialHoverTarget target =
+            image.GetComponent<CaveRadialHoverTarget>();
+
+        if (target == null)
+            target = image.gameObject.AddComponent<CaveRadialHoverTarget>();
+
+        target.Configure(this, statIndex);
+    }
+
+    public void SetRadialHoverStat(int statIndex)
+    {
+        hoveredRadialStat = enableRadialHover ? statIndex : -1;
+    }
+
+    private void CacheRadialHoverBaseScales()
+    {
+        populationHoverBaseScale =
+            HoverScaleOf(HoverTarget(populationHoverRoot, populationRadialFill));
+        healthHoverBaseScale =
+            HoverScaleOf(HoverTarget(healthHoverRoot, healthRadialFill));
+        foodHoverBaseScale =
+            HoverScaleOf(HoverTarget(foodHoverRoot, foodRadialFill));
+        waterHoverBaseScale =
+            HoverScaleOf(HoverTarget(waterHoverRoot, waterRadialFill));
+
+        populationIconHoverBaseScale = HoverScaleOf(animatedPopulationIcon);
+        healthIconHoverBaseScale = HoverScaleOf(animatedHealthIcon);
+        foodIconHoverBaseScale = HoverScaleOf(animatedFoodIcon);
+        waterIconHoverBaseScale = HoverScaleOf(animatedWaterIcon);
+    }
+
+    private RectTransform HoverTarget(RectTransform root, Image fallback)
+    {
+        if (root != null) return root;
+        return fallback != null ? fallback.rectTransform : null;
+    }
+
+    private Vector3 HoverScaleOf(RectTransform target)
+    {
+        return target != null ? target.localScale : Vector3.one;
+    }
+
+    private void UpdateRadialHoverVisuals()
+    {
+        if (!enableRadialHover)
+        {
+            hoveredRadialStat = -1;
+        }
+
+        if (contentOpenAnimationPlaying) return;
+
+        SmoothHoverScale(
+            HoverTarget(populationHoverRoot, populationRadialFill),
+            populationHoverBaseScale, hoveredRadialStat == 0, hoveredArcScale);
+
+        SmoothHoverScale(
+            HoverTarget(healthHoverRoot, healthRadialFill),
+            healthHoverBaseScale, hoveredRadialStat == 1, hoveredArcScale);
+
+        SmoothHoverScale(
+            HoverTarget(foodHoverRoot, foodRadialFill),
+            foodHoverBaseScale, hoveredRadialStat == 2, hoveredArcScale);
+
+        SmoothHoverScale(
+            HoverTarget(waterHoverRoot, waterRadialFill),
+            waterHoverBaseScale, hoveredRadialStat == 3, hoveredArcScale);
+
+        SmoothHoverScale(
+            animatedPopulationIcon, populationIconHoverBaseScale,
+            hoveredRadialStat == 0, hoveredIconScale);
+
+        SmoothHoverScale(
+            animatedHealthIcon, healthIconHoverBaseScale,
+            hoveredRadialStat == 1, hoveredIconScale);
+
+        SmoothHoverScale(
+            animatedFoodIcon, foodIconHoverBaseScale,
+            hoveredRadialStat == 2, hoveredIconScale);
+
+        SmoothHoverScale(
+            animatedWaterIcon, waterIconHoverBaseScale,
+            hoveredRadialStat == 3, hoveredIconScale);
+
+        bool hovering = hoveredRadialStat >= 0;
+
+        SetArcSaturation(populationRadialMaterial,
+            !hovering || hoveredRadialStat == 0 ? 1f : nonHoveredSaturation);
+        SetArcSaturation(healthRadialMaterial,
+            !hovering || hoveredRadialStat == 1 ? 1f : nonHoveredSaturation);
+        SetArcSaturation(foodRadialMaterial,
+            !hovering || hoveredRadialStat == 2 ? 1f : nonHoveredSaturation);
+        SetArcSaturation(waterRadialMaterial,
+            !hovering || hoveredRadialStat == 3 ? 1f : nonHoveredSaturation);
+    }
+
+    private void SmoothHoverScale(
+        RectTransform target,
+        Vector3 baseScale,
+        bool hovered,
+        float multiplier)
+    {
+        if (target == null) return;
+
+        Vector3 wanted = baseScale * (hovered ? multiplier : 1f);
+        float amount = 1f - Mathf.Exp(
+            -Mathf.Max(0.01f, hoverScaleSpeed) * Time.unscaledDeltaTime);
+
+        target.localScale =
+            Vector3.Lerp(target.localScale, wanted, amount);
+    }
+
+    private void SetArcSaturation(Material material, float saturation)
+    {
+        if (material == null || !material.HasProperty("_Saturation")) return;
+        material.SetFloat("_Saturation", Mathf.Clamp01(saturation));
+    }
+
+    private void ResetRadialHover()
+    {
+        hoveredRadialStat = -1;
+
+        RestoreHoverScale(
+            HoverTarget(populationHoverRoot, populationRadialFill),
+            populationHoverBaseScale);
+        RestoreHoverScale(
+            HoverTarget(healthHoverRoot, healthRadialFill),
+            healthHoverBaseScale);
+        RestoreHoverScale(
+            HoverTarget(foodHoverRoot, foodRadialFill),
+            foodHoverBaseScale);
+        RestoreHoverScale(
+            HoverTarget(waterHoverRoot, waterRadialFill),
+            waterHoverBaseScale);
+
+        RestoreHoverScale(animatedPopulationIcon, populationIconHoverBaseScale);
+        RestoreHoverScale(animatedHealthIcon, healthIconHoverBaseScale);
+        RestoreHoverScale(animatedFoodIcon, foodIconHoverBaseScale);
+        RestoreHoverScale(animatedWaterIcon, waterIconHoverBaseScale);
+
+        SetArcSaturation(populationRadialMaterial, 1f);
+        SetArcSaturation(healthRadialMaterial, 1f);
+        SetArcSaturation(foodRadialMaterial, 1f);
+        SetArcSaturation(waterRadialMaterial, 1f);
+
+        if (hoverStatText != null) hoverStatText.text = "";
+    }
+
+    private void RestoreHoverScale(RectTransform target, Vector3 scale)
+    {
+        if (target != null) target.localScale = scale;
+    }
+
+    private void SetupRadialMaterials()
+    {
+        SetupArcMaterial(
+            populationRadialFill,
+            ref populationRadialMaterial,
+            populationStartAngle
+        );
+
+        SetupArcMaterial(
+            healthRadialFill,
+            ref healthRadialMaterial,
+            healthStartAngle
+        );
+
+        SetupArcMaterial(
+            foodRadialFill,
+            ref foodRadialMaterial,
+            foodStartAngle
+        );
+
+        SetupArcMaterial(
+            waterRadialFill,
+            ref waterRadialMaterial,
+            waterStartAngle
+        );
+    }
+
+    private void SetupArcMaterial(
+        Image image,
+        ref Material runtimeMaterial,
+        float startAngle)
+    {
+        if (image == null ||
+            radialArcMaterial == null)
+        {
+            return;
+        }
+
+        if (runtimeMaterial == null)
+        {
+            runtimeMaterial =
+                new Material(radialArcMaterial);
+
+            runtimeMaterial.name =
+                radialArcMaterial.name +
+                " (Cave Runtime)";
+        }
+
+        image.material =
+            runtimeMaterial;
+
+        image.type =
+            Image.Type.Simple;
+
+        image.preserveAspect =
+            true;
+
+        // Needed for hover detection on the visible quarter.
+        image.raycastTarget =
+            true;
+
+        runtimeMaterial.SetFloat(
+            "_StartAngle",
+            startAngle
+        );
+
+        runtimeMaterial.SetFloat(
+            "_ArcAngle",
+            radialArcAngle
+        );
+
+        runtimeMaterial.SetFloat(
+            "_Clockwise",
+            fillClockwise ? 1f : 0f
+        );
+
+        if (runtimeMaterial.HasProperty("_Saturation"))
+        {
+            runtimeMaterial.SetFloat("_Saturation", 1f);
+        }
+    }
+
+    private void SetArcFill(
+        Material material,
+        float amount)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        material.SetFloat(
+            "_FillAmount",
+            Mathf.Clamp01(amount)
+        );
+    }
+
+    private void ResetRadialAnimation()
+    {
+        radialValuesInitialised = false;
+    }
 
     // =========================================================
     // CLOSE
@@ -1053,6 +1153,10 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         ClearCurrentCaveHighlight();
+        ResetRadialHover();
+        ResetRadialAnimation();
+        contentOpenAnimationPlaying = false;
+        RestoreOpenAnimationVisuals();
 
         isOpen =
             false;
@@ -1673,12 +1777,20 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             yield break;
         }
 
+        CacheDefaultAnimationObjects();
+        CacheOpenAnimationOriginalScales();
+
         panel.localScale =
             Vector3.one *
             startingScale;
 
         panel.localRotation =
             Quaternion.identity;
+
+        if (animateContentsOnOpen)
+        {
+            PrepareContentsForOpenAnimation();
+        }
 
         yield return ScalePanel(
             startingScale,
@@ -1698,8 +1810,837 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             Vector3.one *
             normalScale;
 
+        if (animateContentsOnOpen)
+        {
+            yield return AnimateContentsOpen();
+        }
+
         animationCoroutine =
             null;
+    }
+
+    private void CacheDefaultAnimationObjects()
+    {
+        if (animatedTitle == null &&
+            titleText != null)
+        {
+            animatedTitle =
+                titleText.rectTransform;
+        }
+
+        if (animatedCaveIcon == null &&
+            caveIcon != null)
+        {
+            animatedCaveIcon =
+                caveIcon.rectTransform;
+        }
+
+        if (animatedPopulationText == null &&
+            populationText != null)
+        {
+            animatedPopulationText =
+                populationText.rectTransform;
+        }
+    }
+
+    private void PrepareContentsForOpenAnimation()
+    {
+        contentOpenAnimationPlaying = true;
+
+        openingPopulationTarget =
+            currentColony != null
+                ? Mathf.Clamp01(
+                    currentColony.GetPopulation() /
+                    (float)Mathf.Max(
+                        1,
+                        currentColony.GetMaximumPopulation()
+                    )
+                )
+                : 0f;
+
+        openingHealthTarget =
+            currentColony != null
+                ? Mathf.Clamp01(
+                    currentColony.GetBatHealth() / 100f
+                )
+                : 0f;
+
+        openingFoodTarget =
+            currentColony != null
+                ? Mathf.Clamp01(
+                    currentColony.GetBatFood() / 100f
+                )
+                : 0f;
+
+        openingWaterTarget =
+            currentColony != null
+                ? Mathf.Clamp01(
+                    currentColony.GetBatWater() / 100f
+                )
+                : 0f;
+
+        SetArcFill(
+            populationRadialMaterial,
+            0f
+        );
+
+        SetArcFill(
+            healthRadialMaterial,
+            0f
+        );
+
+        SetArcFill(
+            foodRadialMaterial,
+            0f
+        );
+
+        SetArcFill(
+            waterRadialMaterial,
+            0f
+        );
+
+        SetAnimatedObjectHidden(animatedTitle);
+        SetAnimatedObjectHidden(animatedCaveIcon);
+
+        // The brown ring keeps its authored size, but starts transparent.
+        RestoreAnimatedObject(animatedRingBackground);
+        SetRectAlpha(animatedRingBackground, 0f);
+
+        SetAnimatedObjectHidden(animatedPopulationIcon);
+        SetAnimatedObjectHidden(animatedHealthIcon);
+        SetAnimatedObjectHidden(animatedFoodIcon);
+        SetAnimatedObjectHidden(animatedWaterIcon);
+        SetAnimatedObjectHidden(animatedPopulationText);
+
+        SetGraphicAlpha(
+            healthRadialText,
+            0f
+        );
+
+        SetGraphicAlpha(
+            foodRadialText,
+            0f
+        );
+
+        SetGraphicAlpha(
+            waterRadialText,
+            0f
+        );
+
+        if (populationTrendIcon != null)
+        {
+            SetGraphicAlpha(
+                populationTrendIcon,
+                0f
+            );
+        }
+    }
+
+    private IEnumerator AnimateContentsOpen()
+    {
+        if (contentStartDelay > 0f)
+        {
+            yield return WaitUnscaled(
+                contentStartDelay
+            );
+        }
+
+        yield return AnimateRectPop(
+            animatedTitle,
+            1f
+        );
+
+        yield return WaitUnscaled(
+            itemStagger
+        );
+
+        yield return AnimateRectPop(
+            animatedCaveIcon,
+            contentOvershootScale
+        );
+
+        yield return WaitUnscaled(
+            itemStagger * 0.5f
+        );
+
+        // Brown ring background fades in quickly without changing size.
+        StartCoroutine(
+            FadeRect(
+                animatedRingBackground,
+                0f,
+                1f,
+                contentFadeDuration
+            )
+        );
+
+        StartCoroutine(
+            AnimateArcSweep(
+                populationRadialMaterial,
+                openingPopulationTarget,
+                0f
+            )
+        );
+
+        yield return WaitUnscaled(
+            itemStagger
+        );
+
+        StartCoroutine(
+            AnimateRectPop(
+                animatedPopulationIcon,
+                contentOvershootScale
+            )
+        );
+
+        StartCoroutine(
+            AnimateArcSweep(
+                healthRadialMaterial,
+                openingHealthTarget,
+                itemStagger
+            )
+        );
+
+        yield return WaitUnscaled(
+            itemStagger
+        );
+
+        StartCoroutine(
+            AnimateRectPop(
+                animatedHealthIcon,
+                contentOvershootScale
+            )
+        );
+
+        StartCoroutine(
+            AnimateArcSweep(
+                foodRadialMaterial,
+                openingFoodTarget,
+                itemStagger * 2f
+            )
+        );
+
+        yield return WaitUnscaled(
+            itemStagger
+        );
+
+        StartCoroutine(
+            AnimateRectPop(
+                animatedFoodIcon,
+                contentOvershootScale
+            )
+        );
+
+        StartCoroutine(
+            AnimateArcSweep(
+                waterRadialMaterial,
+                openingWaterTarget,
+                itemStagger * 3f
+            )
+        );
+
+        yield return WaitUnscaled(
+            itemStagger
+        );
+
+        StartCoroutine(
+            AnimateRectPop(
+                animatedWaterIcon,
+                contentOvershootScale
+            )
+        );
+
+        StartCoroutine(
+            FadeGraphic(
+                healthRadialText,
+                0f,
+                1f,
+                contentFadeDuration
+            )
+        );
+
+        StartCoroutine(
+            FadeGraphic(
+                foodRadialText,
+                0f,
+                1f,
+                contentFadeDuration
+            )
+        );
+
+        StartCoroutine(
+            FadeGraphic(
+                waterRadialText,
+                0f,
+                1f,
+                contentFadeDuration
+            )
+        );
+
+        if (populationTrendIcon != null)
+        {
+            StartCoroutine(
+                FadeGraphic(
+                    populationTrendIcon,
+                    0f,
+                    1f,
+                    contentFadeDuration
+                )
+            );
+        }
+
+        yield return AnimateRectPop(
+            animatedPopulationText,
+            1.05f
+        );
+
+        float remaining =
+            arcSweepDuration +
+            itemStagger * 3f;
+
+        if (remaining > 0f)
+        {
+            yield return WaitUnscaled(
+                remaining
+            );
+        }
+
+        SetArcFill(
+            populationRadialMaterial,
+            openingPopulationTarget
+        );
+
+        SetArcFill(
+            healthRadialMaterial,
+            openingHealthTarget
+        );
+
+        SetArcFill(
+            foodRadialMaterial,
+            openingFoodTarget
+        );
+
+        SetArcFill(
+            waterRadialMaterial,
+            openingWaterTarget
+        );
+
+        displayedPopulationFill =
+            openingPopulationTarget;
+
+        displayedHealthFill =
+            openingHealthTarget;
+
+        displayedFoodFill =
+            openingFoodTarget;
+
+        displayedWaterFill =
+            openingWaterTarget;
+
+        radialValuesInitialised =
+            true;
+
+        RestoreAnimatedObject(animatedTitle);
+        RestoreAnimatedObject(animatedCaveIcon);
+        RestoreAnimatedObject(animatedRingBackground);
+        RestoreAnimatedObject(animatedPopulationIcon);
+        RestoreAnimatedObject(animatedHealthIcon);
+        RestoreAnimatedObject(animatedFoodIcon);
+        RestoreAnimatedObject(animatedWaterIcon);
+        RestoreAnimatedObject(animatedPopulationText);
+
+        SetGraphicAlpha(
+            healthRadialText,
+            1f
+        );
+
+        SetGraphicAlpha(
+            foodRadialText,
+            1f
+        );
+
+        SetGraphicAlpha(
+            waterRadialText,
+            1f
+        );
+
+        if (populationTrendIcon != null)
+        {
+            SetGraphicAlpha(
+                populationTrendIcon,
+                1f
+            );
+        }
+
+        contentOpenAnimationPlaying =
+            false;
+    }
+
+    private IEnumerator AnimateArcSweep(
+        Material material,
+        float target,
+        float delay)
+    {
+        if (material == null)
+        {
+            yield break;
+        }
+
+        if (delay > 0f)
+        {
+            yield return WaitUnscaled(
+                delay
+            );
+        }
+
+        float duration =
+            Mathf.Max(
+                0.01f,
+                arcSweepDuration
+            );
+
+        float timer =
+            0f;
+
+        while (timer < duration)
+        {
+            timer +=
+                Time.unscaledDeltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    timer /
+                    duration
+                );
+
+            float eased =
+                EaseOutCubic(t);
+
+            SetArcFill(
+                material,
+                Mathf.Lerp(
+                    0f,
+                    target,
+                    eased
+                )
+            );
+
+            yield return null;
+        }
+
+        SetArcFill(
+            material,
+            target
+        );
+    }
+
+    private IEnumerator AnimateRectPop(
+        RectTransform target,
+        float overshoot)
+    {
+        if (target == null)
+        {
+            yield break;
+        }
+
+        Vector3 originalScale =
+            GetOriginalAnimationScale(target);
+
+        CanvasGroup group =
+            GetOrCreateCanvasGroup(target);
+
+        if (group != null)
+        {
+            group.alpha =
+                0f;
+        }
+
+        target.localScale =
+            originalScale *
+            contentStartingScale;
+
+        float duration =
+            Mathf.Max(
+                0.01f,
+                contentPopDuration
+            );
+
+        float firstPart =
+            duration * 0.68f;
+
+        float timer =
+            0f;
+
+        while (timer < firstPart)
+        {
+            timer +=
+                Time.unscaledDeltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    timer /
+                    firstPart
+                );
+
+            float eased =
+                EaseOutBack(t);
+
+            target.localScale =
+                Vector3.LerpUnclamped(
+                    originalScale *
+                    contentStartingScale,
+                    originalScale *
+                    overshoot,
+                    eased
+                );
+
+            if (group != null)
+            {
+                group.alpha =
+                    Mathf.Clamp01(
+                        timer /
+                        Mathf.Max(
+                            0.01f,
+                            contentFadeDuration
+                        )
+                    );
+            }
+
+            yield return null;
+        }
+
+        float secondPart =
+            Mathf.Max(
+                0.01f,
+                duration - firstPart
+            );
+
+        timer =
+            0f;
+
+        while (timer < secondPart)
+        {
+            timer +=
+                Time.unscaledDeltaTime;
+
+            float t =
+                EaseOutCubic(
+                    Mathf.Clamp01(
+                        timer /
+                        secondPart
+                    )
+                );
+
+            target.localScale =
+                Vector3.Lerp(
+                    originalScale *
+                    overshoot,
+                    originalScale,
+                    t
+                );
+
+            if (group != null)
+            {
+                group.alpha =
+                    1f;
+            }
+
+            yield return null;
+        }
+
+        target.localScale =
+            originalScale;
+
+        if (group != null)
+        {
+            group.alpha =
+                1f;
+        }
+    }
+
+    private IEnumerator FadeGraphic(
+        Graphic graphic,
+        float from,
+        float to,
+        float duration)
+    {
+        if (graphic == null)
+        {
+            yield break;
+        }
+
+        Color original =
+            graphic.color;
+
+        duration =
+            Mathf.Max(
+                0.01f,
+                duration
+            );
+
+        float timer =
+            0f;
+
+        while (timer < duration)
+        {
+            timer +=
+                Time.unscaledDeltaTime;
+
+            float t =
+                EaseOutCubic(
+                    Mathf.Clamp01(
+                        timer /
+                        duration
+                    )
+                );
+
+            Color color =
+                original;
+
+            color.a =
+                Mathf.Lerp(
+                    from,
+                    to,
+                    t
+                );
+
+            graphic.color =
+                color;
+
+            yield return null;
+        }
+
+        original.a =
+            to;
+
+        graphic.color =
+            original;
+    }
+
+    private IEnumerator WaitUnscaled(float duration)
+    {
+        float timer =
+            0f;
+
+        while (timer < duration)
+        {
+            timer +=
+                Time.unscaledDeltaTime;
+
+            yield return null;
+        }
+    }
+
+    private CanvasGroup GetOrCreateCanvasGroup(
+        RectTransform target)
+    {
+        if (target == null)
+        {
+            return null;
+        }
+
+        CanvasGroup group =
+            target.GetComponent<CanvasGroup>();
+
+        if (group == null)
+        {
+            group =
+                target.gameObject.AddComponent<CanvasGroup>();
+        }
+
+        return group;
+    }
+
+    private void CacheOpenAnimationOriginalScales()
+    {
+        CacheOriginalAnimationScale(animatedTitle);
+        CacheOriginalAnimationScale(animatedCaveIcon);
+        CacheOriginalAnimationScale(animatedPopulationIcon);
+        CacheOriginalAnimationScale(animatedHealthIcon);
+        CacheOriginalAnimationScale(animatedFoodIcon);
+        CacheOriginalAnimationScale(animatedWaterIcon);
+        CacheOriginalAnimationScale(animatedPopulationText);
+
+        // Ring background is intentionally NOT animated/scaled.
+        // It stays at its authored size at all times.
+        if (animatedRingBackground != null)
+        {
+            CacheOriginalAnimationScale(animatedRingBackground);
+            RestoreAnimatedObject(animatedRingBackground);
+        }
+    }
+
+    private void CacheOriginalAnimationScale(
+        RectTransform target)
+    {
+        if (target == null ||
+            openAnimationOriginalScales.ContainsKey(target))
+        {
+            return;
+        }
+
+        openAnimationOriginalScales.Add(
+            target,
+            target.localScale
+        );
+    }
+
+    private Vector3 GetOriginalAnimationScale(
+        RectTransform target)
+    {
+        if (target == null)
+        {
+            return Vector3.one;
+        }
+
+        if (openAnimationOriginalScales.TryGetValue(
+            target,
+            out Vector3 originalScale))
+        {
+            return originalScale;
+        }
+
+        originalScale =
+            target.localScale;
+
+        if (originalScale == Vector3.zero)
+        {
+            originalScale =
+                Vector3.one;
+        }
+
+        openAnimationOriginalScales[target] =
+            originalScale;
+
+        return originalScale;
+    }
+
+    private void SetAnimatedObjectHidden(
+        RectTransform target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        CanvasGroup group =
+            GetOrCreateCanvasGroup(target);
+
+        if (group != null)
+        {
+            group.alpha =
+                0f;
+        }
+
+        Vector3 originalScale =
+            GetOriginalAnimationScale(target);
+
+        target.localScale =
+            originalScale *
+            contentStartingScale;
+    }
+
+    private void RestoreAnimatedObject(
+        RectTransform target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        target.localScale =
+            GetOriginalAnimationScale(target);
+
+        CanvasGroup group =
+            GetOrCreateCanvasGroup(target);
+
+        if (group != null)
+        {
+            group.alpha =
+                1f;
+        }
+    }
+
+    private IEnumerator FadeRect(
+        RectTransform target,
+        float from,
+        float to,
+        float duration)
+    {
+        if (target == null)
+        {
+            yield break;
+        }
+
+        CanvasGroup group =
+            GetOrCreateCanvasGroup(target);
+
+        if (group == null)
+        {
+            yield break;
+        }
+
+        duration =
+            Mathf.Max(0.01f, duration);
+
+        group.alpha = from;
+
+        float timer = 0f;
+
+        while (timer < duration)
+        {
+            timer += Time.unscaledDeltaTime;
+
+            float normalized =
+                Mathf.Clamp01(timer / duration);
+
+            group.alpha =
+                Mathf.Lerp(
+                    from,
+                    to,
+                    EaseOutCubic(normalized)
+                );
+
+            yield return null;
+        }
+
+        group.alpha = to;
+    }
+
+    private void SetRectAlpha(
+        RectTransform target,
+        float alpha)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        CanvasGroup group =
+            GetOrCreateCanvasGroup(target);
+
+        if (group != null)
+        {
+            group.alpha = alpha;
+        }
+    }
+
+    private void SetGraphicAlpha(
+        Graphic graphic,
+        float alpha)
+    {
+        if (graphic == null)
+        {
+            return;
+        }
+
+        Color color =
+            graphic.color;
+
+        color.a =
+            alpha;
+
+        graphic.color =
+            color;
     }
 
     // =========================================================
@@ -1720,6 +2661,10 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             false;
 
         ClearCurrentCaveHighlight();
+        ResetRadialHover();
+        ResetRadialAnimation();
+        contentOpenAnimationPlaying = false;
+        RestoreOpenAnimationVisuals();
 
         Vector3 startScale =
             panel.localScale;
@@ -1978,13 +2923,62 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
     // CLEANUP
     // =========================================================
 
+    private void DestroyRuntimeMaterial(Material material)
+    {
+        if (material == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(material);
+        }
+        else
+        {
+            DestroyImmediate(material);
+        }
+    }
+
     private void OnDestroy()
     {
+        DestroyRuntimeMaterial(populationRadialMaterial);
+        DestroyRuntimeMaterial(healthRadialMaterial);
+        DestroyRuntimeMaterial(foodRadialMaterial);
+        DestroyRuntimeMaterial(waterRadialMaterial);
+
         if (closeButton != null)
         {
             closeButton.onClick.RemoveListener(
                 Close
             );
         }
+    }
+}
+
+public class CaveRadialHoverTarget :
+    MonoBehaviour,
+    IPointerEnterHandler,
+    IPointerExitHandler
+{
+    private CaveInspectionUI owner;
+    private int statIndex = -1;
+
+    public void Configure(CaveInspectionUI targetOwner, int targetStatIndex)
+    {
+        owner = targetOwner;
+        statIndex = targetStatIndex;
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (owner != null)
+            owner.SetRadialHoverStat(statIndex);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (owner != null)
+            owner.SetRadialHoverStat(-1);
     }
 }
