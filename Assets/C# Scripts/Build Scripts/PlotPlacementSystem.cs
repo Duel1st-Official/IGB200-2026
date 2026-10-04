@@ -73,6 +73,310 @@ public class PlotPlacementSystem : MonoBehaviour
     public float grassBreakCheckSize = 0.9f;
 
     // =========================================================
+    // DIRT PARTICLES
+    // =========================================================
+
+    private void SpawnDirtParticles(
+        Vector3 plotPosition)
+    {
+        if (dirtParticlePrefab == null)
+        {
+            return;
+        }
+
+        GameObject particles =
+            Instantiate(
+                dirtParticlePrefab,
+                plotPosition +
+                dirtParticleOffset,
+                Quaternion.identity
+            );
+
+        if (dirtParticleLifetime > 0f)
+        {
+            Destroy(
+                particles,
+                dirtParticleLifetime
+            );
+        }
+    }
+
+    // =========================================================
+    // CREATE DIRT VISUAL
+    // =========================================================
+
+    private GameObject CreateDirtVisual(
+        GameObject plot,
+        Vector2Int cell)
+    {
+        if (plot == null ||
+            dirtSprite == null)
+        {
+            return null;
+        }
+
+        GameObject dirt =
+            new GameObject(
+                "Dirt Visual"
+            );
+
+        dirt.transform.position =
+            plot.transform.position +
+            dirtOffset;
+
+        dirt.transform.rotation =
+            Quaternion.identity;
+
+        dirt.transform.localScale =
+            new Vector3(
+                dirtFinalScale.x *
+                dirtStartingScale,
+
+                dirtFinalScale.y *
+                dirtStartingScale,
+
+                1f
+            );
+
+        SpriteRenderer renderer =
+            dirt.AddComponent<SpriteRenderer>();
+
+        renderer.sprite =
+            dirtSprite;
+
+        if (dirtMaterial != null)
+        {
+            renderer.material =
+                dirtMaterial;
+        }
+
+        // Use the same sorting layer as the plot, but give EVERY dirt
+        // sprite the same very-low absolute order. This prevents dirt from
+        // ever drawing over another plot on a different grid row.
+        SortingGroup plotSortingGroup =
+            plot.GetComponent<SortingGroup>();
+
+        if (plotSortingGroup != null)
+        {
+            renderer.sortingLayerID =
+                plotSortingGroup.sortingLayerID;
+        }
+        else
+        {
+            SpriteRenderer plotRenderer =
+                plot.GetComponentInChildren<SpriteRenderer>();
+
+            if (plotRenderer != null)
+            {
+                renderer.sortingLayerID =
+                    plotRenderer.sortingLayerID;
+            }
+        }
+
+        renderer.sortingOrder =
+            dirtSortingOrder;
+
+        Color startColor =
+            renderer.color;
+
+        startColor.a = 0f;
+
+        renderer.color =
+            startColor;
+
+        // Keep dirt independent so plot removal shake never affects it.
+        DirtFadeAfterPlotRemoved fadeWatcher =
+            dirt.AddComponent<DirtFadeAfterPlotRemoved>();
+
+        fadeWatcher.Setup(
+            plot,
+            renderer,
+            dirtFadeDelay,
+            dirtFadeDuration
+        );
+
+        return dirt;
+    }
+
+    // =========================================================
+    // DIRT REVEAL ANIMATION
+    // =========================================================
+
+    private IEnumerator AnimateDirtReveal(
+        GameObject dirt,
+        GameObject plot)
+    {
+        if (dirt == null)
+        {
+            yield break;
+        }
+
+        SpriteRenderer renderer =
+            dirt.GetComponent<SpriteRenderer>();
+
+        if (renderer == null)
+        {
+            yield break;
+        }
+
+        Vector3 finalScale =
+            new Vector3(
+                dirtFinalScale.x,
+                dirtFinalScale.y,
+                1f
+            );
+
+        Vector3 startScale =
+            new Vector3(
+                finalScale.x *
+                dirtStartingScale,
+
+                finalScale.y *
+                dirtStartingScale,
+
+                1f
+            );
+
+        Vector3 overshootScale =
+            finalScale *
+            dirtOvershoot;
+
+        overshootScale.z = 1f;
+
+        Color finalColor =
+            renderer.color;
+
+        finalColor.a = 1f;
+
+        float growDuration =
+            Mathf.Max(
+                0.01f,
+                dirtRevealDuration *
+                0.72f
+            );
+
+        float settleDuration =
+            Mathf.Max(
+                0.01f,
+                dirtRevealDuration -
+                growDuration
+            );
+
+        float timer = 0f;
+
+        // -----------------------------------------------------
+        // SPREAD OUTWARD
+        // -----------------------------------------------------
+
+        while (timer < growDuration)
+        {
+            if (dirt == null)
+            {
+                yield break;
+            }
+
+            timer += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    timer /
+                    growDuration
+                );
+
+            float xT = t;
+
+            if (dirtHorizontalSpread)
+            {
+                xT =
+                    Mathf.Clamp01(
+                        t +
+                        dirtHorizontalLead
+                    );
+            }
+
+            float easedX =
+                EaseOutCubic(xT);
+
+            float easedY =
+                EaseOutCubic(t);
+
+            dirt.transform.localScale =
+                new Vector3(
+                    Mathf.Lerp(
+                        startScale.x,
+                        overshootScale.x,
+                        easedX
+                    ),
+
+                    Mathf.Lerp(
+                        startScale.y,
+                        overshootScale.y,
+                        easedY
+                    ),
+
+                    1f
+                );
+
+            Color color =
+                finalColor;
+
+            color.a =
+                EaseOutCubic(t);
+
+            renderer.color =
+                color;
+
+            yield return null;
+        }
+
+        // -----------------------------------------------------
+        // SETTLE
+        // -----------------------------------------------------
+
+        timer = 0f;
+
+        while (timer < settleDuration)
+        {
+            if (dirt == null)
+            {
+                yield break;
+            }
+
+            timer += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    timer /
+                    settleDuration
+                );
+
+            dirt.transform.localScale =
+                Vector3.Lerp(
+                    overshootScale,
+                    finalScale,
+                    EaseOutCubic(t)
+                );
+
+            yield return null;
+        }
+
+        if (dirt == null)
+        {
+            yield break;
+        }
+
+        dirt.transform.localScale =
+            finalScale;
+
+        renderer.color =
+            finalColor;
+
+        // Do NOT parent dirt to the plot.
+        // It must remain perfectly still during plot removal/shake.
+        // DirtFadeAfterPlotRemoved will fade it once the plot is gone.
+    }
+
+    // =========================================================
     // SORTING
     // =========================================================
 
@@ -95,6 +399,65 @@ public class PlotPlacementSystem : MonoBehaviour
     public float startingScale = 0.12f;
     public float smallScale = 0.35f;
     public float middleScale = 0.65f;
+
+    // =========================================================
+    // DIRT REVEAL
+    // =========================================================
+
+    [Header("Dirt Reveal")]
+    [Tooltip("Single transparent dirt sprite spawned underneath every newly built plot.")]
+    [SerializeField] private Sprite dirtSprite;
+
+    [Tooltip("Optional material for the dirt. Leave empty to use Sprites/Default.")]
+    [SerializeField] private Material dirtMaterial;
+
+    [Tooltip("World-space offset from the plot centre.")]
+    [SerializeField] private Vector3 dirtOffset = Vector3.zero;
+
+    [Tooltip("Absolute sorting order for ALL dirt sprites. Keep this lower than every plot sorting order.")]
+    [SerializeField] private int dirtSortingOrder = -1000;
+
+    [Tooltip("Starting size of the dirt reveal.")]
+    [Range(0.01f, 1f)]
+    [SerializeField] private float dirtStartingScale = 0.08f;
+
+    [Tooltip("How long the dirt takes to spread out.")]
+    [Min(0.01f)]
+    [SerializeField] private float dirtRevealDuration = 0.28f;
+
+    [Tooltip("Small overshoot before the dirt settles.")]
+    [Range(1f, 1.3f)]
+    [SerializeField] private float dirtOvershoot = 1.07f;
+
+    [Tooltip("Final local scale of the dirt sprite.")]
+    [SerializeField] private Vector2 dirtFinalScale = Vector2.one;
+
+    [Tooltip("If enabled, the dirt spreads a little faster horizontally than vertically.")]
+    [SerializeField] private bool dirtHorizontalSpread = true;
+
+    [Range(0f, 0.35f)]
+    [SerializeField] private float dirtHorizontalLead = 0.12f;
+
+    [Tooltip("Delay after the plot is actually removed before the dirt begins fading.")]
+    [Min(0f)]
+    [SerializeField] private float dirtFadeDelay = 0.15f;
+
+    [Tooltip("How long the dirt takes to slowly fade away.")]
+    [Min(0.05f)]
+    [SerializeField] private float dirtFadeDuration = 1.5f;
+
+    // =========================================================
+    // DIRT PARTICLES
+    // =========================================================
+
+    [Header("Dirt Placement Particles")]
+    [Tooltip("Optional particle prefab spawned at the same moment the dirt appears.")]
+    [SerializeField] private GameObject dirtParticlePrefab;
+
+    [Min(0f)]
+    [SerializeField] private float dirtParticleLifetime = 1.5f;
+
+    [SerializeField] private Vector3 dirtParticleOffset = Vector3.zero;
 
     // =========================================================
     // BUILD PARTICLES
@@ -848,6 +1211,38 @@ public class PlotPlacementSystem : MonoBehaviour
         }
 
         // =====================================================
+        // DIRT REVEAL - ONLY AFTER THE PLOT IS FULLY BUILT
+        // =====================================================
+
+        if (plot != null)
+        {
+            Vector2Int dirtCell =
+                GetGridCell(
+                    plot.transform.position
+                );
+
+            GameObject dirtVisual =
+                CreateDirtVisual(
+                    plot,
+                    dirtCell
+                );
+
+            if (dirtVisual != null)
+            {
+                StartCoroutine(
+                    AnimateDirtReveal(
+                        dirtVisual,
+                        plot
+                    )
+                );
+            }
+
+            SpawnDirtParticles(
+                plot.transform.position
+            );
+        }
+
+        // =====================================================
         // FARM PLOT BUILD SOUND
         // =====================================================
 
@@ -1192,3 +1587,96 @@ public class PlotPlacementSystem : MonoBehaviour
         );
     }
 }
+
+// ============================================================================
+// DIRT FADE AFTER PLOT REMOVAL
+// ============================================================================
+
+public class DirtFadeAfterPlotRemoved : MonoBehaviour
+{
+    private GameObject watchedPlot;
+    private SpriteRenderer dirtRenderer;
+    private float fadeDelay = 0.15f;
+    private float fadeDuration = 1.5f;
+    private bool fadeStarted = false;
+
+    public void Setup(
+        GameObject plot,
+        SpriteRenderer renderer,
+        float delay,
+        float duration)
+    {
+        watchedPlot = plot;
+        dirtRenderer = renderer;
+        fadeDelay = Mathf.Max(0f, delay);
+        fadeDuration = Mathf.Max(0.05f, duration);
+    }
+
+    private void Update()
+    {
+        if (fadeStarted)
+        {
+            return;
+        }
+
+        // Unity destroyed GameObjects compare equal to null.
+        // Therefore the dirt remains stationary during the plot's
+        // removal animation and only fades once the plot is truly gone.
+        if (watchedPlot == null)
+        {
+            fadeStarted = true;
+            StartCoroutine(FadeAwayRoutine());
+        }
+    }
+
+    private IEnumerator FadeAwayRoutine()
+    {
+        if (fadeDelay > 0f)
+        {
+            yield return new WaitForSeconds(fadeDelay);
+        }
+
+        if (dirtRenderer == null)
+        {
+            Destroy(gameObject);
+            yield break;
+        }
+
+        Color startingColor = dirtRenderer.color;
+        float startingAlpha = startingColor.a;
+        float timer = 0f;
+
+        while (timer < fadeDuration)
+        {
+            timer += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    timer / fadeDuration
+                );
+
+            float smoothT =
+                t * t * (3f - (2f * t));
+
+            Color color = startingColor;
+
+            color.a =
+                Mathf.Lerp(
+                    startingAlpha,
+                    0f,
+                    smoothT
+                );
+
+            dirtRenderer.color = color;
+
+            yield return null;
+        }
+
+        Color finalColor = dirtRenderer.color;
+        finalColor.a = 0f;
+        dirtRenderer.color = finalColor;
+
+        Destroy(gameObject);
+    }
+}
+
