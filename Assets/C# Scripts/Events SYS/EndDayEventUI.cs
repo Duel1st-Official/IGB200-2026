@@ -937,6 +937,13 @@ public class EndDayEventUI : MonoBehaviour
 
         HideImmediately();
 
+        // Tell the tutorial that the player has fully closed the Night Report.
+        // This fires AFTER the closing animation finishes, so the tutorial
+        // advances cleanly to the next step.
+        TutorialEvents.Report(
+            TutorialAction.NightReportClosed
+        );
+
         animationRoutine =
             null;
 

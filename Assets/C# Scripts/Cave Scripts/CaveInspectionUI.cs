@@ -618,6 +618,14 @@ public class CaveInspectionUI : MonoBehaviour, IInspectionPanel
             StartCoroutine(
                 OpenAnimation()
             );
+
+        // =====================================================
+        // TUTORIAL - GHOST BAT CAVE INSPECTED
+        // =====================================================
+
+        TutorialEvents.Report(
+            TutorialAction.CaveInspected
+        );
     }
 
     // =========================================================

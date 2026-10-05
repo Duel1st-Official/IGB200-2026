@@ -92,6 +92,12 @@ public class ToursBuildingInspectionUI :
     [SerializeField]
     private Button startTourButton;
 
+    [Header("Tutorial Tour Button Lock")]
+    [Tooltip("Enable this only in the Tutorial scene. The Start Tour button stays visible but disabled until the CONSERVATION TOURS step.")]
+    [SerializeField] private bool lockStartTourButtonForTutorial = false;
+
+    private bool tutorialTourButtonUnlocked = false;
+
     // =========================================================
     // BUTTONS
     // =========================================================
@@ -712,14 +718,37 @@ public class ToursBuildingInspectionUI :
             // Once the cooldown is ready, show it again.
             // At day end it stays visible but disabled so the DAY ENDED
             // state remains clear to the player.
+            bool tutorialLocked =
+                lockStartTourButtonForTutorial &&
+                !tutorialTourButtonUnlocked;
+
+            // During the tutorial, keep the button visible so the player can
+            // see the feature, but grey it out until the Conservation Tours step.
             startTourButton.gameObject.SetActive(
-                cooldownReady
+                tutorialLocked || cooldownReady
             );
 
             startTourButton.interactable =
+                !tutorialLocked &&
                 actionActive &&
                 cooldownReady;
         }
+    }
+
+    // =========================================================
+    // TUTORIAL TOUR BUTTON
+    // =========================================================
+
+    public void UnlockStartTourButtonForTutorial()
+    {
+        tutorialTourButtonUnlocked = true;
+        RefreshUI();
+    }
+
+    public bool IsStartTourButtonUnlockedForTutorial()
+    {
+        return !lockStartTourButtonForTutorial ||
+               tutorialTourButtonUnlocked;
     }
 
     // =========================================================
@@ -730,6 +759,13 @@ public class ToursBuildingInspectionUI :
     {
         if (currentToursBuilding == null)
             return;
+
+        if (lockStartTourButtonForTutorial &&
+            !tutorialTourButtonUnlocked)
+        {
+            RefreshUI();
+            return;
+        }
 
         // =====================================================
         // ACTION PHASE SAFETY CHECK

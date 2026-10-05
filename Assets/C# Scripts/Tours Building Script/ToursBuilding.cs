@@ -537,6 +537,14 @@ public class ToursBuilding : MonoBehaviour
             );
         }
 
+        // =====================================================
+        // TUTORIAL - CONSERVATION TOUR SUCCESSFULLY STARTED
+        // =====================================================
+
+        TutorialEvents.Report(
+            TutorialAction.TourStarted
+        );
+
         if (showDebugLogs)
         {
             Debug.Log(
@@ -617,6 +625,11 @@ public class ToursBuilding : MonoBehaviour
                 -tourHealthCost
             );
         }
+
+        // Keep the legacy CompleteTour API compatible with the tutorial too.
+        TutorialEvents.Report(
+            TutorialAction.TourStarted
+        );
 
         if (showDebugLogs)
         {

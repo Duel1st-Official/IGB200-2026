@@ -24,19 +24,55 @@ public class PlayerMovement : MonoBehaviour
     private bool actionLocked;
     private Coroutine actionCoroutine;
 
+    // =========================================================
+    // TUTORIAL
+    // =========================================================
+
+    private bool tutorialMovementReported;
+
+
+    // =========================================================
+    // START
+    // =========================================================
+
     private void Start()
     {
         lastMoveDirection = Vector2.down;
 
-        animator.SetFloat("MoveX", 0f);
-        animator.SetFloat("MoveY", 0f);
+        animator.SetFloat(
+            "MoveX",
+            0f
+        );
 
-        animator.SetFloat("LastMoveX", 0f);
-        animator.SetFloat("LastMoveY", -1f);
+        animator.SetFloat(
+            "MoveY",
+            0f
+        );
 
-        animator.SetBool("IsMoving", false);
-        animator.SetBool("IsBuildMode", false);
-        animator.SetBool("IsRemoveMode", false);
+        animator.SetFloat(
+            "LastMoveX",
+            0f
+        );
+
+        animator.SetFloat(
+            "LastMoveY",
+            -1f
+        );
+
+        animator.SetBool(
+            "IsMoving",
+            false
+        );
+
+        animator.SetBool(
+            "IsBuildMode",
+            false
+        );
+
+        animator.SetBool(
+            "IsRemoveMode",
+            false
+        );
 
         if (actionBar != null)
         {
@@ -44,7 +80,14 @@ public class PlayerMovement : MonoBehaviour
         }
 
         SetBarFill(0f);
+
+        tutorialMovementReported = false;
     }
+
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
 
     private void Update()
     {
@@ -92,25 +135,58 @@ public class PlayerMovement : MonoBehaviour
             movementInput.x = 1f;
         }
 
+        // =========================
+        // NORMALIZE DIAGONAL MOVEMENT
+        // =========================
+
         if (movementInput.sqrMagnitude > 1f)
         {
             movementInput.Normalize();
         }
 
+        // =========================
+        // TUTORIAL - MOVEMENT
+        // =========================
+
+        if (movementInput.sqrMagnitude > 0.01f)
+        {
+            // Report while the player is genuinely moving.
+            // TutorialManager only reacts when its current step
+            // specifically requires PlayerMoved, so this cannot
+            // accidentally advance unrelated tutorial steps.
+            TutorialEvents.Report(
+                TutorialAction.PlayerMoved
+            );
+
+            tutorialMovementReported = true;
+        }
+
+        // =========================
+        // ANIMATOR
+        // =========================
+
         UpdateAnimator();
     }
+
+
+    // =========================================================
+    // FIXED UPDATE
+    // =========================================================
 
     private void FixedUpdate()
     {
         if (actionLocked)
         {
-            rb.linearVelocity = Vector2.zero;
+            rb.linearVelocity =
+                Vector2.zero;
+
             return;
         }
 
         rb.linearVelocity =
             movementInput * moveSpeed;
     }
+
 
     // =========================================================
     // CURRENT MODE
@@ -143,6 +219,7 @@ public class PlayerMovement : MonoBehaviour
             selectionWheel.IsRemoveMode()
         );
     }
+
 
     // =========================================================
     // ANIMATOR
@@ -202,6 +279,11 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+
+    // =========================================================
+    // CARDINAL DIRECTION
+    // =========================================================
+
     private Vector2 GetCardinalDirection(
         Vector2 direction)
     {
@@ -218,24 +300,31 @@ public class PlayerMovement : MonoBehaviour
             : Vector2.down;
     }
 
+
     // =========================================================
     // START ACTION
     // =========================================================
 
     public void StartAction(float duration)
     {
-        // IMPORTANT:
-        // Completely cancel the previous bar/action coroutine.
+        // Completely cancel the previous
+        // bar/action coroutine.
         if (actionCoroutine != null)
         {
-            StopCoroutine(actionCoroutine);
+            StopCoroutine(
+                actionCoroutine
+            );
+
             actionCoroutine = null;
         }
 
         actionLocked = true;
 
-        movementInput = Vector2.zero;
-        rb.linearVelocity = Vector2.zero;
+        movementInput =
+            Vector2.zero;
+
+        rb.linearVelocity =
+            Vector2.zero;
 
         animator.SetBool(
             "IsMoving",
@@ -255,9 +344,12 @@ public class PlayerMovement : MonoBehaviour
 
         actionCoroutine =
             StartCoroutine(
-                ActionLockRoutine(duration)
+                ActionLockRoutine(
+                    duration
+                )
             );
     }
+
 
     // =========================================================
     // ACTION TIMER
@@ -275,14 +367,17 @@ public class PlayerMovement : MonoBehaviour
 
         while (timer < duration)
         {
-            timer += Time.deltaTime;
+            timer +=
+                Time.deltaTime;
 
             float progress =
                 Mathf.Clamp01(
                     timer / duration
                 );
 
-            SetBarFill(progress);
+            SetBarFill(
+                progress
+            );
 
             yield return null;
         }
@@ -299,9 +394,10 @@ public class PlayerMovement : MonoBehaviour
         // for a very short moment.
         if (completedBarDisplayTime > 0f)
         {
-            yield return new WaitForSeconds(
-                completedBarDisplayTime
-            );
+            yield return
+                new WaitForSeconds(
+                    completedBarDisplayTime
+                );
         }
 
         // =========================
@@ -315,17 +411,18 @@ public class PlayerMovement : MonoBehaviour
 
         SetBarFill(0f);
 
-        // IMPORTANT:
         // Only clear this AFTER everything
         // in the coroutine has finished.
         actionCoroutine = null;
     }
 
+
     // =========================================================
     // BAR FILL
     // =========================================================
 
-    private void SetBarFill(float amount)
+    private void SetBarFill(
+        float amount)
     {
         if (actionBarFill == null)
         {
@@ -333,16 +430,20 @@ public class PlayerMovement : MonoBehaviour
         }
 
         amount =
-            Mathf.Clamp01(amount);
+            Mathf.Clamp01(
+                amount
+            );
 
         Vector3 scale =
             actionBarFill.localScale;
 
-        scale.x = amount;
+        scale.x =
+            amount;
 
         actionBarFill.localScale =
             scale;
     }
+
 
     // =========================================================
     // PUBLIC CHECK
@@ -353,6 +454,22 @@ public class PlayerMovement : MonoBehaviour
         return actionLocked;
     }
 
+
+    // =========================================================
+    // TUTORIAL PUBLIC RESET
+    // =========================================================
+
+    /// <summary>
+    /// Allows the tutorial system to reset the
+    /// movement trigger if we ever need to test
+    /// or replay the movement tutorial.
+    /// </summary>
+    public void ResetTutorialMovementReport()
+    {
+        tutorialMovementReported = false;
+    }
+
+
     // =========================================================
     // SAFETY
     // =========================================================
@@ -361,11 +478,23 @@ public class PlayerMovement : MonoBehaviour
     {
         if (actionCoroutine != null)
         {
-            StopCoroutine(actionCoroutine);
+            StopCoroutine(
+                actionCoroutine
+            );
+
             actionCoroutine = null;
         }
 
         actionLocked = false;
+
+        movementInput =
+            Vector2.zero;
+
+        if (rb != null)
+        {
+            rb.linearVelocity =
+                Vector2.zero;
+        }
 
         if (actionBar != null)
         {

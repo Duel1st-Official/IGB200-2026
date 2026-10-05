@@ -1294,6 +1294,21 @@ public class PlotPlacementSystem : MonoBehaviour
         {
             cameraShake.Shake();
         }
+
+        // =====================================================
+        // TUTORIAL - FARM PLOT SUCCESSFULLY BUILT
+        // =====================================================
+
+        // Report this only after the complete build animation,
+        // dirt reveal setup, particles, sound, and camera shake.
+        // This ensures the tutorial advances only for a real,
+        // successfully completed Farm Plot placement.
+        if (plot != null)
+        {
+            TutorialEvents.Report(
+                TutorialAction.FarmPlotPlaced
+            );
+        }
     }
 
     // =========================================================

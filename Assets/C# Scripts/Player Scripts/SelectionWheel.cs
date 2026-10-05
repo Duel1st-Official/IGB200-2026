@@ -598,6 +598,12 @@ public class SelectionWheel : MonoBehaviour
         ResetOptionRotations();
 
         UpdateHighlightedText();
+
+        // Tutorial: opening the action wheel completes
+        // the ACTION WHEEL tutorial requirement.
+        TutorialEvents.Report(
+            TutorialAction.SelectionWheelOpened
+        );
     }
 
     // =========================================================
@@ -1250,6 +1256,11 @@ public class SelectionWheel : MonoBehaviour
 
                 currentMode =
                     PlayerMode.Build;
+
+                // Tutorial: Build Mode was successfully selected.
+                TutorialEvents.Report(
+                    TutorialAction.BuildModeSelected
+                );
 
                 break;
 

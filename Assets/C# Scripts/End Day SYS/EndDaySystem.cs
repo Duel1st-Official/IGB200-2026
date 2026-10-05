@@ -786,6 +786,15 @@ public class EndDaySystem : MonoBehaviour
             return;
         }
 
+        // =====================================================
+        // TUTORIAL - END DAY SUCCESSFULLY PRESSED
+        // =====================================================
+        // Report only after the real End Day request has passed
+        // the system's rejection checks.
+        TutorialEvents.Report(
+            TutorialAction.EndDayPressed
+        );
+
         StartCoroutine(
             EndDayRoutine()
         );

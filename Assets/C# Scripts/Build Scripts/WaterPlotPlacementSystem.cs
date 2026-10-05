@@ -800,6 +800,19 @@ public class WaterPlotPlacementSystem : MonoBehaviour
             cameraShake.Shake();
         }
 
+        // =====================================================
+        // TUTORIAL - WATER PLOT SUCCESSFULLY BUILT
+        // =====================================================
+
+        // Report only after the real Water Plot has completed
+        // its build animation and placement effects.
+        if (newWaterPlot != null)
+        {
+            TutorialEvents.Report(
+                TutorialAction.WaterPlotPlaced
+            );
+        }
+
         currentlyPlacing = false;
     }
 

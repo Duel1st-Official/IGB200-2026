@@ -852,6 +852,19 @@ public class TrapPlacementSystem : MonoBehaviour
             cameraShake.Shake();
         }
 
+        // =====================================================
+        // TUTORIAL - TRAP SUCCESSFULLY BUILT
+        // =====================================================
+
+        // Report only after the real Trap has completed
+        // its build animation and placement effects.
+        if (newTrap != null)
+        {
+            TutorialEvents.Report(
+                TutorialAction.TrapPlaced
+            );
+        }
+
         currentlyPlacing = false;
     }
 

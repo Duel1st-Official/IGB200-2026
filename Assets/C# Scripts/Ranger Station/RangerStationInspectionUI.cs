@@ -770,6 +770,14 @@ public class RangerStationInspectionUI :
                 "Ranger Station inspection opened."
             );
         }
+
+        // =====================================================
+        // TUTORIAL - RANGER STATION INSPECTED
+        // =====================================================
+
+        TutorialEvents.Report(
+            TutorialAction.RangerStationInspected
+        );
     }
 
     // =========================================================
