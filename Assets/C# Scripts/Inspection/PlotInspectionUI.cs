@@ -16,6 +16,12 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     [SerializeField] private Canvas canvas;
     [SerializeField] private SelectionWheel selectionWheel;
 
+    [Tooltip(
+        "Controls whether management actions are currently available. " +
+        "Automatically found if left empty."
+    )]
+    [SerializeField] private EndDaySystem endDaySystem;
+
     [Tooltip("The entire Farm Plot inspection window.")]
     [SerializeField] private RectTransform panel;
 
@@ -40,6 +46,13 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     [Header("Icon")]
     [SerializeField] private Image plotIcon;
 
+    [Tooltip("Only enlarges the UI icon while this plot is destroyed.")]
+    [Min(1f)]
+    [SerializeField] private float destroyedIconScale = 1.25f;
+
+    private Vector3 plotIconNormalScale = Vector3.one;
+    private bool plotIconScaleCaptured = false;
+
     // =========================================================
     // BUTTONS
     // =========================================================
@@ -58,17 +71,26 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
 
     [Header("Plot Audio")]
 
-    [Tooltip("AudioSource used for Farm Plot UI sounds. If empty, one will be found or created automatically.")]
+    [Tooltip(
+        "AudioSource used for Farm Plot UI sounds. " +
+        "If empty, one will be found or created automatically."
+    )]
     [SerializeField] private AudioSource audioSource;
 
     [Tooltip("Random sound played after successfully planting the seed.")]
-    [SerializeField] private AudioClip[] plantSeedSounds = new AudioClip[3];
+    [SerializeField]
+    private AudioClip[] plantSeedSounds =
+        new AudioClip[3];
 
     [Tooltip("Random sound played when hovering over the Plant button.")]
-    [SerializeField] private AudioClip[] plantButtonHoverSounds = new AudioClip[3];
+    [SerializeField]
+    private AudioClip[] plantButtonHoverSounds =
+        new AudioClip[3];
 
     [Tooltip("Random sound played when clicking the Plant button.")]
-    [SerializeField] private AudioClip[] plantButtonClickSounds = new AudioClip[3];
+    [SerializeField]
+    private AudioClip[] plantButtonClickSounds =
+        new AudioClip[3];
 
     [Range(0f, 1f)]
     [SerializeField] private float plantSeedVolume = 1f;
@@ -225,6 +247,18 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
         }
 
         // -----------------------------------------------------
+        // END DAY SYSTEM
+        // -----------------------------------------------------
+
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        // -----------------------------------------------------
         // PANEL
         // -----------------------------------------------------
 
@@ -300,6 +334,29 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     }
 
     // =========================================================
+    // ACTION PHASE
+    // =========================================================
+
+    private bool IsActionPhaseActive()
+    {
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        // Fail open if this scene has no EndDaySystem.
+        if (endDaySystem == null)
+        {
+            return true;
+        }
+
+        return endDaySystem.IsActionPhaseActive();
+    }
+
+    // =========================================================
     // AUDIO SETUP
     // =========================================================
 
@@ -363,7 +420,8 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             new EventTrigger.TriggerEvent();
 
         plantHoverEntry.callback.AddListener(
-            (data) => PlayPlantButtonHoverSound()
+            (data) =>
+                PlayPlantButtonHoverSound()
         );
 
         plantButtonEventTrigger.triggers.Add(
@@ -390,7 +448,9 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        // Keep button/text state current.
+        // This runs every frame while open.
+        // It immediately disables Plant when the action phase ends
+        // and re-enables it after End Day starts the next day.
         RefreshUI();
 
         HandleDragging();
@@ -582,6 +642,32 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
     // UI CONTENT
     // =========================================================
 
+    private void RefreshDestroyedIconScale()
+    {
+        if (plotIcon == null)
+        {
+            return;
+        }
+
+        if (!plotIconScaleCaptured)
+        {
+            plotIconNormalScale =
+                plotIcon.rectTransform.localScale;
+
+            plotIconScaleCaptured =
+                true;
+        }
+
+        bool destroyed =
+            currentPlot.IsDestroyed();
+
+        plotIcon.rectTransform.localScale =
+            destroyed
+                ? plotIconNormalScale *
+                  Mathf.Max(1f, destroyedIconScale)
+                : plotIconNormalScale;
+    }
+
     public void RefreshUI()
     {
         if (currentPlot == null)
@@ -589,69 +675,133 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
+        RefreshDestroyedIconScale();
+
+        bool actionPhaseActive =
+            IsActionPhaseActive();
+
         // =====================================================
         // TITLE
         // =====================================================
 
         if (titleText != null)
         {
-            titleText.text =
-                "FARM PLOT";
+            titleText.text = "FARM PLOT";
         }
 
         // =====================================================
-        // GROWING
+        // MATCH EXACT WORLD SPRITE
         // =====================================================
 
-        if (currentPlot.IsPlanted())
+        if (plotIcon != null)
+        {
+            Sprite displayedSprite =
+                currentPlot.GetCurrentDisplayedSprite();
+
+            plotIcon.sprite = displayedSprite;
+            plotIcon.enabled = displayedSprite != null;
+            plotIcon.preserveAspect = true;
+        }
+
+        // =====================================================
+        // DESTROYED
+        // =====================================================
+
+        if (currentPlot.IsDestroyed())
         {
             if (statusText != null)
             {
-                statusText.text =
-                    "GROWING";
+                statusText.text = "DESTROYED";
             }
 
             if (descriptionText != null)
             {
-                descriptionText.text =
-                    "The plant is growing.";
+                descriptionText.text = "";
             }
 
             if (plantButton != null)
             {
-                plantButton.gameObject.SetActive(
-                    false
-                );
+                plantButton.gameObject.SetActive(false);
+                plantButton.interactable = false;
             }
+
+            return;
+        }
+
+        // =====================================================
+        // GROWING / READY
+        // =====================================================
+
+        if (currentPlot.IsPlanted())
+        {
+            CropPlot cropPlot =
+                currentPlot.GetCropPlot();
+
+            bool fullyGrown =
+                cropPlot != null &&
+                cropPlot.IsFullyGrown();
+
+            if (statusText != null)
+            {
+                if (fullyGrown)
+                {
+                    statusText.text = "READY!";
+                }
+                else if (cropPlot != null)
+                {
+                    int daysRemaining =
+                        cropPlot.GetDaysUntilFullyGrown();
+
+                    statusText.text =
+                        daysRemaining <= 1
+                            ? "READY IN 1 DAY"
+                            : "READY IN " +
+                              daysRemaining +
+                              " DAYS";
+                }
+                else
+                {
+                    statusText.text = "GROWING";
+                }
+            }
+
+            if (descriptionText != null)
+            {
+                descriptionText.text = "";
+            }
+
+            if (plantButton != null)
+            {
+                plantButton.gameObject.SetActive(false);
+                plantButton.interactable = false;
+            }
+
+            return;
         }
 
         // =====================================================
         // EMPTY
         // =====================================================
 
-        else
+        if (statusText != null)
         {
-            if (statusText != null)
-            {
-                statusText.text =
-                    "PLANT PLOT";
-            }
+            statusText.text =
+                actionPhaseActive
+                    ? "PLANT PLOT"
+                    : "DAY ENDED";
+        }
 
-            if (descriptionText != null)
-            {
-                descriptionText.text =
-                    "Plant a seed here to attract wildlife.";
-            }
+        if (descriptionText != null)
+        {
+            descriptionText.text = "";
+        }
 
-            if (plantButton != null)
-            {
-                plantButton.gameObject.SetActive(
-                    true
-                );
-
-                plantButton.interactable =
-                    true;
-            }
+        if (plantButton != null)
+        {
+            plantButton.gameObject.SetActive(true);
+            plantButton.interactable =
+                actionPhaseActive &&
+                currentPlot.CanPerformPlayerAction();
         }
     }
 
@@ -661,6 +811,31 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
 
     private void HandlePlantButtonClicked()
     {
+        // -----------------------------------------------------
+        // END DAY LOCK
+        // -----------------------------------------------------
+
+        if (!IsActionPhaseActive())
+        {
+            RefreshUI();
+            return;
+        }
+
+        if (plantButton != null &&
+            !plantButton.interactable)
+        {
+            return;
+        }
+
+        if (currentPlot == null ||
+            currentPlot.IsDestroyed() ||
+            currentPlot.IsPlanted())
+        {
+            RefreshUI();
+            return;
+        }
+
+        // Only play the click when this is a valid action.
         PlayPlantButtonClickSound();
 
         PlantSeed();
@@ -677,7 +852,18 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
             return;
         }
 
-        if (currentPlot.IsPlanted())
+        // -----------------------------------------------------
+        // SECOND END DAY GUARD
+        // -----------------------------------------------------
+
+        if (!IsActionPhaseActive())
+        {
+            RefreshUI();
+            return;
+        }
+
+        if (currentPlot.IsDestroyed() ||
+            currentPlot.IsPlanted())
         {
             RefreshUI();
             return;
@@ -754,7 +940,9 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
         List<AudioClip> validClips =
             new List<AudioClip>();
 
-        for (int i = 0; i < clips.Length; i++)
+        for (int i = 0;
+             i < clips.Length;
+             i++)
         {
             if (clips[i] != null)
             {
@@ -780,10 +968,22 @@ public class PlotInspectionUI : MonoBehaviour, IInspectionPanel
         float oldPitch =
             audioSource.pitch;
 
-        audioSource.pitch =
-            Random.Range(
+        float minPitch =
+            Mathf.Min(
                 audioPitchMin,
                 audioPitchMax
+            );
+
+        float maxPitch =
+            Mathf.Max(
+                audioPitchMin,
+                audioPitchMax
+            );
+
+        audioSource.pitch =
+            Random.Range(
+                minPitch,
+                maxPitch
             );
 
         audioSource.PlayOneShot(

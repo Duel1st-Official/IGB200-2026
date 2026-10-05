@@ -9,10 +9,67 @@ public class EndDaySystem : MonoBehaviour
     // REFERENCES
     // =========================================================
 
+    [Header("Top Day Bar Visibility")]
+    [Tooltip("Checked: Always visible. Unchecked: Temporary visible (hover to show). The game clock keeps running.")]
+    [SerializeField] private bool showTopDayBar = true;
+
+    [Tooltip("Assign the Top Day Bar UI object only, not the whole Canvas or transition UI.")]
+    [SerializeField] private GameObject topDayBarRoot;
+
+    private CanvasGroup topDayBarVisibilityGroup;
+
+    public void SetShowTopDayBar(bool visible)
+    {
+        showTopDayBar = visible;
+        ApplyTopDayBarVisibility();
+    }
+
+    public bool GetShowTopDayBar()
+    {
+        return showTopDayBar;
+    }
+
+    private void LateUpdate()
+    {
+        // Apply after normal UI updates without disabling clock or UI scripts.
+        ApplyTopDayBarVisibility();
+    }
+
+    private void ApplyTopDayBarVisibility()
+    {
+        if (topDayBarRoot == null) return;
+
+        if (topDayBarVisibilityGroup == null ||
+            topDayBarVisibilityGroup.gameObject != topDayBarRoot)
+        {
+            topDayBarVisibilityGroup = topDayBarRoot.GetComponent<CanvasGroup>();
+            if (topDayBarVisibilityGroup == null)
+                topDayBarVisibilityGroup = topDayBarRoot.AddComponent<CanvasGroup>();
+        }
+
+        if (!topDayBarRoot.activeSelf)
+            topDayBarRoot.SetActive(true);
+
+        topDayBarVisibilityGroup.alpha = 1f;
+        topDayBarVisibilityGroup.interactable = true;
+        topDayBarVisibilityGroup.blocksRaycasts = true;
+    }
+
+
     [Header("References")]
 
     [SerializeField]
     private TopDayDropdownUI topDayDropdown;
+
+    [Header("Night Report")]
+
+    [Tooltip("System that rolls and applies the nightly event. Auto-found when empty.")]
+    [SerializeField]
+    private EndDayEventSystem endDayEventSystem;
+
+    [Tooltip("UI that displays the rolled event and waits for Continue. Auto-found when empty.")]
+    [SerializeField]
+    private EndDayEventUI endDayEventUI;
 
     [Tooltip(
         "Parent GameObject containing the entire transition UI."
@@ -54,6 +111,29 @@ public class EndDaySystem : MonoBehaviour
     private int startingDay = 1;
 
     // =========================================================
+    // ACTION PHASE
+    // =========================================================
+
+    [Header("Action Phase")]
+
+    [Tooltip(
+        "How many REAL seconds the player has to perform actions " +
+        "before the day reaches its end time.\n\n" +
+        "300 = 5 real minutes.\n" +
+        "180 = 3 real minutes.\n" +
+        "60 = 1 real minute."
+    )]
+    [Min(1f)]
+    [SerializeField]
+    private float actionPhaseDurationSeconds = 300f;
+
+    [Tooltip(
+        "If enabled, the action phase automatically progresses."
+    )]
+    [SerializeField]
+    private bool timeRunsAutomatically = true;
+
+    // =========================================================
     // TIME SETTINGS
     // =========================================================
 
@@ -74,34 +154,18 @@ public class EndDaySystem : MonoBehaviour
     private int newDayMinute = 0;
 
     [Tooltip(
-        "Hour at which the clock stops."
+        "Hour at which the action phase finishes."
     )]
     [Range(0, 23)]
     [SerializeField]
-    private int dayEndHour = 20;
+    private int dayEndHour = 17;
 
     [Tooltip(
-        "Minute at which the clock stops."
+        "Minute at which the action phase finishes."
     )]
     [Range(0, 59)]
     [SerializeField]
     private int dayEndMinute = 0;
-
-    [Tooltip(
-        "How many real-world seconds it takes for one in-game minute to pass.\n\n" +
-        "1 = 1 real second per game minute.\n" +
-        "0.5 = 2 game minutes per real second.\n" +
-        "2 = 1 game minute every 2 real seconds."
-    )]
-    [Min(0.01f)]
-    [SerializeField]
-    private float realSecondsPerGameMinute = 1f;
-
-    [Tooltip(
-        "If true, game time automatically progresses."
-    )]
-    [SerializeField]
-    private bool timeRunsAutomatically = true;
 
     // =========================================================
     // WEATHER SETTINGS
@@ -110,7 +174,7 @@ public class EndDaySystem : MonoBehaviour
     [Header("New Day Weather")]
 
     [Tooltip(
-        "Choose a new random weather type whenever a new day begins."
+        "Advance the sunny-biased weather pattern whenever a new day begins."
     )]
     [SerializeField]
     private bool randomizeWeatherEachDay = true;
@@ -204,7 +268,7 @@ public class EndDaySystem : MonoBehaviour
     [Header("Time Events")]
 
     [Tooltip(
-        "Invoked when the clock reaches the end of the day."
+        "Invoked once when the action phase reaches the end of the day."
     )]
     [SerializeField]
     private UnityEvent onTimeReachedDayEnd;
@@ -218,7 +282,7 @@ public class EndDaySystem : MonoBehaviour
     private int currentHour;
     private int currentMinute;
 
-    private float timeTimer = 0f;
+    private float actionPhaseTimer = 0f;
 
     private bool reachedDayEnd = false;
 
@@ -227,6 +291,22 @@ public class EndDaySystem : MonoBehaviour
     // =========================================================
 
     private bool transitionRunning = false;
+
+    [Header("Game Ending")]
+    [SerializeField] private GameEndingSystem gameEndingSystem;
+    private bool gameEnded;
+
+    public bool HasGameEnded() { return gameEnded; }
+
+    public void LockForGameEnding()
+    {
+        gameEnded = true;
+        if (topDayDropdown != null)
+        {
+            topDayDropdown.SetEndDayInteractable(false);
+            topDayDropdown.CloseDropdown();
+        }
+    }
 
     private bool doorPositionsCached = false;
 
@@ -242,9 +322,13 @@ public class EndDaySystem : MonoBehaviour
 
     private void Start()
     {
-        // -----------------------------------------------------
-        // FIND HUD
-        // -----------------------------------------------------
+        ApplyTopDayBarVisibility();
+        if (gameEndingSystem == null)
+            gameEndingSystem = FindFirstObjectByType<GameEndingSystem>();
+        if (gameEndingSystem == null)
+            gameEndingSystem = gameObject.AddComponent<GameEndingSystem>();
+        gameEndingSystem.SetEndDaySystem(this);
+        AutoAssignNightReportReferences();
 
         if (topDayDropdown == null)
         {
@@ -252,52 +336,20 @@ public class EndDaySystem : MonoBehaviour
                 FindFirstObjectByType<TopDayDropdownUI>();
         }
 
-        // -----------------------------------------------------
-        // DAY
-        // -----------------------------------------------------
-
         currentDay =
             Mathf.Max(
                 1,
                 startingDay
             );
 
-        // -----------------------------------------------------
-        // START TIME AT 8AM
-        // -----------------------------------------------------
-
-        currentHour =
-            newDayHour;
-
-        currentMinute =
-            newDayMinute;
-
-        reachedDayEnd =
-            false;
-
-        timeTimer =
-            0f;
-
-        // -----------------------------------------------------
-        // HUD
-        // -----------------------------------------------------
-
-        UpdateDayAndTimeHUD();
+        ResetTimeForNewDay();
 
         if (topDayDropdown != null)
         {
             topDayDropdown.UpdateWeatherDisplay();
         }
 
-        // -----------------------------------------------------
-        // TRANSITION UI
-        // -----------------------------------------------------
-
         HideTransitionUI();
-
-        // -----------------------------------------------------
-        // STARTUP TRANSITION
-        // -----------------------------------------------------
 
         if (playTransitionOnStart)
         {
@@ -322,121 +374,122 @@ public class EndDaySystem : MonoBehaviour
 
     private void UpdateGameTime()
     {
-        // Don't run time if disabled.
-
+        if (gameEnded) return;
         if (!timeRunsAutomatically)
         {
             return;
         }
-
-        // Don't move the clock during the day transition.
 
         if (transitionRunning)
         {
             return;
         }
 
-        // Clock already reached 8PM.
-
         if (reachedDayEnd)
         {
             return;
         }
 
-        // -----------------------------------------------------
-        // TIMER
-        // -----------------------------------------------------
-
-        timeTimer +=
+        actionPhaseTimer +=
             Time.deltaTime;
 
-        // -----------------------------------------------------
-        // ADVANCE MINUTES
-        // -----------------------------------------------------
+        actionPhaseTimer =
+            Mathf.Clamp(
+                actionPhaseTimer,
+                0f,
+                GetSafeActionPhaseDuration()
+            );
 
-        while (timeTimer >= realSecondsPerGameMinute)
+        UpdateClockFromActionProgress();
+
+        if (actionPhaseTimer >=
+            GetSafeActionPhaseDuration())
         {
-            timeTimer -=
-                realSecondsPerGameMinute;
-
-            AdvanceOneMinute();
-
-            if (reachedDayEnd)
-            {
-                break;
-            }
+            ReachDayEnd();
         }
     }
 
     // =========================================================
-    // ADVANCE ONE MINUTE
+    // CLOCK FROM PROGRESS
     // =========================================================
 
-    private void AdvanceOneMinute()
+    private void UpdateClockFromActionProgress()
     {
-        currentMinute++;
+        float progress =
+            GetDayProgress();
 
-        // -----------------------------------------------------
-        // NEXT HOUR
-        // -----------------------------------------------------
+        int startMinutes =
+            (newDayHour * 60) +
+            newDayMinute;
 
-        if (currentMinute >= 60)
+        int endMinutes =
+            (dayEndHour * 60) +
+            dayEndMinute;
+
+        if (endMinutes <= startMinutes)
         {
-            currentMinute =
-                0;
-
-            currentHour++;
+            endMinutes =
+                startMinutes + 1;
         }
 
-        // -----------------------------------------------------
-        // STOP AT 8PM
-        // -----------------------------------------------------
+        int totalGameMinutes =
+            endMinutes -
+            startMinutes;
 
-        if (HasReachedEndTime())
+        int elapsedGameMinutes =
+            Mathf.FloorToInt(
+                totalGameMinutes *
+                progress
+            );
+
+        int calculatedMinutes =
+            startMinutes +
+            elapsedGameMinutes;
+
+        currentHour =
+            calculatedMinutes / 60;
+
+        currentMinute =
+            calculatedMinutes % 60;
+
+        if (progress >= 1f)
         {
             currentHour =
                 dayEndHour;
 
             currentMinute =
                 dayEndMinute;
-
-            reachedDayEnd =
-                true;
-
-            UpdateDayAndTimeHUD();
-
-            onTimeReachedDayEnd?.Invoke();
-
-            return;
         }
-
-        // -----------------------------------------------------
-        // UPDATE HUD
-        // -----------------------------------------------------
 
         UpdateDayAndTimeHUD();
     }
 
     // =========================================================
-    // HAS REACHED END TIME
+    // REACH DAY END
     // =========================================================
 
-    private bool HasReachedEndTime()
+    private void ReachDayEnd()
     {
-        if (currentHour > dayEndHour)
+        if (reachedDayEnd)
         {
-            return true;
+            return;
         }
 
-        if (
-            currentHour == dayEndHour &&
-            currentMinute >= dayEndMinute
-        )
-        {
-            return true;
-        }
+        actionPhaseTimer =
+            GetSafeActionPhaseDuration();
 
-        return false;
+        currentHour =
+            dayEndHour;
+
+        currentMinute =
+            dayEndMinute;
+
+        reachedDayEnd =
+            true;
+
+        UpdateDayAndTimeHUD();
+
+        onTimeReachedDayEnd?.Invoke();
     }
 
     // =========================================================
@@ -455,6 +508,10 @@ public class EndDaySystem : MonoBehaviour
             currentHour,
             currentMinute
         );
+
+        topDayDropdown.UpdateDayProgress(
+            GetDayProgress()
+        );
     }
 
     // =========================================================
@@ -469,7 +526,7 @@ public class EndDaySystem : MonoBehaviour
         currentMinute =
             newDayMinute;
 
-        timeTimer =
+        actionPhaseTimer =
             0f;
 
         reachedDayEnd =
@@ -494,42 +551,7 @@ public class EndDaySystem : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
-        // 0 = SUNNY
-        // 1 = RAIN
-        // 2 = RAIN + THUNDER
-        // -----------------------------------------------------
-
-        int randomWeather =
-            Random.Range(
-                0,
-                3
-            );
-
-        switch (randomWeather)
-        {
-            case 0:
-
-                WeatherManager.Instance.MakeSunny();
-
-                break;
-
-            case 1:
-
-                WeatherManager.Instance.MakeRain();
-
-                break;
-
-            case 2:
-
-                WeatherManager.Instance.MakeRainAndThunder();
-
-                break;
-        }
-
-        // -----------------------------------------------------
-        // REFRESH WEATHER HUD
-        // -----------------------------------------------------
+        WeatherManager.Instance.AdvanceDailyWeather();
 
         if (topDayDropdown != null)
         {
@@ -602,10 +624,6 @@ public class EndDaySystem : MonoBehaviour
 
         Canvas.ForceUpdateCanvases();
 
-        // -----------------------------------------------------
-        // LEFT
-        // -----------------------------------------------------
-
         if (leftDoor != null)
         {
             leftClosedPosition =
@@ -621,10 +639,6 @@ public class EndDaySystem : MonoBehaviour
                     0f
                 );
         }
-
-        // -----------------------------------------------------
-        // RIGHT
-        // -----------------------------------------------------
 
         if (rightDoor != null)
         {
@@ -647,7 +661,7 @@ public class EndDaySystem : MonoBehaviour
     }
 
     // =========================================================
-    // DOORS CLOSED
+    // DOORS
     // =========================================================
 
     private void SetDoorsClosed()
@@ -664,10 +678,6 @@ public class EndDaySystem : MonoBehaviour
                 rightClosedPosition;
         }
     }
-
-    // =========================================================
-    // DOORS OPEN
-    // =========================================================
 
     private void SetDoorsOpen()
     {
@@ -717,71 +727,44 @@ public class EndDaySystem : MonoBehaviour
         transitionRunning =
             true;
 
-        // -----------------------------------------------------
-        // SHOW UI
-        // -----------------------------------------------------
-
         ShowTransitionUI();
 
         onStartupTransitionStarted?.Invoke();
-
-        // Let Unity initialise the UI.
 
         yield return null;
 
         Canvas.ForceUpdateCanvases();
 
-        // -----------------------------------------------------
-        // CACHE DOORS
-        // -----------------------------------------------------
-
         CacheDoorPositions();
-
-        // -----------------------------------------------------
-        // BEGIN CLOSED
-        // -----------------------------------------------------
 
         SetDoorsClosed();
 
         ResetDayText();
 
-        // -----------------------------------------------------
-        // DELAY
-        // -----------------------------------------------------
-
         if (startupDelay > 0f)
         {
-            yield return new WaitForSecondsRealtime(
-                startupDelay
-            );
+            yield return
+                new WaitForSecondsRealtime(
+                    startupDelay
+                );
         }
-
-        // -----------------------------------------------------
-        // DAY 1 TEXT
-        // -----------------------------------------------------
 
         if (showDayTextOnStart)
         {
-            yield return PlayDayTextAnimation();
+            yield return
+                PlayDayTextAnimation();
         }
 
-        // -----------------------------------------------------
-        // OPEN
-        // -----------------------------------------------------
-
-        yield return MoveDoors(
-            leftClosedPosition,
-            leftOpenPosition,
-            rightClosedPosition,
-            rightOpenPosition,
-            openDuration
-        );
+        yield return
+            MoveDoors(
+                leftClosedPosition,
+                leftOpenPosition,
+                rightClosedPosition,
+                rightOpenPosition,
+                openDuration
+            );
 
         SetDoorsOpen();
-
-        // -----------------------------------------------------
-        // FINISH
-        // -----------------------------------------------------
 
         transitionRunning =
             false;
@@ -797,10 +780,20 @@ public class EndDaySystem : MonoBehaviour
 
     public void EndDay()
     {
+        if (gameEnded) return;
         if (transitionRunning)
         {
             return;
         }
+
+        // =====================================================
+        // TUTORIAL - END DAY SUCCESSFULLY PRESSED
+        // =====================================================
+        // Report only after the real End Day request has passed
+        // the system's rejection checks.
+        TutorialEvents.Report(
+            TutorialAction.EndDayPressed
+        );
 
         StartCoroutine(
             EndDayRoutine()
@@ -816,10 +809,6 @@ public class EndDaySystem : MonoBehaviour
         transitionRunning =
             true;
 
-        // -----------------------------------------------------
-        // DROPDOWN
-        // -----------------------------------------------------
-
         if (topDayDropdown != null)
         {
             topDayDropdown.SetEndDayInteractable(
@@ -829,10 +818,6 @@ public class EndDaySystem : MonoBehaviour
             topDayDropdown.CloseDropdown();
         }
 
-        // -----------------------------------------------------
-        // SHOW UI
-        // -----------------------------------------------------
-
         ShowTransitionUI();
 
         yield return null;
@@ -841,25 +826,18 @@ public class EndDaySystem : MonoBehaviour
 
         CacheDoorPositions();
 
-        // -----------------------------------------------------
-        // ALWAYS BEGIN OPEN
-        // -----------------------------------------------------
-
         SetDoorsOpen();
 
         ResetDayText();
 
-        // =====================================================
-        // CLOSE DOORS
-        // =====================================================
-
-        yield return MoveDoors(
-            leftOpenPosition,
-            leftClosedPosition,
-            rightOpenPosition,
-            rightClosedPosition,
-            closeDuration
-        );
+        yield return
+            MoveDoors(
+                leftOpenPosition,
+                leftClosedPosition,
+                rightOpenPosition,
+                rightClosedPosition,
+                closeDuration
+            );
 
         SetDoorsClosed();
 
@@ -869,64 +847,53 @@ public class EndDaySystem : MonoBehaviour
 
         onDayEnded?.Invoke();
 
+        // Keep the current day and closed doors until Continue finishes
+        // closing the report. transitionRunning stays true throughout.
+        yield return PlayNightReportRoutine();
+
         // =====================================================
         // NEXT DAY
         // =====================================================
 
         currentDay++;
 
-        // =====================================================
-        // RESET TIME TO 8AM
-        // =====================================================
-
         ResetTimeForNewDay();
-
-        // =====================================================
-        // RANDOM NEW WEATHER
-        // =====================================================
 
         RandomizeNewDayWeather();
 
-        // =====================================================
-        // NEW DAY EVENT
-        // =====================================================
-
         onNewDayStarted?.Invoke();
 
-        // =====================================================
-        // DAY TEXT
-        // =====================================================
+        // Explicit processing avoids depending on Unity's Update order.
+        // Both components use their day tracker to prevent double processing.
+        if (gameEndingSystem != null && gameEndingSystem.CheckAfterDailyProcessing())
+        {
+            transitionRunning = false;
+            onTransitionFinished?.Invoke();
+            HideTransitionUI();
+            yield break;
+        }
 
-        yield return PlayDayTextAnimation();
-
-        // =====================================================
-        // CLOSED HOLD
-        // =====================================================
+        yield return
+            PlayDayTextAnimation();
 
         if (closedHoldDuration > 0f)
         {
-            yield return new WaitForSecondsRealtime(
-                closedHoldDuration
-            );
+            yield return
+                new WaitForSecondsRealtime(
+                    closedHoldDuration
+                );
         }
 
-        // =====================================================
-        // OPEN DOORS
-        // =====================================================
-
-        yield return MoveDoors(
-            leftClosedPosition,
-            leftOpenPosition,
-            rightClosedPosition,
-            rightOpenPosition,
-            openDuration
-        );
+        yield return
+            MoveDoors(
+                leftClosedPosition,
+                leftOpenPosition,
+                rightClosedPosition,
+                rightOpenPosition,
+                openDuration
+            );
 
         SetDoorsOpen();
-
-        // =====================================================
-        // BUTTON
-        // =====================================================
 
         if (topDayDropdown != null)
         {
@@ -934,10 +901,6 @@ public class EndDaySystem : MonoBehaviour
                 true
             );
         }
-
-        // =====================================================
-        // FINISH
-        // =====================================================
 
         transitionRunning =
             false;
@@ -950,6 +913,74 @@ public class EndDaySystem : MonoBehaviour
     // =========================================================
     // DAY TEXT
     // =========================================================
+
+    private void AutoAssignNightReportReferences()
+    {
+        if (endDayEventSystem == null)
+        {
+            endDayEventSystem =
+                FindFirstObjectByType<EndDayEventSystem>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        if (endDayEventUI == null)
+        {
+            endDayEventUI =
+                FindFirstObjectByType<EndDayEventUI>(
+                    FindObjectsInactive.Include
+                );
+        }
+    }
+
+    private IEnumerator PlayNightReportRoutine()
+    {
+        AutoAssignNightReportReferences();
+
+        if (endDayEventSystem == null || endDayEventUI == null)
+        {
+            Debug.LogWarning(
+                "[EndDaySystem] Night Report skipped: EndDayEventSystem " +
+                "or EndDayEventUI is missing. Continuing to the next day.",
+                this
+            );
+            yield break;
+        }
+
+        // The UI starts its own animation coroutine, so its host must be active.
+        // Keep the UI component on an active object and assign its panel as uiRoot.
+        if (!endDayEventUI.gameObject.activeInHierarchy)
+        {
+            endDayEventUI.gameObject.SetActive(true);
+        }
+
+        // Awake may hide uiRoot on first activation, including the host itself.
+        if (!endDayEventUI.gameObject.activeInHierarchy)
+        {
+            endDayEventUI.gameObject.SetActive(true);
+        }
+
+        if (!endDayEventUI.gameObject.activeInHierarchy)
+        {
+            Debug.LogWarning(
+                "[EndDaySystem] Night Report has an inactive parent. " +
+                "Continuing to the next day.",
+                this
+            );
+            yield break;
+        }
+
+        // RollRandomEvent applies the effect; do not apply it a second time.
+        endDayEventSystem.RollRandomEvent();
+        endDayEventUI.ShowLastEvent();
+
+        // IsOpen remains true during the closing animation. No timeout or
+        // automatic dismissal: only the report's Continue flow closes it.
+        while (endDayEventUI != null && endDayEventUI.IsOpen())
+        {
+            yield return null;
+        }
+    }
 
     private IEnumerator PlayDayTextAnimation()
     {
@@ -969,48 +1000,36 @@ public class EndDaySystem : MonoBehaviour
         transitionDayText.transform.localScale =
             Vector3.zero;
 
-        // -----------------------------------------------------
-        // POP
-        // -----------------------------------------------------
+        yield return
+            ScaleText(
+                Vector3.zero,
+                Vector3.one *
+                textOvershootScale,
+                textPopDuration
+            );
 
-        yield return ScaleText(
-            Vector3.zero,
-            Vector3.one *
-            textOvershootScale,
-            textPopDuration
-        );
-
-        // -----------------------------------------------------
-        // SETTLE
-        // -----------------------------------------------------
-
-        yield return ScaleText(
-            Vector3.one *
-            textOvershootScale,
-            Vector3.one,
-            textSettleDuration
-        );
-
-        // -----------------------------------------------------
-        // HOLD
-        // -----------------------------------------------------
+        yield return
+            ScaleText(
+                Vector3.one *
+                textOvershootScale,
+                Vector3.one,
+                textSettleDuration
+            );
 
         if (textHoldDuration > 0f)
         {
-            yield return new WaitForSecondsRealtime(
-                textHoldDuration
-            );
+            yield return
+                new WaitForSecondsRealtime(
+                    textHoldDuration
+                );
         }
 
-        // -----------------------------------------------------
-        // EXIT
-        // -----------------------------------------------------
-
-        yield return ScaleText(
-            Vector3.one,
-            Vector3.zero,
-            textExitDuration
-        );
+        yield return
+            ScaleText(
+                Vector3.one,
+                Vector3.zero,
+                textExitDuration
+            );
 
         transitionDayText.gameObject.SetActive(
             false
@@ -1055,7 +1074,8 @@ public class EndDaySystem : MonoBehaviour
 
             float progress =
                 Mathf.Clamp01(
-                    timer / duration
+                    timer /
+                    duration
                 );
 
             progress =
@@ -1134,7 +1154,8 @@ public class EndDaySystem : MonoBehaviour
 
             float progress =
                 Mathf.Clamp01(
-                    timer / duration
+                    timer /
+                    duration
                 );
 
             progress =
@@ -1230,11 +1251,39 @@ public class EndDaySystem : MonoBehaviour
                 59
             );
 
-        timeTimer =
-            0f;
+        int startMinutes =
+            (newDayHour * 60) +
+            newDayMinute;
+
+        int endMinutes =
+            (dayEndHour * 60) +
+            dayEndMinute;
+
+        int requestedMinutes =
+            (currentHour * 60) +
+            currentMinute;
+
+        int totalMinutes =
+            Mathf.Max(
+                1,
+                endMinutes -
+                startMinutes
+            );
+
+        float progress =
+            Mathf.InverseLerp(
+                startMinutes,
+                endMinutes,
+                requestedMinutes
+            );
+
+        actionPhaseTimer =
+            progress *
+            GetSafeActionPhaseDuration();
 
         reachedDayEnd =
-            HasReachedEndTime();
+            requestedMinutes >=
+            endMinutes;
 
         if (reachedDayEnd)
         {
@@ -1243,6 +1292,9 @@ public class EndDaySystem : MonoBehaviour
 
             currentMinute =
                 dayEndMinute;
+
+            actionPhaseTimer =
+                GetSafeActionPhaseDuration();
         }
 
         UpdateDayAndTimeHUD();
@@ -1285,6 +1337,79 @@ public class EndDaySystem : MonoBehaviour
     }
 
     // =========================================================
+    // PUBLIC - ACTION PHASE
+    // =========================================================
+
+    public bool IsActionPhaseActive()
+    {
+        return
+            !gameEnded &&
+            !reachedDayEnd &&
+            !transitionRunning;
+    }
+
+    public float GetDayProgress()
+    {
+        return
+            Mathf.Clamp01(
+                actionPhaseTimer /
+                GetSafeActionPhaseDuration()
+            );
+    }
+
+    public float GetDayProgressPercent()
+    {
+        return
+            GetDayProgress() *
+            100f;
+    }
+
+    public float GetRemainingDaySeconds()
+    {
+        return
+            Mathf.Max(
+                0f,
+                GetSafeActionPhaseDuration() -
+                actionPhaseTimer
+            );
+    }
+
+    public float GetActionPhaseDuration()
+    {
+        return
+            GetSafeActionPhaseDuration();
+    }
+
+    public int GetDayStartHour()
+    {
+        return newDayHour;
+    }
+
+    public int GetDayStartMinute()
+    {
+        return newDayMinute;
+    }
+
+    public int GetDayEndHour()
+    {
+        return dayEndHour;
+    }
+
+    public int GetDayEndMinute()
+    {
+        return dayEndMinute;
+    }
+
+    private float GetSafeActionPhaseDuration()
+    {
+        return
+            Mathf.Max(
+                1f,
+                actionPhaseDurationSeconds
+            );
+    }
+
+    // =========================================================
     // PUBLIC - TRANSITION
     // =========================================================
 
@@ -1307,18 +1432,29 @@ public class EndDaySystem : MonoBehaviour
     private void DebugSetMorning()
     {
         SetTime(
-            8,
-            0
+            newDayHour,
+            newDayMinute
         );
     }
 
-    [ContextMenu("Debug - Set Time To 8 PM")]
+    [ContextMenu("Debug - Set Time To End")]
     private void DebugSetNight()
     {
         SetTime(
-            20,
-            0
+            dayEndHour,
+            dayEndMinute
         );
+    }
+
+    [ContextMenu("Debug - Finish Action Phase")]
+    private void DebugFinishActionPhase()
+    {
+        actionPhaseTimer =
+            GetSafeActionPhaseDuration();
+
+        UpdateClockFromActionProgress();
+
+        ReachDayEnd();
     }
 
     [ContextMenu("Debug - Random Weather")]
@@ -1340,3 +1476,5 @@ public class EndDaySystem : MonoBehaviour
         );
     }
 }
+
+

@@ -2,27 +2,301 @@ using UnityEngine;
 
 public class Trap : MonoBehaviour
 {
+    [Header("Caught Animal Alert")]
+    [SerializeField] private bool showCaughtAlert = true;
+    [Tooltip("Drag your exclamation-mark icon sprite here. No icon is shown until assigned.")]
+    [SerializeField] private Sprite caughtAlertIcon;
+    [SerializeField] private Color caughtAlertColor = Color.white;
+    [Tooltip("Offset above the top of the trap sprite, in world units.")]
+    [SerializeField] private Vector2 caughtAlertOffset = new Vector2(0f, 0.2f);
+    [Tooltip("Icon height in world units. Aspect ratio is preserved.")]
+    [Min(0.01f)][SerializeField] private float caughtAlertSize = 0.5f;
+    [Min(0f)][SerializeField] private float caughtAlertBounceHeight = 0.06f;
+    [Min(0f)][SerializeField] private float caughtAlertBounceSpeed = 2f;
+    [SerializeField] private int caughtAlertSortingOffset = 10;
+    private SpriteRenderer caughtAlertRenderer;
+
+    private void LateUpdate()
+    {
+        RefreshCaughtAlert();
+        RefreshDestroyedWarning();
+    }
+
+    private void RefreshCaughtAlert()
+    {
+        bool visible = showCaughtAlert && caughtAlertIcon != null && !destroyed &&
+            currentState == TrapState.Caught && hasCaughtAnimal && !PlotIsDestroyed();
+        if (!visible)
+        {
+            if (caughtAlertRenderer != null) caughtAlertRenderer.gameObject.SetActive(false);
+            return;
+        }
+
+        if (caughtAlertRenderer == null)
+        {
+            GameObject marker = new GameObject("Caught Animal Icon");
+            marker.layer = gameObject.layer;
+            marker.transform.SetParent(transform, false);
+            caughtAlertRenderer = marker.AddComponent<SpriteRenderer>();
+        }
+
+        caughtAlertRenderer.gameObject.SetActive(true);
+        caughtAlertRenderer.sprite = caughtAlertIcon;
+        caughtAlertRenderer.color = caughtAlertColor;
+        Vector3 basePosition = spriteRenderer != null
+            ? new Vector3(spriteRenderer.bounds.center.x, spriteRenderer.bounds.max.y, transform.position.z)
+            : transform.position;
+        float bounce = Mathf.Sin(Time.time * Mathf.Max(0f, caughtAlertBounceSpeed) * Mathf.PI * 2f)
+            * Mathf.Max(0f, caughtAlertBounceHeight);
+
+        Transform markerTransform = caughtAlertRenderer.transform;
+        markerTransform.rotation = Quaternion.identity;
+        Vector3 scale = transform.lossyScale;
+        float size = Mathf.Max(0.01f, caughtAlertSize) /
+            Mathf.Max(0.0001f, caughtAlertIcon.bounds.size.y);
+        markerTransform.localScale = new Vector3(
+            size / Mathf.Max(0.0001f, Mathf.Abs(scale.x)),
+            size / Mathf.Max(0.0001f, Mathf.Abs(scale.y)), 1f);
+        // Position the visible icon centre consistently even with a non-centred sprite pivot.
+        markerTransform.position = basePosition +
+            new Vector3(caughtAlertOffset.x, caughtAlertOffset.y + bounce, 0f);
+        markerTransform.position -= markerTransform.TransformVector(caughtAlertIcon.bounds.center);
+
+        if (spriteRenderer != null)
+        {
+            caughtAlertRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+            caughtAlertRenderer.sortingOrder = spriteRenderer.sortingOrder + caughtAlertSortingOffset;
+        }
+    }
+
+    private void RefreshDestroyedWarning()
+    {
+        bool visible =
+            showDestroyedWarning &&
+            destroyed &&
+            destroyedWarningSprite != null;
+
+        if (!visible)
+        {
+            if (destroyedWarningRenderer != null)
+            {
+                destroyedWarningRenderer.gameObject.SetActive(false);
+            }
+
+            return;
+        }
+
+        if (destroyedWarningRenderer == null)
+        {
+            GameObject marker =
+                new GameObject("Destroyed Warning Icon");
+
+            marker.layer = gameObject.layer;
+            marker.transform.SetParent(transform, false);
+
+            destroyedWarningRenderer =
+                marker.AddComponent<SpriteRenderer>();
+        }
+
+        destroyedWarningRenderer.gameObject.SetActive(true);
+        destroyedWarningRenderer.sprite = destroyedWarningSprite;
+        destroyedWarningRenderer.color = destroyedWarningColor;
+
+        SpriteRenderer baseRenderer = debrisRenderer != null ? debrisRenderer : spriteRenderer;
+
+        Vector3 basePosition =
+            baseRenderer != null
+                ? new Vector3(
+                    baseRenderer.bounds.center.x,
+                    baseRenderer.bounds.max.y,
+                    transform.position.z)
+                : transform.position;
+
+        float bounce =
+            Mathf.Sin(
+                Time.time *
+                Mathf.Max(0f, destroyedWarningBounceSpeed) *
+                Mathf.PI * 2f) *
+            Mathf.Max(0f, destroyedWarningBounceHeight);
+
+        Transform markerTransform =
+            destroyedWarningRenderer.transform;
+
+        markerTransform.rotation = Quaternion.identity;
+
+        Vector3 objectScale =
+            transform.lossyScale;
+
+        float size =
+            Mathf.Max(0.01f, destroyedWarningSize) /
+            Mathf.Max(
+                0.0001f,
+                destroyedWarningSprite.bounds.size.y);
+
+        markerTransform.localScale =
+            new Vector3(
+                size /
+                Mathf.Max(
+                    0.0001f,
+                    Mathf.Abs(objectScale.x)),
+                size /
+                Mathf.Max(
+                    0.0001f,
+                    Mathf.Abs(objectScale.y)),
+                1f);
+
+        markerTransform.position =
+            basePosition +
+            new Vector3(
+                destroyedWarningOffset.x,
+                destroyedWarningOffset.y + bounce,
+                0f);
+
+        markerTransform.position -=
+            markerTransform.TransformVector(
+                destroyedWarningSprite.bounds.center);
+
+        if (baseRenderer != null)
+        {
+            destroyedWarningRenderer.sortingLayerID =
+                baseRenderer.sortingLayerID;
+
+            destroyedWarningRenderer.sortingOrder =
+                baseRenderer.sortingOrder +
+                destroyedWarningSortingOffset;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (caughtAlertRenderer != null)
+        {
+            caughtAlertRenderer.gameObject.SetActive(false);
+        }
+
+        if (destroyedWarningRenderer != null)
+        {
+            destroyedWarningRenderer.gameObject.SetActive(false);
+        }
+    }
+
+    [Header("Destroyed Warning")]
+    [SerializeField] private bool showDestroyedWarning = true;
+    [Tooltip("Drag the 16x16 warning sprite here.")]
+    [SerializeField] private Sprite destroyedWarningSprite;
+    [SerializeField] private Color destroyedWarningColor = Color.white;
+    [Tooltip("World-space offset above the destroyed plot.")]
+    [SerializeField] private Vector2 destroyedWarningOffset = new Vector2(0f, 0.35f);
+    [Tooltip("Warning icon height in world units. Aspect ratio is preserved.")]
+    [Min(0.01f)][SerializeField] private float destroyedWarningSize = 0.5f;
+    [Min(0f)][SerializeField] private float destroyedWarningBounceHeight = 0.04f;
+    [Min(0f)][SerializeField] private float destroyedWarningBounceSpeed = 1.5f;
+    [SerializeField] private int destroyedWarningSortingOffset = 20;
+    private SpriteRenderer destroyedWarningRenderer;
+
+    [Header("Destroyed plot / debris")]
+    [SerializeField] private bool destroyed;
+    [SerializeField] private Sprite debrisSprite;
+    [SerializeField] private SpriteRenderer debrisRenderer;
+    [SerializeField] private string destructionCause;
+    [SerializeField] private int criticalSoilDays;
+    private int soilCheckedDay = -1;
+    public bool IsDestroyed() { return destroyed; }
+    public string GetDestructionCause() { return destructionCause; }
+    public bool DestroyTrap(string cause)
+    {
+        if (destroyed) return false;
+        destroyed = true; destructionCause = cause;
+        if (caughtAlertRenderer != null) caughtAlertRenderer.gameObject.SetActive(false);
+        hasBait = false; hasCaughtAnimal = false; caughtMammalName = "";
+        currentState = TrapState.Destroyed; dayTrapWasSet = -1;
+        ApplyDebrisVisual();
+        return true;
+    }
+    private void ApplyDebrisVisual()
+    {
+        if (debrisRenderer == null) debrisRenderer = spriteRenderer;
+        if (debrisRenderer == null) debrisRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (debrisRenderer == null) return;
+        if (spriteRenderer != null && spriteRenderer != debrisRenderer) spriteRenderer.enabled = false;
+        debrisRenderer.enabled = true;
+        if (debrisSprite != null) debrisRenderer.sprite = debrisSprite;
+        debrisRenderer.color = debrisSprite != null ? Color.white : new Color(0.25f, 0.19f, 0.17f);
+    }
+    public void RemoveWithPlot()
+    {
+        Plot owner = GetOwningPlot();
+        if (owner != null && (owner.gameObject == gameObject || owner.transform.IsChildOf(transform))) return;
+        gameObject.SetActive(false); Destroy(gameObject);
+    }
+    private void CheckSoilDamage()
+    {
+        if (destroyed || endDaySystem == null || endDaySystem.HasGameEnded()) return;
+        int day = endDaySystem.GetCurrentDay();
+        if (day < 1) return;
+        if (soilCheckedDay < 1 || day < soilCheckedDay) { soilCheckedDay = day; criticalSoilDays = 0; return; }
+        if (day == soilCheckedDay) return;
+        soilCheckedDay = day;
+        if (rangerStation == null) rangerStation = FindFirstObjectByType<RangerStation>();
+        if (rangerStation == null) return;
+        PlotDisasterSystem settings = PlotDisasterSystem.GetOrCreate();
+        criticalSoilDays = rangerStation.GetSoilHealth() <= settings.criticalSoilHealth ? criticalSoilDays + 1 : 0;
+        if (criticalSoilDays >= Mathf.Max(1, settings.consecutiveCriticalDays)) DestroyTrap("Critical soil health");
+    }
+    [ContextMenu("Debug - Destroy Trap")]
+    private void DebugDestroyTrap() { DestroyTrap("Debug"); }
+
+
+    [Header("Plot ownership")]
+    [Tooltip("Optional explicit owner. Otherwise resolves parent Plot, then matching plot grid cell.")]
+    [SerializeField] private Plot owningPlot;
+
+    public Plot GetOwningPlot()
+    {
+        if (owningPlot != null) return owningPlot;
+        owningPlot = GetComponentInParent<Plot>();
+        if (owningPlot != null) return owningPlot;
+        foreach (Plot candidate in FindObjectsByType<Plot>(FindObjectsSortMode.None))
+        {
+            RemovableBuildItem item = candidate.GetComponentInParent<RemovableBuildItem>();
+            if (item != null && item.placementSystem != null)
+            {
+                if (item.placementSystem.GetGridCell(transform.position) == item.gridCell)
+                { owningPlot = candidate; break; }
+            }
+            else if (Vector2.Distance(transform.position, candidate.transform.position) < 0.15f)
+            { owningPlot = candidate; break; }
+        }
+        return owningPlot;
+    }
+    private bool PlotIsDestroyed()
+    {
+        Plot owner = GetOwningPlot();
+        return destroyed || (owner != null && owner.IsDestroyed());
+    }
+    public void DestroyWithPlot()
+    {
+        DestroyTrap("Owning plot destroyed");
+    }
     // =========================================================
-    // TRAP STATE
+    // STATE
     // =========================================================
 
     public enum TrapState
     {
         Empty,
         Set,
-        Caught
+        Caught,
+        Destroyed
     }
-
-    // =========================================================
-    // STATE
-    // =========================================================
 
     [Header("Trap State")]
     [SerializeField]
     private TrapState currentState =
         TrapState.Empty;
 
-    [SerializeField] private bool startsWithBait = false;
+    [SerializeField]
+    private bool startsWithBait = false;
 
     // =========================================================
     // VISUALS
@@ -30,56 +304,53 @@ public class Trap : MonoBehaviour
 
     [Header("Trap Visuals")]
 
-    [Tooltip("SpriteRenderer used to display the trap.")]
-    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField]
+    private SpriteRenderer spriteRenderer;
 
-    [Tooltip("Shown when the trap is empty.")]
-    [SerializeField] private Sprite emptyTrapSprite;
+    [SerializeField]
+    private Sprite emptyTrapSprite;
 
-    [Tooltip("Shown when the trap is set and contains bait.")]
-    [SerializeField] private Sprite baitedTrapSprite;
+    [SerializeField]
+    private Sprite baitedTrapSprite;
 
-    [Tooltip("Shown when a Feral Cat has been caught.")]
-    [SerializeField] private Sprite feralCatCaughtSprite;
+    [SerializeField]
+    private Sprite feralCatCaughtSprite;
 
-    [Tooltip("Shown when a Fox has been caught.")]
-    [SerializeField] private Sprite foxCaughtSprite;
+    [SerializeField]
+    private Sprite foxCaughtSprite;
 
-    [Tooltip(
-        "Fallback sprite used if an unknown predator is caught."
-    )]
-    [SerializeField] private Sprite genericCaughtSprite;
+    [SerializeField]
+    private Sprite genericCaughtSprite;
 
     // =========================================================
-    // DAY SYSTEM
+    // REFERENCES
     // =========================================================
 
-    [Header("Day System")]
+    [Header("References")]
 
-    [Tooltip(
-        "Used to make one capture attempt when a new day begins."
-    )]
-    [SerializeField] private EndDaySystem endDaySystem;
+    [SerializeField]
+    private EndDaySystem endDaySystem;
+
+    [SerializeField]
+    private RangerStation rangerStation;
 
     // =========================================================
-    // WEATHER CAPTURE CHANCE
+    // CAPTURE CHANCES
     // =========================================================
 
     [Header("Daily Capture Chance")]
 
-    [Tooltip("Chance to catch a predator after a Sunny day.")]
     [Range(0f, 1f)]
-    [SerializeField] private float sunnyCaptureChance = 0.70f;
+    [SerializeField]
+    private float sunnyCaptureChance = 0.70f;
 
-    [Tooltip("Chance to catch a predator after a Rain day.")]
     [Range(0f, 1f)]
-    [SerializeField] private float rainCaptureChance = 0.50f;
+    [SerializeField]
+    private float rainCaptureChance = 0.50f;
 
-    [Tooltip(
-        "Chance to catch a predator after a thunderstorm day."
-    )]
     [Range(0f, 1f)]
-    [SerializeField] private float thunderCaptureChance = 0.30f;
+    [SerializeField]
+    private float thunderCaptureChance = 0.30f;
 
     // =========================================================
     // PREDATORS
@@ -87,9 +358,6 @@ public class Trap : MonoBehaviour
 
     [Header("Predators")]
 
-    [Tooltip(
-        "Possible predators that can be captured by this trap."
-    )]
     [SerializeField]
     private string[] predatorNames =
     {
@@ -98,15 +366,28 @@ public class Trap : MonoBehaviour
     };
 
     // =========================================================
+    // ECOSYSTEM
+    // =========================================================
+
+    [Header("Predator Pressure Reduction")]
+
+    [SerializeField]
+    private float feralCatPredatorReduction = 6f;
+
+    [SerializeField]
+    private float foxPredatorReduction = 8f;
+
+    [SerializeField]
+    private float genericPredatorReduction = 5f;
+
+    // =========================================================
     // CAUGHT PREDATOR
     // =========================================================
 
     [Header("Caught Predator")]
 
-    [Tooltip(
-        "Name of the predator currently inside the trap."
-    )]
-    [SerializeField] private string caughtMammalName = "";
+    [SerializeField]
+    private string caughtMammalName = "";
 
     // =========================================================
     // DEBUG
@@ -114,14 +395,11 @@ public class Trap : MonoBehaviour
 
     [Header("Debug")]
 
-    [Tooltip(
-        "Predator used by the Debug Catch Predator option."
-    )]
     [SerializeField]
-    private string debugMammalName =
-        "Feral Cat";
+    private string debugMammalName = "Feral Cat";
 
-    [SerializeField] private bool showDebugLogs = true;
+    [SerializeField]
+    private bool showDebugLogs = true;
 
     // =========================================================
     // PRIVATE
@@ -141,31 +419,19 @@ public class Trap : MonoBehaviour
 
     private void Awake()
     {
-        // -----------------------------------------------------
-        // SPRITE RENDERER
-        // -----------------------------------------------------
-
         if (spriteRenderer == null)
         {
             spriteRenderer =
                 GetComponent<SpriteRenderer>();
+
+            if (spriteRenderer == null)
+            {
+                spriteRenderer =
+                    GetComponentInChildren<SpriteRenderer>();
+            }
         }
 
-        if (spriteRenderer == null)
-        {
-            spriteRenderer =
-                GetComponentInChildren<SpriteRenderer>();
-        }
-
-        // -----------------------------------------------------
-        // DAY SYSTEM
-        // -----------------------------------------------------
-
-        if (endDaySystem == null)
-        {
-            endDaySystem =
-                FindFirstObjectByType<EndDaySystem>();
-        }
+        FindReferences();
     }
 
     // =========================================================
@@ -174,11 +440,9 @@ public class Trap : MonoBehaviour
 
     private void Start()
     {
-        if (endDaySystem == null)
-        {
-            endDaySystem =
-                FindFirstObjectByType<EndDaySystem>();
-        }
+        if (destroyed) { currentState = TrapState.Destroyed; hasBait = false; hasCaughtAnimal = false; caughtMammalName = ""; ApplyDebrisVisual(); return; }
+        if (PlotIsDestroyed()) { DestroyWithPlot(); return; }
+        FindReferences();
 
         if (endDaySystem != null)
         {
@@ -189,16 +453,15 @@ public class Trap : MonoBehaviour
         recordedDayWeather =
             GetCurrentWeatherName();
 
+        // Starting state is setup, not a player action.
         if (startsWithBait)
         {
-            SetTrap();
+            SetTrapInternal();
         }
         else
         {
             MakeEmpty();
         }
-
-        RefreshTrapSprite();
     }
 
     // =========================================================
@@ -207,15 +470,57 @@ public class Trap : MonoBehaviour
 
     private void Update()
     {
+        CheckSoilDamage(); if (destroyed) return;
         CheckForNewDay();
     }
 
     // =========================================================
-    // NEW DAY CHECK
+    // REFERENCES
+    // =========================================================
+
+    private void FindReferences()
+    {
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        if (rangerStation == null)
+        {
+            rangerStation =
+                FindFirstObjectByType<RangerStation>();
+        }
+    }
+
+    // =========================================================
+    // ACTION PHASE
+    // =========================================================
+
+    public bool CanPerformPlayerAction()
+    {
+        if (PlotIsDestroyed()) return false;
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        if (endDaySystem == null)
+        {
+            return true;
+        }
+
+        return endDaySystem.IsActionPhaseActive();
+    }
+
+    // =========================================================
+    // NEW DAY
     // =========================================================
 
     private void CheckForNewDay()
     {
+        if (PlotIsDestroyed()) { DestroyWithPlot(); return; }
         if (endDaySystem == null)
         {
             endDaySystem =
@@ -247,16 +552,12 @@ public class Trap : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
-        // SAVE PREVIOUS WEATHER
-        // -----------------------------------------------------
-
         string previousWeather =
             recordedDayWeather;
 
-        // -----------------------------------------------------
-        // TRY TO CATCH PREDATOR
-        // -----------------------------------------------------
+        // IMPORTANT:
+        // This is automatic overnight processing.
+        // It is intentionally NOT blocked by the action phase.
 
         if (currentState ==
                 TrapState.Set &&
@@ -269,49 +570,27 @@ public class Trap : MonoBehaviour
             );
         }
 
-        // -----------------------------------------------------
-        // RECORD NEW DAY
-        // -----------------------------------------------------
-
         lastProcessedDay =
             currentDay;
 
         recordedDayWeather =
             GetCurrentWeatherName();
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                gameObject.name +
-                " entered Day " +
-                currentDay +
-                " | Previous Weather: " +
-                previousWeather +
-                " | Trap State: " +
-                currentState
-            );
-        }
     }
 
     // =========================================================
-    // DAILY CAPTURE ATTEMPT
+    // CAPTURE ATTEMPT
     // =========================================================
 
     private void AttemptDailyCapture(
         string previousWeather)
     {
-        if (currentState !=
-            TrapState.Set)
+        if (!IsSet() ||
+            !hasBait)
         {
             return;
         }
 
-        if (!hasBait)
-        {
-            return;
-        }
-
-        float captureChance =
+        float chance =
             GetCaptureChanceForWeather(
                 previousWeather
             );
@@ -323,41 +602,32 @@ public class Trap : MonoBehaviour
         {
             Debug.Log(
                 gameObject.name +
-                " capture roll | Weather: " +
+                " Capture | Weather: " +
                 previousWeather +
                 " | Chance: " +
-                Mathf.RoundToInt(
-                    captureChance * 100f
-                ) +
+                Mathf.RoundToInt(chance * 100f) +
                 "% | Roll: " +
                 roll.ToString("0.00")
             );
         }
 
-        if (roll <=
-            captureChance)
+        if (roll <= chance)
         {
-            string predator =
-                GetRandomPredatorName();
-
             TriggerTrap(
-                predator
+                GetRandomPredatorName()
             );
         }
-        else
+        else if (showDebugLogs)
         {
-            if (showDebugLogs)
-            {
-                Debug.Log(
-                    gameObject.name +
-                    " caught nothing overnight."
-                );
-            }
+            Debug.Log(
+                gameObject.name +
+                " caught nothing overnight."
+            );
         }
     }
 
     // =========================================================
-    // WEATHER CAPTURE CHANCE
+    // WEATHER CHANCE
     // =========================================================
 
     private float GetCaptureChanceForWeather(
@@ -383,7 +653,7 @@ public class Trap : MonoBehaviour
     }
 
     // =========================================================
-    // CURRENT WEATHER
+    // WEATHER
     // =========================================================
 
     private string GetCurrentWeatherName()
@@ -414,59 +684,84 @@ public class Trap : MonoBehaviour
         int validCount =
             0;
 
-        for (int i = 0;
-             i < predatorNames.Length;
-             i++)
+        foreach (string predator
+                 in predatorNames)
         {
             if (!string.IsNullOrWhiteSpace(
-                predatorNames[i]))
+                predator))
             {
                 validCount++;
             }
         }
 
-        if (validCount == 0)
+        if (validCount <= 0)
         {
             return "Unknown Predator";
         }
 
-        int targetIndex =
+        int target =
             Random.Range(
                 0,
                 validCount
             );
 
-        int validIndex =
+        int current =
             0;
 
-        for (int i = 0;
-             i < predatorNames.Length;
-             i++)
+        foreach (string predator
+                 in predatorNames)
         {
             if (string.IsNullOrWhiteSpace(
-                predatorNames[i]))
+                predator))
             {
                 continue;
             }
 
-            if (validIndex ==
-                targetIndex)
+            if (current ==
+                target)
             {
-                return predatorNames[i];
+                return predator;
             }
 
-            validIndex++;
+            current++;
         }
 
         return "Unknown Predator";
     }
 
     // =========================================================
-    // SET TRAP
+    // SET TRAP - PLAYER ACTION
     // =========================================================
 
     public void SetTrap()
     {
+        // =====================================================
+        // ACTION PHASE LOCK
+        // =====================================================
+
+        if (!CanPerformPlayerAction())
+        {
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    gameObject.name +
+                    " cannot be set because the action phase has ended."
+                );
+            }
+
+            return;
+        }
+
+        SetTrapInternal();
+    }
+
+    // =========================================================
+    // INTERNAL SET TRAP
+    // =========================================================
+
+    private void SetTrapInternal()
+    {
+        if (PlotIsDestroyed()) { DestroyWithPlot(); return; }
         hasBait =
             true;
 
@@ -479,15 +774,7 @@ public class Trap : MonoBehaviour
         currentState =
             TrapState.Set;
 
-        // -----------------------------------------------------
-        // REMEMBER WHICH DAY IT WAS SET
-        // -----------------------------------------------------
-
-        if (endDaySystem == null)
-        {
-            endDaySystem =
-                FindFirstObjectByType<EndDaySystem>();
-        }
+        FindReferences();
 
         if (endDaySystem != null)
         {
@@ -500,32 +787,29 @@ public class Trap : MonoBehaviour
                 lastProcessedDay;
         }
 
-        // -----------------------------------------------------
-        // SHOW BAIT SPRITE
-        // -----------------------------------------------------
-
         RefreshTrapSprite();
 
         if (showDebugLogs)
         {
             Debug.Log(
                 gameObject.name +
-                " has been SET with bait on Day " +
-                dayTrapWasSet +
-                "."
+                " set with meat bait."
             );
         }
     }
 
     // =========================================================
-    // TRIGGER TRAP
+    // TRIGGER
     // =========================================================
 
     public void TriggerTrap(
         string mammalName)
     {
-        if (currentState !=
-            TrapState.Set)
+        // IMPORTANT:
+        // No action lock.
+        // This is used by automatic overnight capture.
+
+        if (!IsSet())
         {
             return;
         }
@@ -537,16 +821,8 @@ public class Trap : MonoBehaviour
                 "Unknown Predator";
         }
 
-        // -----------------------------------------------------
-        // BAIT IS CONSUMED
-        // -----------------------------------------------------
-
         hasBait =
             false;
-
-        // -----------------------------------------------------
-        // STORE ANIMAL
-        // -----------------------------------------------------
 
         hasCaughtAnimal =
             true;
@@ -557,25 +833,18 @@ public class Trap : MonoBehaviour
         currentState =
             TrapState.Caught;
 
-        // -----------------------------------------------------
-        // SHOW ANIMAL SPRITE
-        // -----------------------------------------------------
-
         RefreshTrapSprite();
 
         if (showDebugLogs)
         {
             Debug.Log(
                 gameObject.name +
-                " caught predator: " +
-                caughtMammalName
+                " caught " +
+                caughtMammalName +
+                "."
             );
         }
     }
-
-    // =========================================================
-    // SIMPLE TRIGGER
-    // =========================================================
 
     public void TriggerTrap()
     {
@@ -585,19 +854,40 @@ public class Trap : MonoBehaviour
     }
 
     // =========================================================
-    // RELOCATE / COLLECT
+    // RELOCATE
     // =========================================================
 
     public void CollectCaughtMammal()
     {
-        if (currentState !=
-            TrapState.Caught)
+        // =====================================================
+        // ACTION PHASE LOCK
+        // =====================================================
+
+        if (!CanPerformPlayerAction())
+        {
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    gameObject.name +
+                    " predator cannot be relocated because " +
+                    "the action phase has ended."
+                );
+            }
+
+            return;
+        }
+
+        if (!IsCaught())
         {
             return;
         }
 
         string relocatedPredator =
             caughtMammalName;
+
+        ReducePredatorPressure(
+            relocatedPredator
+        );
 
         hasCaughtAnimal =
             false;
@@ -613,10 +903,6 @@ public class Trap : MonoBehaviour
 
         dayTrapWasSet =
             -1;
-
-        // -----------------------------------------------------
-        // RETURN TO EMPTY SPRITE
-        // -----------------------------------------------------
 
         RefreshTrapSprite();
 
@@ -632,17 +918,74 @@ public class Trap : MonoBehaviour
         }
     }
 
-    // =========================================================
-    // RELOCATE ALIAS
-    // =========================================================
-
     public void RelocateCaughtPredator()
     {
         CollectCaughtMammal();
     }
 
     // =========================================================
-    // RESET TRAP
+    // PREDATOR PRESSURE
+    // =========================================================
+
+    private void ReducePredatorPressure(
+        string predatorName)
+    {
+        if (rangerStation == null)
+        {
+            rangerStation =
+                FindFirstObjectByType<RangerStation>();
+        }
+
+        if (rangerStation == null)
+        {
+            return;
+        }
+
+        float reduction =
+            genericPredatorReduction;
+
+        string normalized =
+            string.IsNullOrWhiteSpace(
+                predatorName)
+                ? ""
+                : predatorName
+                    .Trim()
+                    .ToLowerInvariant();
+
+        if (normalized ==
+                "feral cat" ||
+            normalized ==
+                "cat")
+        {
+            reduction =
+                feralCatPredatorReduction;
+        }
+        else if (
+            normalized ==
+                "fox" ||
+            normalized ==
+                "red fox")
+        {
+            reduction =
+                foxPredatorReduction;
+        }
+
+        rangerStation.RemovePredatorPressure(
+            reduction
+        );
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                predatorName +
+                " relocated | Predator Pressure -" +
+                reduction
+            );
+        }
+    }
+
+    // =========================================================
+    // RESET
     // =========================================================
 
     public void ResetTrap()
@@ -650,12 +993,18 @@ public class Trap : MonoBehaviour
         SetTrap();
     }
 
+    public void AddBait()
+    {
+        SetTrap();
+    }
+
     // =========================================================
-    // MAKE EMPTY
+    // EMPTY
     // =========================================================
 
     public void MakeEmpty()
     {
+        if (destroyed) return;
         hasCaughtAnimal =
             false;
 
@@ -671,33 +1020,8 @@ public class Trap : MonoBehaviour
         dayTrapWasSet =
             -1;
 
-        // -----------------------------------------------------
-        // SHOW EMPTY SPRITE
-        // -----------------------------------------------------
-
         RefreshTrapSprite();
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                gameObject.name +
-                " is EMPTY."
-            );
-        }
     }
-
-    // =========================================================
-    // ADD BAIT
-    // =========================================================
-
-    public void AddBait()
-    {
-        SetTrap();
-    }
-
-    // =========================================================
-    // CLEAR CAUGHT ANIMAL
-    // =========================================================
 
     public void ClearCaughtAnimal()
     {
@@ -705,11 +1029,14 @@ public class Trap : MonoBehaviour
     }
 
     // =========================================================
-    // REFRESH TRAP SPRITE
+    // SPRITE
     // =========================================================
 
     public void RefreshTrapSprite()
     {
+        RefreshCaughtAlert();
+        if (destroyed) { currentState = TrapState.Destroyed; hasBait = false; hasCaughtAnimal = false; caughtMammalName = ""; ApplyDebrisVisual(); return; }
+        if (PlotIsDestroyed()) { DestroyWithPlot(); return; }
         if (spriteRenderer == null)
         {
             spriteRenderer =
@@ -727,12 +1054,7 @@ public class Trap : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // EMPTY
-        // =====================================================
-
-        if (currentState ==
-            TrapState.Empty)
+        if (IsEmpty())
         {
             if (emptyTrapSprite != null)
             {
@@ -743,12 +1065,7 @@ public class Trap : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // SET / BAITED
-        // =====================================================
-
-        if (currentState ==
-            TrapState.Set)
+        if (IsSet())
         {
             if (baitedTrapSprite != null)
             {
@@ -757,7 +1074,6 @@ public class Trap : MonoBehaviour
             }
             else if (emptyTrapSprite != null)
             {
-                // Fallback if bait sprite is not assigned.
                 spriteRenderer.sprite =
                     emptyTrapSprite;
             }
@@ -765,53 +1081,33 @@ public class Trap : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // CAUGHT
-        // =====================================================
+        Sprite caughtSprite =
+            GetCaughtPredatorSprite();
 
-        if (currentState ==
-            TrapState.Caught)
+        if (caughtSprite != null)
         {
-            Sprite caughtSprite =
-                GetCaughtPredatorSprite();
-
-            if (caughtSprite != null)
-            {
-                spriteRenderer.sprite =
-                    caughtSprite;
-            }
+            spriteRenderer.sprite =
+                caughtSprite;
         }
     }
 
     // =========================================================
-    // GET CAUGHT PREDATOR SPRITE
+    // CAUGHT SPRITE
     // =========================================================
 
     private Sprite GetCaughtPredatorSprite()
     {
-        if (string.IsNullOrWhiteSpace(
-            caughtMammalName))
-        {
-            if (genericCaughtSprite != null)
-            {
-                return genericCaughtSprite;
-            }
+        string normalized =
+            string.IsNullOrWhiteSpace(
+                caughtMammalName)
+                ? ""
+                : caughtMammalName
+                    .Trim()
+                    .ToLowerInvariant();
 
-            return emptyTrapSprite;
-        }
-
-        string normalizedName =
-            caughtMammalName
-                .Trim()
-                .ToLowerInvariant();
-
-        // =====================================================
-        // FERAL CAT
-        // =====================================================
-
-        if (normalizedName ==
+        if (normalized ==
                 "feral cat" ||
-            normalizedName ==
+            normalized ==
                 "cat")
         {
             if (feralCatCaughtSprite != null)
@@ -820,13 +1116,9 @@ public class Trap : MonoBehaviour
             }
         }
 
-        // =====================================================
-        // FOX
-        // =====================================================
-
-        if (normalizedName ==
+        if (normalized ==
                 "fox" ||
-            normalizedName ==
+            normalized ==
                 "red fox")
         {
             if (foxCaughtSprite != null)
@@ -835,141 +1127,12 @@ public class Trap : MonoBehaviour
             }
         }
 
-        // =====================================================
-        // FALLBACK
-        // =====================================================
-
         if (genericCaughtSprite != null)
         {
             return genericCaughtSprite;
         }
 
         return emptyTrapSprite;
-    }
-
-    // =========================================================
-    // DEBUG - SET TRAP
-    // =========================================================
-
-    [ContextMenu("Debug - Set Trap With Bait")]
-    private void DebugSetTrap()
-    {
-        SetTrap();
-    }
-
-    // =========================================================
-    // DEBUG - EMPTY
-    // =========================================================
-
-    [ContextMenu("Debug - Make Empty")]
-    private void DebugMakeEmpty()
-    {
-        MakeEmpty();
-    }
-
-    // =========================================================
-    // DEBUG - CATCH FERAL CAT
-    // =========================================================
-
-    [ContextMenu("Debug - Catch Feral Cat")]
-    private void DebugCatchFeralCat()
-    {
-        currentState =
-            TrapState.Set;
-
-        hasBait =
-            true;
-
-        TriggerTrap(
-            "Feral Cat"
-        );
-    }
-
-    // =========================================================
-    // DEBUG - CATCH FOX
-    // =========================================================
-
-    [ContextMenu("Debug - Catch Fox")]
-    private void DebugCatchFox()
-    {
-        currentState =
-            TrapState.Set;
-
-        hasBait =
-            true;
-
-        TriggerTrap(
-            "Fox"
-        );
-    }
-
-    // =========================================================
-    // DEBUG - CATCH CUSTOM PREDATOR
-    // =========================================================
-
-    [ContextMenu("Debug - Catch Predator")]
-    private void DebugCatchPredator()
-    {
-        currentState =
-            TrapState.Set;
-
-        hasBait =
-            true;
-
-        TriggerTrap(
-            debugMammalName
-        );
-    }
-
-    // =========================================================
-    // DEBUG - SUNNY CAPTURE
-    // =========================================================
-
-    [ContextMenu("Debug - Sunny Capture Roll")]
-    private void DebugSunnyCaptureRoll()
-    {
-        if (!IsSet())
-        {
-            SetTrap();
-        }
-
-        AttemptDailyCapture(
-            "Sunny"
-        );
-    }
-
-    // =========================================================
-    // DEBUG - RAIN CAPTURE
-    // =========================================================
-
-    [ContextMenu("Debug - Rain Capture Roll")]
-    private void DebugRainCaptureRoll()
-    {
-        if (!IsSet())
-        {
-            SetTrap();
-        }
-
-        AttemptDailyCapture(
-            "Rain"
-        );
-    }
-
-    // =========================================================
-    // DEBUG - THUNDER CAPTURE
-    // =========================================================
-
-    [ContextMenu("Debug - Thunder Capture Roll")]
-    private void DebugThunderCaptureRoll()
-    {
-        if (!IsSet())
-        {
-            SetTrap();
-        }
-
-        AttemptDailyCapture(
-            "RainAndThunder"
-        );
     }
 
     // =========================================================
@@ -981,6 +1144,39 @@ public class Trap : MonoBehaviour
         return currentState;
     }
 
+    public Sprite GetCurrentDisplayedSprite()
+    {
+        if (destroyed)
+        {
+            if (debrisRenderer != null && debrisRenderer.sprite != null)
+                return debrisRenderer.sprite;
+
+            return debrisSprite;
+        }
+
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+
+            if (spriteRenderer == null)
+                spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        }
+
+        if (spriteRenderer != null && spriteRenderer.sprite != null)
+            return spriteRenderer.sprite;
+
+        if (IsEmpty())
+            return emptyTrapSprite;
+
+        if (IsSet())
+            return baitedTrapSprite != null ? baitedTrapSprite : emptyTrapSprite;
+
+        if (IsCaught())
+            return GetCaughtPredatorSprite();
+
+        return null;
+    }
+
     public string GetCaughtMammalName()
     {
         return caughtMammalName;
@@ -988,28 +1184,33 @@ public class Trap : MonoBehaviour
 
     public bool HasBait()
     {
+        if (PlotIsDestroyed()) return false;
         return hasBait;
     }
 
     public bool HasCaughtAnimal()
     {
+        if (PlotIsDestroyed()) return false;
         return hasCaughtAnimal;
     }
 
     public bool IsEmpty()
     {
+        if (destroyed) return false;
         return currentState ==
                TrapState.Empty;
     }
 
     public bool IsSet()
     {
+        if (PlotIsDestroyed()) return false;
         return currentState ==
                TrapState.Set;
     }
 
     public bool IsCaught()
     {
+        if (PlotIsDestroyed()) return false;
         return currentState ==
                TrapState.Caught;
     }
@@ -1022,5 +1223,96 @@ public class Trap : MonoBehaviour
     public string GetRecordedWeather()
     {
         return recordedDayWeather;
+    }
+
+    // =========================================================
+    // DEBUG
+    // =========================================================
+
+    [ContextMenu("Debug - Set Trap With Bait")]
+    private void DebugSetTrap()
+    {
+        SetTrap();
+    }
+
+    [ContextMenu("Debug - Make Empty")]
+    private void DebugEmpty()
+    {
+        MakeEmpty();
+    }
+
+    [ContextMenu("Debug - Catch Feral Cat")]
+    private void DebugCatchCat()
+    {
+        if (PlotIsDestroyed()) return;
+        currentState =
+            TrapState.Set;
+
+        hasBait =
+            true;
+
+        TriggerTrap(
+            "Feral Cat"
+        );
+    }
+
+    [ContextMenu("Debug - Catch Fox")]
+    private void DebugCatchFox()
+    {
+        if (PlotIsDestroyed()) return;
+        currentState =
+            TrapState.Set;
+
+        hasBait =
+            true;
+
+        TriggerTrap(
+            "Fox"
+        );
+    }
+
+    [ContextMenu("Debug - Relocate Current Predator")]
+    private void DebugRelocate()
+    {
+        RelocateCaughtPredator();
+    }
+
+    [ContextMenu("Debug - Sunny Capture Roll")]
+    private void DebugSunny()
+    {
+        if (!IsSet())
+        {
+            SetTrapInternal();
+        }
+
+        AttemptDailyCapture(
+            "Sunny"
+        );
+    }
+
+    [ContextMenu("Debug - Rain Capture Roll")]
+    private void DebugRain()
+    {
+        if (!IsSet())
+        {
+            SetTrapInternal();
+        }
+
+        AttemptDailyCapture(
+            "Rain"
+        );
+    }
+
+    [ContextMenu("Debug - Thunder Capture Roll")]
+    private void DebugThunder()
+    {
+        if (!IsSet())
+        {
+            SetTrapInternal();
+        }
+
+        AttemptDailyCapture(
+            "RainAndThunder"
+        );
     }
 }

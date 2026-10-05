@@ -3,6 +3,23 @@ using UnityEngine.Events;
 
 public class CropPlot : MonoBehaviour
 {
+    public Sprite GetEmptyPlotSprite() { return emptyPlotSprite; }
+
+    public Sprite GetCurrentDisplayedSprite()
+    {
+        if (cropRenderer == null)
+        {
+            AutoAssignReferences();
+        }
+
+        if (cropRenderer != null &&
+            cropRenderer.sprite != null)
+        {
+            return cropRenderer.sprite;
+        }
+
+        return emptyPlotSprite;
+    }
     // =========================================================
     // REFERENCES
     // =========================================================
@@ -11,24 +28,59 @@ public class CropPlot : MonoBehaviour
 
     [Tooltip(
         "Plot component this crop belongs to. " +
-        "If empty, it will automatically be found."
+        "Automatically found if left empty."
     )]
     [SerializeField]
     private Plot plot;
 
     [Tooltip(
-        "Main SpriteRenderer for the entire farm plot. " +
-        "If empty, it will automatically use the SpriteRenderer on this object."
+        "Main SpriteRenderer for the farm plot. " +
+        "Automatically found if left empty."
     )]
     [SerializeField]
     private SpriteRenderer cropRenderer;
 
     [Tooltip(
-        "Main day system. " +
-        "If empty, it will automatically be found in the scene."
+        "Automatically finds the EndDaySystem in the scene if left empty."
     )]
     [SerializeField]
     private EndDaySystem endDaySystem;
+
+    [Tooltip(
+        "Automatically finds the BatColony in the scene if left empty."
+    )]
+    [SerializeField]
+    private BatColony batColony;
+
+    [Tooltip("Environment stats used for daily prey arrival. Automatically found if empty.")]
+    [SerializeField] private RangerStation rangerStation;
+
+    [Header("Daily Prey Arrival")]
+    [Tooltip("Daily arrival chance at 100 Soil Health and 100 Prey Availability. Checks start the day AFTER maturity.")]
+    [Range(0f, 100f)]
+    [SerializeField] private float maximumDailyPreyChance = 80f;
+
+    public float GetDailyPreyArrivalChance()
+    {
+        if (plot != null && plot.IsDestroyed()) return 0f;
+        if (rangerStation == null)
+            rangerStation = FindFirstObjectByType<RangerStation>();
+        if (rangerStation == null) return 0f;
+        float chance = Mathf.Clamp(maximumDailyPreyChance, 0f, 100f) *
+            Mathf.Clamp01(rangerStation.GetSoilHealth() / 100f) *
+            Mathf.Clamp01(rangerStation.GetPreyAvailability() / 100f);
+        return float.IsNaN(chance) ? 0f : chance;
+    }
+
+    private void TryDailyPreyArrival()
+    {
+        if (!cropActive || !fullyGrown || attractedMammal != null ||
+            !attractMammalWhenFullyGrown) return;
+
+        float chance = GetDailyPreyArrivalChance();
+        if (chance > 0f && (chance >= 100f || Random.value < chance / 100f))
+            SpawnMammal();
+    }
 
     // =========================================================
     // CROP VISUALS
@@ -37,20 +89,18 @@ public class CropPlot : MonoBehaviour
     [Header("Crop Visuals")]
 
     [Tooltip(
-        "Original empty farm plot sprite.\n\n" +
-        "If left empty, the sprite currently assigned to this prefab's " +
-        "SpriteRenderer will automatically be remembered as the empty plot."
+        "Original empty farm plot sprite. " +
+        "If empty, the starting SpriteRenderer sprite is remembered."
     )]
     [SerializeField]
     private Sprite emptyPlotSprite;
 
     [Tooltip(
-        "Each sprite should contain the ENTIRE farm plot plus the crop.\n\n" +
-        "Example:\n" +
-        "0 = Plot + Seedling\n" +
-        "1 = Plot + Small Plant\n" +
-        "2 = Plot + Large Plant\n" +
-        "3 = Plot + Fully Grown Plant"
+        "Each sprite should contain the entire farm plot plus crop.\n\n" +
+        "0 = Seedling\n" +
+        "1 = Small Plant\n" +
+        "2 = Large Plant\n" +
+        "3 = Fully Grown"
     )]
     [SerializeField]
     private Sprite[] growthStageSprites;
@@ -62,24 +112,43 @@ public class CropPlot : MonoBehaviour
     [Header("Mammal Attraction")]
 
     [Tooltip(
-        "Possible mammals this crop can attract when fully grown."
+        "Possible mammals attracted when the crop becomes fully grown."
     )]
     [SerializeField]
     private GameObject[] mammalPrefabs;
 
     [Tooltip(
-        "Optional spawn point for the mammal.\n\n" +
-        "If empty, this script will look for a child named " +
-        "\"Mammal Spawn Point\"."
+        "Spawn point for attracted mammals. " +
+        "If empty, searches for a child called 'Mammal Spawn Point'."
     )]
     [SerializeField]
     private Transform mammalSpawnPoint;
 
     [Tooltip(
-        "Automatically spawn a mammal when the crop becomes fully grown."
+        "Enable daily prey arrival checks after the crop has matured."
     )]
     [SerializeField]
     private bool attractMammalWhenFullyGrown = true;
+
+    // =========================================================
+    // BAT FOOD
+    // =========================================================
+
+    [Header("Bat Food Reward")]
+
+    [Tooltip(
+        "Food added to the Ghost Bat colony when the player " +
+        "collects an attracted mammal."
+    )]
+    [Min(0f)]
+    [SerializeField]
+    private float foodPerMammalCollected = 20f;
+
+    [Tooltip(
+        "Enable Food rewards when attracted mammals are collected."
+    )]
+    [SerializeField]
+    private bool rewardBatFoodOnCollection = true;
 
     // =========================================================
     // EVENTS
@@ -100,6 +169,9 @@ public class CropPlot : MonoBehaviour
     private UnityEvent onMammalAttracted;
 
     [SerializeField]
+    private UnityEvent onMammalCollected;
+
+    [SerializeField]
     private UnityEvent onCropHarvested;
 
     // =========================================================
@@ -116,20 +188,54 @@ public class CropPlot : MonoBehaviour
     // =========================================================
 
     private int currentGrowthStage = -1;
-
     private int lastProcessedDay = -1;
 
     private bool cropActive = false;
-
     private bool fullyGrown = false;
 
     private GameObject attractedMammal;
+
+    private bool foodRewardGivenForCurrentMammal = false;
 
     // =========================================================
     // AWAKE
     // =========================================================
 
     private void Awake()
+    {
+        AutoAssignReferences();
+    }
+
+    // =========================================================
+    // START
+    // =========================================================
+
+    private void Start()
+    {
+        // Run again in Start in case another scene object
+        // had not finished initializing during Awake.
+        AutoAssignReferences();
+
+        // =====================================================
+        // EXISTING PLOT STATE
+        // =====================================================
+
+        if (plot != null &&
+            plot.IsPlanted())
+        {
+            PlantCrop();
+        }
+        else
+        {
+            ShowEmptyPlot();
+        }
+    }
+
+    // =========================================================
+    // AUTO ASSIGN REFERENCES
+    // =========================================================
+
+    private void AutoAssignReferences()
     {
         // =====================================================
         // PLOT
@@ -154,7 +260,7 @@ public class CropPlot : MonoBehaviour
         }
 
         // =====================================================
-        // MAIN PLOT SPRITE RENDERER
+        // SPRITE RENDERER
         // =====================================================
 
         if (cropRenderer == null)
@@ -173,10 +279,8 @@ public class CropPlot : MonoBehaviour
         // REMEMBER EMPTY PLOT SPRITE
         // =====================================================
 
-        if (
-            cropRenderer != null &&
-            emptyPlotSprite == null
-        )
+        if (cropRenderer != null &&
+            emptyPlotSprite == null)
         {
             emptyPlotSprite =
                 cropRenderer.sprite;
@@ -193,44 +297,75 @@ public class CropPlot : MonoBehaviour
                     "Mammal Spawn Point"
                 );
 
+            if (foundSpawnPoint == null)
+            {
+                Transform[] children =
+                    GetComponentsInChildren<Transform>(
+                        true
+                    );
+
+                foreach (Transform child in children)
+                {
+                    if (child.name ==
+                        "Mammal Spawn Point")
+                    {
+                        foundSpawnPoint =
+                            child;
+
+                        break;
+                    }
+                }
+            }
+
             if (foundSpawnPoint != null)
             {
                 mammalSpawnPoint =
                     foundSpawnPoint;
             }
         }
-    }
 
-    // =========================================================
-    // START
-    // =========================================================
-
-    private void Start()
-    {
         // =====================================================
-        // DAY SYSTEM
+        // END DAY SYSTEM
         // =====================================================
 
         if (endDaySystem == null)
         {
             endDaySystem =
-                FindFirstObjectByType<EndDaySystem>();
+                FindFirstObjectByType<EndDaySystem>(
+                    FindObjectsInactive.Include
+                );
+
+            if (endDaySystem == null &&
+                showDebugLogs)
+            {
+                Debug.LogWarning(
+                    "[CropPlot] " +
+                    gameObject.name +
+                    " could not find EndDaySystem."
+                );
+            }
         }
 
         // =====================================================
-        // EXISTING PLOT STATE
+        // BAT COLONY
         // =====================================================
 
-        if (
-            plot != null &&
-            plot.IsPlanted()
-        )
+        if (batColony == null)
         {
-            PlantCrop();
-        }
-        else
-        {
-            ShowEmptyPlot();
+            batColony =
+                FindFirstObjectByType<BatColony>(
+                    FindObjectsInactive.Include
+                );
+
+            if (batColony == null &&
+                showDebugLogs)
+            {
+                Debug.LogWarning(
+                    "[CropPlot] " +
+                    gameObject.name +
+                    " could not find BatColony."
+                );
+            }
         }
     }
 
@@ -240,32 +375,19 @@ public class CropPlot : MonoBehaviour
 
     private void Update()
     {
-        // -----------------------------------------------------
-        // NO ACTIVE CROP
-        // -----------------------------------------------------
-
+        if (plot != null) { plot.CheckSoilDamage(); if (plot.IsDestroyed()) return; }
         if (!cropActive)
         {
             return;
         }
 
-        // -----------------------------------------------------
-        // FULLY GROWN
-        // -----------------------------------------------------
-
-        if (fullyGrown)
-        {
-            return;
-        }
-
-        // -----------------------------------------------------
-        // FIND DAY SYSTEM
-        // -----------------------------------------------------
+        // =====================================================
+        // MAKE SURE END DAY SYSTEM EXISTS
+        // =====================================================
 
         if (endDaySystem == null)
         {
-            endDaySystem =
-                FindFirstObjectByType<EndDaySystem>();
+            AutoAssignReferences();
 
             if (endDaySystem == null)
             {
@@ -273,36 +395,41 @@ public class CropPlot : MonoBehaviour
             }
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // CURRENT DAY
-        // -----------------------------------------------------
+        // =====================================================
 
         int currentDay =
             endDaySystem.GetCurrentDay();
 
-        // -----------------------------------------------------
-        // NO NEW DAY
-        // -----------------------------------------------------
+        if (currentDay < 1) return;
+        if (lastProcessedDay < 1)
+        {
+            lastProcessedDay = currentDay;
+            return;
+        }
 
         if (currentDay <= lastProcessedDay)
         {
             return;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // PROCESS MISSED DAYS
-        // -----------------------------------------------------
+        // =====================================================
 
         while (lastProcessedDay < currentDay)
         {
             lastProcessedDay++;
 
-            GrowOneDay();
-
+            // Choose the branch BEFORE growth: reaching maturity today
+            // cannot also run today's prey check.
             if (fullyGrown)
-            {
-                break;
-            }
+                TryDailyPreyArrival();
+            else
+                GrowOneDay();
+
+            if (!cropActive) break;
         }
     }
 
@@ -312,14 +439,11 @@ public class CropPlot : MonoBehaviour
 
     public void PlantCrop()
     {
-        // -----------------------------------------------------
-        // NEED GROWTH STAGES
-        // -----------------------------------------------------
+        if (plot != null && plot.IsDestroyed()) return;
+        AutoAssignReferences();
 
-        if (
-            growthStageSprites == null ||
-            growthStageSprites.Length == 0
-        )
+        if (growthStageSprites == null ||
+            growthStageSprites.Length == 0)
         {
             Debug.LogWarning(
                 gameObject.name +
@@ -329,25 +453,22 @@ public class CropPlot : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
-        // FIND DAY SYSTEM
-        // -----------------------------------------------------
-
-        if (endDaySystem == null)
-        {
-            endDaySystem =
-                FindFirstObjectByType<EndDaySystem>();
-        }
-
-        // -----------------------------------------------------
+        // =====================================================
         // REMOVE OLD MAMMAL
-        // -----------------------------------------------------
+        // =====================================================
 
         DestroyAttractedMammal();
 
-        // -----------------------------------------------------
+        // =====================================================
+        // RESET REWARD
+        // =====================================================
+
+        foodRewardGivenForCurrentMammal =
+            false;
+
+        // =====================================================
         // RESET CROP STATE
-        // -----------------------------------------------------
+        // =====================================================
 
         cropActive =
             true;
@@ -358,9 +479,9 @@ public class CropPlot : MonoBehaviour
         currentGrowthStage =
             0;
 
-        // -----------------------------------------------------
+        // =====================================================
         // REMEMBER DAY PLANTED
-        // -----------------------------------------------------
+        // =====================================================
 
         if (endDaySystem != null)
         {
@@ -373,21 +494,21 @@ public class CropPlot : MonoBehaviour
                 0;
         }
 
-        // -----------------------------------------------------
-        // SHOW FIRST STAGE
-        // -----------------------------------------------------
+        // =====================================================
+        // SPRITE
+        // =====================================================
 
         RefreshCropSprite();
 
-        // -----------------------------------------------------
+        // =====================================================
         // EVENT
-        // -----------------------------------------------------
+        // =====================================================
 
         onCropPlanted?.Invoke();
 
-        // -----------------------------------------------------
+        // =====================================================
         // DEBUG
-        // -----------------------------------------------------
+        // =====================================================
 
         if (showDebugLogs)
         {
@@ -406,45 +527,28 @@ public class CropPlot : MonoBehaviour
 
     public void GrowOneDay()
     {
-        // -----------------------------------------------------
-        // NO CROP
-        // -----------------------------------------------------
-
+        if (plot != null && plot.IsDestroyed()) return;
         if (!cropActive)
         {
             return;
         }
-
-        // -----------------------------------------------------
-        // ALREADY FULLY GROWN
-        // -----------------------------------------------------
 
         if (fullyGrown)
         {
             return;
         }
 
-        // -----------------------------------------------------
-        // NEED SPRITES
-        // -----------------------------------------------------
-
-        if (
-            growthStageSprites == null ||
-            growthStageSprites.Length == 0
-        )
+        if (growthStageSprites == null ||
+            growthStageSprites.Length == 0)
         {
             return;
         }
 
-        // -----------------------------------------------------
-        // NEXT GROWTH STAGE
-        // -----------------------------------------------------
+        // =====================================================
+        // NEXT STAGE
+        // =====================================================
 
         currentGrowthStage++;
-
-        // -----------------------------------------------------
-        // CLAMP
-        // -----------------------------------------------------
 
         currentGrowthStage =
             Mathf.Clamp(
@@ -453,33 +557,19 @@ public class CropPlot : MonoBehaviour
                 growthStageSprites.Length - 1
             );
 
-        // -----------------------------------------------------
-        // CHANGE WHOLE PLOT SPRITE
-        // -----------------------------------------------------
-
         RefreshCropSprite();
-
-        // -----------------------------------------------------
-        // EVENT
-        // -----------------------------------------------------
 
         onCropGrown?.Invoke();
 
-        // -----------------------------------------------------
+        // =====================================================
         // FULLY GROWN
-        // -----------------------------------------------------
+        // =====================================================
 
-        if (
-            currentGrowthStage >=
-            growthStageSprites.Length - 1
-        )
+        if (currentGrowthStage >=
+            growthStageSprites.Length - 1)
         {
             BecomeFullyGrown();
         }
-
-        // -----------------------------------------------------
-        // DEBUG
-        // -----------------------------------------------------
 
         if (showDebugLogs)
         {
@@ -506,15 +596,7 @@ public class CropPlot : MonoBehaviour
         fullyGrown =
             true;
 
-        // -----------------------------------------------------
-        // EVENT
-        // -----------------------------------------------------
-
         onCropFullyGrown?.Invoke();
-
-        // -----------------------------------------------------
-        // DEBUG
-        // -----------------------------------------------------
 
         if (showDebugLogs)
         {
@@ -524,14 +606,7 @@ public class CropPlot : MonoBehaviour
             );
         }
 
-        // -----------------------------------------------------
-        // ATTRACT MAMMAL
-        // -----------------------------------------------------
-
-        if (attractMammalWhenFullyGrown)
-        {
-            SpawnMammal();
-        }
+        // Prey checks begin on the following processed day.
     }
 
     // =========================================================
@@ -540,122 +615,55 @@ public class CropPlot : MonoBehaviour
 
     public void SpawnMammal()
     {
-        // -----------------------------------------------------
-        // MUST BE FULLY GROWN
-        // -----------------------------------------------------
-
+        if (plot != null && plot.IsDestroyed()) return;
         if (!fullyGrown)
         {
             return;
         }
-
-        // -----------------------------------------------------
-        // ALREADY HAS MAMMAL
-        // -----------------------------------------------------
 
         if (attractedMammal != null)
         {
             return;
         }
 
-        // -----------------------------------------------------
-        // NEED MAMMALS
-        // -----------------------------------------------------
+        GameObject mammalPrefab =
+            GetRandomMammalPrefab();
 
-        if (
-            mammalPrefabs == null ||
-            mammalPrefabs.Length == 0
-        )
+        if (mammalPrefab == null)
         {
             if (showDebugLogs)
             {
                 Debug.LogWarning(
                     gameObject.name +
-                    " has no mammal prefabs assigned."
+                    ": No mammal prefab available."
                 );
             }
 
             return;
         }
 
-        // -----------------------------------------------------
-        // CHOOSE MAMMAL
-        // -----------------------------------------------------
-
-        GameObject chosenPrefab =
-            GetRandomMammalPrefab();
-
-        if (chosenPrefab == null)
-        {
-            return;
-        }
-
-        // -----------------------------------------------------
-        // POSITION
-        // -----------------------------------------------------
-
         Vector3 spawnPosition =
-            transform.position;
+            mammalSpawnPoint != null
+                ? mammalSpawnPoint.position
+                : transform.position;
 
         Quaternion spawnRotation =
-            Quaternion.identity;
-
-        if (mammalSpawnPoint != null)
-        {
-            spawnPosition =
-                mammalSpawnPoint.position;
-
-            spawnRotation =
-                mammalSpawnPoint.rotation;
-        }
-
-        // -----------------------------------------------------
-        // SPAWN
-        // -----------------------------------------------------
+            mammalSpawnPoint != null
+                ? mammalSpawnPoint.rotation
+                : Quaternion.identity;
 
         attractedMammal =
             Instantiate(
-                chosenPrefab,
+                mammalPrefab,
                 spawnPosition,
                 spawnRotation
             );
 
-        // -----------------------------------------------------
-        // CONNECT TO CROP
-        // -----------------------------------------------------
-
-        MammalPickup mammalPickup =
-            attractedMammal.GetComponent<MammalPickup>();
-
-        if (mammalPickup == null)
-        {
-            mammalPickup =
-                attractedMammal.GetComponentInChildren<MammalPickup>();
-        }
-
-        if (mammalPickup != null)
-        {
-            mammalPickup.SetCropOwner(
-                this
-            );
-        }
-        else
-        {
-            Debug.LogWarning(
-                attractedMammal.name +
-                " does not have a MammalPickup component."
-            );
-        }
-
-        // -----------------------------------------------------
-        // EVENT
-        // -----------------------------------------------------
+        // A newly spawned mammal can reward food.
+        foodRewardGivenForCurrentMammal =
+            false;
 
         onMammalAttracted?.Invoke();
-
-        // -----------------------------------------------------
-        // DEBUG
-        // -----------------------------------------------------
 
         if (showDebugLogs)
         {
@@ -674,17 +682,15 @@ public class CropPlot : MonoBehaviour
 
     private GameObject GetRandomMammalPrefab()
     {
-        if (
-            mammalPrefabs == null ||
-            mammalPrefabs.Length == 0
-        )
+        if (mammalPrefabs == null ||
+            mammalPrefabs.Length == 0)
         {
             return null;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // RANDOM ATTEMPTS
-        // -----------------------------------------------------
+        // =====================================================
 
         for (
             int attempt = 0;
@@ -704,9 +710,9 @@ public class CropPlot : MonoBehaviour
             }
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // FALLBACK
-        // -----------------------------------------------------
+        // =====================================================
 
         for (
             int i = 0;
@@ -735,25 +741,127 @@ public class CropPlot : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
-        // REMOVE REFERENCE
-        // -----------------------------------------------------
+        // =====================================================
+        // VALIDATE THE MAMMAL
+        // =====================================================
 
-        if (
+        bool validMammal =
             mammal != null &&
             attractedMammal ==
-            mammal.gameObject
-        )
+            mammal.gameObject;
+
+        // MammalPickup may be on a child object.
+        if (!validMammal &&
+            mammal != null &&
+            attractedMammal != null)
         {
+            validMammal =
+                mammal.transform.IsChildOf(
+                    attractedMammal.transform
+                );
+        }
+
+        // =====================================================
+        // GIVE FOOD
+        // =====================================================
+
+        if (validMammal)
+        {
+            GiveBatFoodReward();
+
             attractedMammal =
                 null;
         }
+        else if (attractedMammal == null)
+        {
+            // Compatibility fallback if the pickup destroys
+            // itself before notifying CropPlot.
+            GiveBatFoodReward();
+        }
 
-        // -----------------------------------------------------
-        // CROP GETS CONSUMED
-        // -----------------------------------------------------
+        // =====================================================
+        // EVENT
+        // =====================================================
+
+        onMammalCollected?.Invoke();
+
+        // =====================================================
+        // CONSUME CROP
+        // =====================================================
 
         HarvestCrop();
+    }
+
+    // =========================================================
+    // GIVE BAT FOOD
+    // =========================================================
+
+    private void GiveBatFoodReward()
+    {
+        if (plot != null && plot.IsDestroyed()) return;
+        if (!rewardBatFoodOnCollection)
+        {
+            return;
+        }
+
+        if (foodRewardGivenForCurrentMammal)
+        {
+            return;
+        }
+
+        // =====================================================
+        // AUTO FIND COLONY
+        // =====================================================
+
+        if (batColony == null)
+        {
+            AutoAssignReferences();
+        }
+
+        if (batColony == null)
+        {
+            Debug.LogWarning(
+                "[CropPlot] Could not give Bat Food because " +
+                "no BatColony exists in the scene."
+            );
+
+            return;
+        }
+
+        // =====================================================
+        // OLD VALUE
+        // =====================================================
+
+        float oldFood =
+            batColony.GetBatFood();
+
+        // =====================================================
+        // ADD FOOD
+        // =====================================================
+
+        batColony.AddBatFood(
+            foodPerMammalCollected
+        );
+
+        foodRewardGivenForCurrentMammal =
+            true;
+
+        // =====================================================
+        // DEBUG
+        // =====================================================
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[CropPlot] PREY COLLECTED!" +
+                "\nFood Reward: +" +
+                foodPerMammalCollected +
+                "\nBat Food: " +
+                oldFood +
+                " -> " +
+                batColony.GetBatFood()
+            );
+        }
     }
 
     // =========================================================
@@ -767,10 +875,6 @@ public class CropPlot : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
-        // RESET CROP
-        // -----------------------------------------------------
-
         cropActive =
             false;
 
@@ -783,30 +887,26 @@ public class CropPlot : MonoBehaviour
         lastProcessedDay =
             -1;
 
-        // -----------------------------------------------------
-        // RESTORE EMPTY FARM PLOT
-        // -----------------------------------------------------
+        // =====================================================
+        // EMPTY SPRITE
+        // =====================================================
 
         ShowEmptyPlot();
 
-        // -----------------------------------------------------
-        // CLEAR PLOT PLANTED STATE
-        // -----------------------------------------------------
+        // =====================================================
+        // CLEAR PLOT
+        // =====================================================
 
         if (plot != null)
         {
             plot.ClearPlant();
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // EVENT
-        // -----------------------------------------------------
+        // =====================================================
 
         onCropHarvested?.Invoke();
-
-        // -----------------------------------------------------
-        // DEBUG
-        // -----------------------------------------------------
 
         if (showDebugLogs)
         {
@@ -823,10 +923,6 @@ public class CropPlot : MonoBehaviour
 
     public void ClearCrop()
     {
-        // -----------------------------------------------------
-        // RESET STATE
-        // -----------------------------------------------------
-
         cropActive =
             false;
 
@@ -839,17 +935,17 @@ public class CropPlot : MonoBehaviour
         lastProcessedDay =
             -1;
 
-        // -----------------------------------------------------
-        // REMOVE MAMMAL
-        // -----------------------------------------------------
+        foodRewardGivenForCurrentMammal =
+            false;
 
         DestroyAttractedMammal();
 
-        // -----------------------------------------------------
-        // RESTORE EMPTY PLOT
-        // -----------------------------------------------------
-
         ShowEmptyPlot();
+
+        if (plot != null)
+        {
+            plot.ClearPlant();
+        }
     }
 
     // =========================================================
@@ -858,6 +954,7 @@ public class CropPlot : MonoBehaviour
 
     private void ShowEmptyPlot()
     {
+        if (plot != null && plot.IsDestroyed()) return;
         if (cropRenderer == null)
         {
             return;
@@ -876,40 +973,37 @@ public class CropPlot : MonoBehaviour
 
     private void RefreshCropSprite()
     {
+        if (plot != null && plot.IsDestroyed()) return;
         if (cropRenderer == null)
         {
             return;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // EMPTY
-        // -----------------------------------------------------
+        // =====================================================
 
-        if (
-            !cropActive ||
-            currentGrowthStage < 0
-        )
+        if (!cropActive ||
+            currentGrowthStage < 0)
         {
             ShowEmptyPlot();
             return;
         }
 
-        // -----------------------------------------------------
-        // NO GROWTH SPRITES
-        // -----------------------------------------------------
+        // =====================================================
+        // NO SPRITES
+        // =====================================================
 
-        if (
-            growthStageSprites == null ||
-            growthStageSprites.Length == 0
-        )
+        if (growthStageSprites == null ||
+            growthStageSprites.Length == 0)
         {
             ShowEmptyPlot();
             return;
         }
 
-        // -----------------------------------------------------
-        // GET CORRECT STAGE
-        // -----------------------------------------------------
+        // =====================================================
+        // CURRENT STAGE
+        // =====================================================
 
         int index =
             Mathf.Clamp(
@@ -920,10 +1014,6 @@ public class CropPlot : MonoBehaviour
 
         Sprite stageSprite =
             growthStageSprites[index];
-
-        // -----------------------------------------------------
-        // APPLY WHOLE PLOT + CROP SPRITE
-        // -----------------------------------------------------
 
         if (stageSprite != null)
         {
@@ -941,7 +1031,7 @@ public class CropPlot : MonoBehaviour
     }
 
     // =========================================================
-    // DESTROY MAMMAL
+    // DESTROY ATTRACTED MAMMAL
     // =========================================================
 
     private void DestroyAttractedMammal()
@@ -951,6 +1041,7 @@ public class CropPlot : MonoBehaviour
             return;
         }
 
+        attractedMammal.SetActive(false);
         Destroy(
             attractedMammal
         );
@@ -988,6 +1079,37 @@ public class CropPlot : MonoBehaviour
         return fullyGrown;
     }
 
+    // =========================================================
+    // DAYS UNTIL FULLY GROWN
+    // =========================================================
+
+    public int GetDaysUntilFullyGrown()
+    {
+        if (!cropActive)
+        {
+            return 0;
+        }
+
+        if (fullyGrown)
+        {
+            return 0;
+        }
+
+        if (growthStageSprites == null ||
+            growthStageSprites.Length == 0)
+        {
+            return 0;
+        }
+
+        int finalGrowthStage =
+            growthStageSprites.Length - 1;
+
+        return Mathf.Max(
+            0,
+            finalGrowthStage - currentGrowthStage
+        );
+    }
+
     public bool HasAttractedMammal()
     {
         return attractedMammal != null;
@@ -998,9 +1120,36 @@ public class CropPlot : MonoBehaviour
         return attractedMammal;
     }
 
+    public float GetFoodReward()
+    {
+        return foodPerMammalCollected;
+    }
+
     // =========================================================
     // DEBUG
     // =========================================================
+
+    [ContextMenu("Debug - Auto Assign References")]
+    private void DebugAutoAssignReferences()
+    {
+        AutoAssignReferences();
+
+        Debug.Log(
+            "[CropPlot] Auto Assignment:" +
+            "\nEnd Day System = " +
+            (
+                endDaySystem != null
+                    ? endDaySystem.name
+                    : "NOT FOUND"
+            ) +
+            "\nBat Colony = " +
+            (
+                batColony != null
+                    ? batColony.name
+                    : "NOT FOUND"
+            )
+        );
+    }
 
     [ContextMenu("Debug - Plant Crop")]
     private void DebugPlantCrop()
@@ -1036,7 +1185,10 @@ public class CropPlot : MonoBehaviour
             }
         }
 
-        while (!fullyGrown)
+        while (
+            cropActive &&
+            !fullyGrown
+        )
         {
             GrowOneDay();
         }
@@ -1045,23 +1197,27 @@ public class CropPlot : MonoBehaviour
     [ContextMenu("Debug - Spawn Mammal")]
     private void DebugSpawnMammal()
     {
+        if (!fullyGrown)
+        {
+            DebugFullyGrow();
+        }
+
         SpawnMammal();
     }
 
-    [ContextMenu("Debug - Harvest Crop")]
-    private void DebugHarvestCrop()
+    [ContextMenu("Debug - Give Bat Food Reward")]
+    private void DebugGiveBatFoodReward()
     {
-        HarvestCrop();
+        foodRewardGivenForCurrentMammal =
+            false;
+
+        GiveBatFoodReward();
     }
 
     [ContextMenu("Debug - Clear Crop")]
     private void DebugClearCrop()
     {
-        if (plot != null)
-        {
-            plot.ClearPlant();
-        }
-
         ClearCrop();
     }
 }
+

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
@@ -34,6 +35,322 @@ public class WeatherManager : MonoBehaviour
     private WeatherType currentWeather =
         WeatherType.Sunny;
 
+    [Header("Procedural Daily Weather")]
+    [Tooltip("Approximate percentage of sunny days over time. 90 = mostly sunny, 0 = always wet, 100 = always sunny. Wet days are mostly rain with occasional storms. Weather still forms short spells.")]
+    [Range(0f, 100f)]
+    [SerializeField] private float sunnyWeatherChance = 90f;
+
+    // Preserve the existing seed while keeping the Inspector simple.
+    [SerializeField, HideInInspector] private int weatherSeed = 12345;
+
+    private System.Random dailyWeatherRandom;
+
+    // Called once by EndDaySystem after the Night Report closes.
+    // This is a seeded, state-dependent pattern, not a climate simulation.
+    public void AdvanceDailyWeather()
+    {
+        // Remember the weather for the day that has just finished.
+        // Storm damage is applied AFTER the storm day, when End Day
+        // advances the game into the next morning.
+        WeatherType weatherThatJustEnded =
+            currentWeather;
+
+        if (dailyWeatherRandom == null)
+        {
+            dailyWeatherRandom = new System.Random(weatherSeed);
+        }
+
+        WeatherType nextWeather;
+
+        if (debugOverrideDailyWeather)
+        {
+            nextWeather =
+                debugWeather;
+        }
+        else
+        {
+            nextWeather =
+                ChooseDailyWeather(
+                    currentWeather,
+                    sunnyWeatherChance,
+                    dailyWeatherRandom.NextDouble()
+                );
+        }
+
+        // Damage belongs to the storm day that just finished, not
+        // the new day that is about to begin.
+        if (weatherThatJustEnded ==
+            WeatherType.RainAndThunder)
+        {
+            ApplyLightningStormPlotDamage();
+        }
+
+        SetWeather(nextWeather);
+    }
+
+    private static WeatherType ChooseDailyWeather(
+        WeatherType previous, float sunnyPercent, double roll)
+    {
+        if (float.IsNaN(sunnyPercent) || float.IsInfinity(sunnyPercent)) sunnyPercent = 90f;
+        double sunny = System.Math.Max(0d, System.Math.Min(100d, sunnyPercent)) / 100d;
+        if (sunny <= 0d) return roll < 0.9d ? WeatherType.Rain : WeatherType.RainAndThunder;
+        if (sunny >= 1d) return WeatherType.Sunny;
+
+        // A little persistence creates spells while retaining the slider's
+        // long-run sunny proportion. The remaining wet days are 90% rain.
+        double nextSunny = 0.75d * sunny + (previous == WeatherType.Sunny ? 0.25d : 0d);
+        if (roll < nextSunny) return WeatherType.Sunny;
+        return roll < nextSunny + (1d - nextSunny) * 0.9d
+            ? WeatherType.Rain : WeatherType.RainAndThunder;
+    }
+
+    // =========================================================
+    // LIGHTNING STORM PLOT DAMAGE
+    // =========================================================
+
+    private void ApplyLightningStormPlotDamage()
+    {
+        if (!lightningStormDestroysPlots)
+        {
+            return;
+        }
+
+        List<StormPlotTarget> availableTargets =
+            BuildStormPlotTargetList();
+
+        if (availableTargets.Count <= 0)
+        {
+            if (showStormDamageLogs)
+            {
+                Debug.Log(
+                    "[WeatherManager] Lightning storm found no " +
+                    "available plots to destroy."
+                );
+            }
+
+            return;
+        }
+
+        int minimum =
+            Mathf.Max(
+                0,
+                minimumStormPlotsDestroyed
+            );
+
+        int maximum =
+            Mathf.Max(
+                minimum,
+                maximumStormPlotsDestroyed
+            );
+
+        int requestedCount =
+            Random.Range(
+                minimum,
+                maximum + 1
+            );
+
+        int destroyCount =
+            Mathf.Min(
+                requestedCount,
+                availableTargets.Count
+            );
+
+        // Fisher-Yates partial shuffle. This guarantees every selected
+        // target is unique, so one plot cannot consume two lightning hits.
+        for (int i = 0; i < destroyCount; i++)
+        {
+            int randomIndex =
+                Random.Range(
+                    i,
+                    availableTargets.Count
+                );
+
+            StormPlotTarget temp =
+                availableTargets[i];
+
+            availableTargets[i] =
+                availableTargets[randomIndex];
+
+            availableTargets[randomIndex] =
+                temp;
+
+            StormPlotTarget target =
+                availableTargets[i];
+
+            if (target.Destroy("Lightning storm"))
+            {
+                if (showStormDamageLogs)
+                {
+                    Debug.Log(
+                        "[WeatherManager] Lightning storm destroyed " +
+                        target.DisplayName +
+                        "."
+                    );
+                }
+            }
+        }
+
+        if (showStormDamageLogs)
+        {
+            Debug.Log(
+                "[WeatherManager] Lightning storm damage complete. " +
+                destroyCount +
+                " plot(s) selected from " +
+                availableTargets.Count +
+                " available plot(s)."
+            );
+        }
+    }
+
+    private List<StormPlotTarget> BuildStormPlotTargetList()
+    {
+        List<StormPlotTarget> targets =
+            new List<StormPlotTarget>();
+
+        // ---------------------------------------------------------
+        // FARM / CROP PLOTS
+        // ---------------------------------------------------------
+
+        Plot[] farmPlots =
+            FindObjectsByType<Plot>(
+                FindObjectsSortMode.None
+            );
+
+        foreach (Plot plot in farmPlots)
+        {
+            if (plot == null ||
+                plot.IsDestroyed())
+            {
+                continue;
+            }
+
+            targets.Add(
+                new StormPlotTarget(plot)
+            );
+        }
+
+        // ---------------------------------------------------------
+        // WATER PLOTS
+        // ---------------------------------------------------------
+
+        WaterPlot[] waterPlots =
+            FindObjectsByType<WaterPlot>(
+                FindObjectsSortMode.None
+            );
+
+        foreach (WaterPlot waterPlot in waterPlots)
+        {
+            if (waterPlot == null ||
+                waterPlot.IsDestroyed())
+            {
+                continue;
+            }
+
+            targets.Add(
+                new StormPlotTarget(waterPlot)
+            );
+        }
+
+        // ---------------------------------------------------------
+        // TRAP PLOTS
+        // ---------------------------------------------------------
+        //
+        // If a Trap belongs to a normal Plot, that Plot already owns it.
+        // Destroying the Plot automatically destroys its Trap too.
+        // Therefore only standalone Trap objects are added here. This
+        // prevents the same physical plot from being selected twice.
+
+        Trap[] traps =
+            FindObjectsByType<Trap>(
+                FindObjectsSortMode.None
+            );
+
+        foreach (Trap trap in traps)
+        {
+            if (trap == null ||
+                trap.IsDestroyed())
+            {
+                continue;
+            }
+
+            if (trap.GetOwningPlot() != null)
+            {
+                continue;
+            }
+
+            targets.Add(
+                new StormPlotTarget(trap)
+            );
+        }
+
+        return targets;
+    }
+
+    private sealed class StormPlotTarget
+    {
+        private readonly Plot plot;
+        private readonly WaterPlot waterPlot;
+        private readonly Trap trap;
+
+        public string DisplayName
+        {
+            get
+            {
+                if (plot != null)
+                {
+                    return plot.gameObject.name;
+                }
+
+                if (waterPlot != null)
+                {
+                    return waterPlot.gameObject.name;
+                }
+
+                if (trap != null)
+                {
+                    return trap.gameObject.name;
+                }
+
+                return "Unknown Plot";
+            }
+        }
+
+        public StormPlotTarget(Plot target)
+        {
+            plot = target;
+        }
+
+        public StormPlotTarget(WaterPlot target)
+        {
+            waterPlot = target;
+        }
+
+        public StormPlotTarget(Trap target)
+        {
+            trap = target;
+        }
+
+        public bool Destroy(string cause)
+        {
+            if (plot != null)
+            {
+                return plot.DestroyPlot(cause);
+            }
+
+            if (waterPlot != null)
+            {
+                return waterPlot.DestroyWaterPlot(cause);
+            }
+
+            if (trap != null)
+            {
+                return trap.DestroyTrap(cause);
+            }
+
+            return false;
+        }
+    }
+
     // =========================================================
     // RAIN
     // =========================================================
@@ -57,6 +374,62 @@ public class WeatherManager : MonoBehaviour
     // =========================================================
     // SUNNY LIGHT
     // =========================================================
+
+    [Header("Morning and Sunset")]
+    [SerializeField] private bool enableTimeOfDayLighting = true;
+    [SerializeField] private EndDaySystem endDaySystem;
+    [Range(0f, 1f)][SerializeField] private float timeOfDayStrength = 0.75f;
+    [SerializeField] private Color morningTint = new Color(1f, 0.86f, 0.68f, 1f);
+    [SerializeField] private Color sunsetTint = new Color(1f, 0.64f, 0.48f, 1f);
+    [Range(0f, 2f)][SerializeField] private float morningBrightness = 0.9f;
+    [Range(0f, 2f)][SerializeField] private float sunsetBrightness = 0.75f;
+
+    private void RefreshLightingTargets()
+    {
+        // Always rebuild from weather, avoiding accumulated colour multiplication.
+        switch (currentWeather)
+        {
+            case WeatherType.Rain:
+                targetLightColor = rainLightColor;
+                targetLightIntensity = rainLightIntensity;
+                break;
+            case WeatherType.RainAndThunder:
+                targetLightColor = stormLightColor;
+                targetLightIntensity = stormLightIntensity;
+                break;
+            default:
+                targetLightColor = sunnyLightColor;
+                targetLightIntensity = sunnyLightIntensity;
+                break;
+        }
+        if (!enableTimeOfDayLighting) return;
+        if (endDaySystem == null) endDaySystem = FindFirstObjectByType<EndDaySystem>();
+        if (endDaySystem == null) return;
+        float start = endDaySystem.GetDayStartHour() * 60f + endDaySystem.GetDayStartMinute();
+        float end = endDaySystem.GetDayEndHour() * 60f + endDaySystem.GetDayEndMinute();
+        float now = endDaySystem.GetCurrentHour() * 60f + endDaySystem.GetCurrentMinute();
+        if (end <= start) return;
+        float progress = Mathf.InverseLerp(start, end, now);
+        Color tint = Color.white;
+        float brightness = 1f;
+        if (progress < 0.3f)
+        {
+            float blend = Mathf.SmoothStep(0f, 1f, progress / 0.3f);
+            tint = Color.Lerp(morningTint, Color.white, blend);
+            brightness = Mathf.Lerp(morningBrightness, 1f, blend);
+        }
+        else if (progress > 0.65f)
+        {
+            float blend = Mathf.SmoothStep(0f, 1f, (progress - 0.65f) / 0.35f);
+            tint = Color.Lerp(Color.white, sunsetTint, blend);
+            brightness = Mathf.Lerp(1f, sunsetBrightness, blend);
+        }
+        float strength = Mathf.Clamp01(timeOfDayStrength);
+        targetLightColor *= Color.Lerp(Color.white, tint, strength);
+        targetLightColor.a = 1f;
+        targetLightIntensity *= Mathf.Lerp(1f, Mathf.Max(0f, brightness), strength);
+    }
+
 
     [Header("Sunny Lighting")]
     [SerializeField]
@@ -119,6 +492,55 @@ public class WeatherManager : MonoBehaviour
 
     [Range(0f, 1f)]
     [SerializeField] private float secondFlashChance = 0.65f;
+
+    [Header("Realistic Lightning Flash")]
+    [Tooltip("How long the first bright flash takes to fade back toward the storm lighting.")]
+    [Min(0.01f)]
+    [SerializeField] private float lightningFadeDuration = 0.22f;
+
+    [Tooltip("Minimum brightness multiplier used for the optional secondary flicker.")]
+    [Range(0.1f, 1f)]
+    [SerializeField] private float secondaryFlashMinStrength = 0.45f;
+
+    [Tooltip("Maximum brightness multiplier used for the optional secondary flicker.")]
+    [Range(0.1f, 1f)]
+    [SerializeField] private float secondaryFlashMaxStrength = 0.8f;
+
+    [Tooltip("How long the secondary flicker fades back into the storm.")]
+    [Min(0.01f)]
+    [SerializeField] private float secondaryFlashFadeDuration = 0.28f;
+
+    [Tooltip("Adds a tiny random variation to each lightning flash so strikes do not look identical.")]
+    [Range(0f, 0.25f)]
+    [SerializeField] private float lightningBrightnessVariation = 0.12f;
+
+    [Tooltip("Chance that a strike gets a very quick initial pre-flash before the main flash.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float preFlashChance = 0.30f;
+
+    [Tooltip("Duration of the subtle pre-flash.")]
+    [Min(0.005f)]
+    [SerializeField] private float preFlashDuration = 0.025f;
+
+    // =========================================================
+    // LIGHTNING STORM PLOT DAMAGE
+    // =========================================================
+
+    [Header("Lightning Storm Plot Damage")]
+
+    [Tooltip("When enabled, each new Rain + Thunder day destroys a random number of plots.")]
+    [SerializeField] private bool lightningStormDestroysPlots = true;
+
+    [Tooltip("Minimum number of plots destroyed by a lightning storm.")]
+    [Min(0)]
+    [SerializeField] private int minimumStormPlotsDestroyed = 1;
+
+    [Tooltip("Maximum number of plots destroyed by a lightning storm.")]
+    [Min(0)]
+    [SerializeField] private int maximumStormPlotsDestroyed = 5;
+
+    [Tooltip("Print which plots were destroyed by the storm.")]
+    [SerializeField] private bool showStormDamageLogs = true;
 
     // =========================================================
     // WEATHER AUDIO SOURCES
@@ -208,6 +630,28 @@ public class WeatherManager : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = false;
 
+    [Header("Debug Weather Override")]
+    [Tooltip(
+        "FOR TESTING ONLY. When enabled, every new day uses Debug Weather " +
+        "instead of the procedural weather roll."
+    )]
+    [SerializeField] private bool debugOverrideDailyWeather = false;
+
+    [Tooltip(
+        "Weather forced on new days while Debug Override Daily Weather is enabled."
+    )]
+    [SerializeField]
+    private WeatherType debugWeather =
+        WeatherType.Sunny;
+
+    [Tooltip(
+        "Optional: while enabled in Play Mode, changing Debug Weather in the " +
+        "Inspector immediately applies it to the current day too."
+    )]
+    [SerializeField] private bool debugApplyWeatherLive = false;
+
+    private WeatherType lastDebugWeather;
+
     // =========================================================
     // PRIVATE
     // =========================================================
@@ -289,14 +733,12 @@ public class WeatherManager : MonoBehaviour
 
     private void Start()
     {
-        WeatherType randomWeather =
-            (WeatherType)Random.Range(
-                0,
-                3
-            );
+        lastDebugWeather =
+            debugWeather;
 
+        // Respect the configured starting weather (Sunny by default).
         SetWeather(
-            randomWeather
+            currentWeather
         );
     }
 
@@ -306,6 +748,19 @@ public class WeatherManager : MonoBehaviour
 
     private void Update()
     {
+        // DEBUG ONLY:
+        // Lets you change Debug Weather from the Inspector during Play Mode.
+        if (debugApplyWeatherLive &&
+            debugWeather != lastDebugWeather)
+        {
+            lastDebugWeather =
+                debugWeather;
+
+            SetWeather(
+                debugWeather
+            );
+        }
+
         UpdateRain();
 
         UpdateGlobalLight();
@@ -448,6 +903,8 @@ public class WeatherManager : MonoBehaviour
                 break;
         }
 
+        RefreshLightingTargets();
+
         if (showDebugLogs)
         {
             Debug.Log(
@@ -533,6 +990,7 @@ public class WeatherManager : MonoBehaviour
 
     private void UpdateGlobalLight()
     {
+        RefreshLightingTargets();
         if (globalLight == null)
         {
             return;
@@ -798,6 +1256,7 @@ public class WeatherManager : MonoBehaviour
 
     public void TriggerLightning()
     {
+        if (IsRainAndThunder()) PlotDisasterSystem.GetOrCreate().LightningStrike();
         if (globalLight != null)
         {
             if (lightningFlashRoutine != null)
@@ -827,57 +1286,217 @@ public class WeatherManager : MonoBehaviour
             yield break;
         }
 
-        lightningActive =
-            true;
+        lightningActive = true;
 
-        globalLight.color =
-            lightningColor;
+        // Refresh first so the flash always returns to the correct
+        // storm + time-of-day lighting, even late in the day.
+        RefreshLightingTargets();
 
-        globalLight.intensity =
-            lightningIntensity;
+        Color baseColor = targetLightColor;
+        float baseIntensity = targetLightIntensity;
+
+        float variation =
+            Random.Range(
+                1f - lightningBrightnessVariation,
+                1f + lightningBrightnessVariation
+            );
+
+        float mainPeak =
+            Mathf.Max(
+                baseIntensity,
+                lightningIntensity * variation
+            );
+
+        // A small pre-flash makes some strikes feel like the sky is
+        // illuminating just before the main electrical discharge.
+        if (Random.value <= preFlashChance)
+        {
+            float preStrength =
+                Random.Range(0.25f, 0.45f);
+
+            globalLight.color =
+                Color.Lerp(
+                    baseColor,
+                    lightningColor,
+                    preStrength
+                );
+
+            globalLight.intensity =
+                Mathf.Lerp(
+                    baseIntensity,
+                    mainPeak,
+                    preStrength
+                );
+
+            yield return
+                new WaitForSeconds(
+                    preFlashDuration
+                );
+
+            globalLight.color = baseColor;
+            globalLight.intensity = baseIntensity;
+
+            yield return
+                new WaitForSeconds(
+                    Random.Range(0.015f, 0.045f)
+                );
+        }
+
+        // Main flash.
+        globalLight.color = lightningColor;
+        globalLight.intensity = mainPeak;
 
         yield return
             new WaitForSeconds(
-                lightningFlashDuration
+                Mathf.Max(
+                    0.01f,
+                    lightningFlashDuration
+                )
             );
 
-        globalLight.color =
-            targetLightColor;
+        // Instead of snapping straight back to the storm colour,
+        // smoothly fade the light down.
+        yield return
+            FadeLightningToBase(
+                lightningColor,
+                mainPeak,
+                baseColor,
+                baseIntensity,
+                lightningFadeDuration
+            );
 
-        globalLight.intensity =
-            targetLightIntensity;
-
-        if (Random.value <=
-            secondFlashChance)
+        // Many real lightning discharges pulse several times through
+        // the same channel. Keep the existing second-flash chance,
+        // but vary its strength so it is not a mechanical duplicate.
+        if (Random.value <= secondFlashChance)
         {
             yield return
                 new WaitForSeconds(
-                    lightningSecondFlashDelay
+                    Mathf.Max(
+                        0f,
+                        lightningSecondFlashDelay +
+                        Random.Range(-0.025f, 0.035f)
+                    )
                 );
 
-            globalLight.color =
-                lightningColor;
+            float minSecondary =
+                Mathf.Min(
+                    secondaryFlashMinStrength,
+                    secondaryFlashMaxStrength
+                );
 
-            globalLight.intensity =
-                lightningIntensity;
+            float maxSecondary =
+                Mathf.Max(
+                    secondaryFlashMinStrength,
+                    secondaryFlashMaxStrength
+                );
+
+            float secondaryStrength =
+                Random.Range(
+                    minSecondary,
+                    maxSecondary
+                );
+
+            float secondaryPeak =
+                Mathf.Lerp(
+                    baseIntensity,
+                    mainPeak,
+                    secondaryStrength
+                );
+
+            Color secondaryColor =
+                Color.Lerp(
+                    baseColor,
+                    lightningColor,
+                    Mathf.Lerp(
+                        0.7f,
+                        1f,
+                        secondaryStrength
+                    )
+                );
+
+            globalLight.color = secondaryColor;
+            globalLight.intensity = secondaryPeak;
 
             yield return
                 new WaitForSeconds(
-                    lightningFlashDuration
+                    Mathf.Max(
+                        0.015f,
+                        lightningFlashDuration *
+                        Random.Range(0.45f, 0.8f)
+                    )
+                );
+
+            yield return
+                FadeLightningToBase(
+                    secondaryColor,
+                    secondaryPeak,
+                    baseColor,
+                    baseIntensity,
+                    secondaryFlashFadeDuration
+                );
+        }
+
+        // Final exact restoration prevents tiny floating-point differences
+        // from accumulating between strikes.
+        globalLight.color = baseColor;
+        globalLight.intensity = baseIntensity;
+
+        lightningActive = false;
+        lightningFlashRoutine = null;
+    }
+
+    private IEnumerator FadeLightningToBase(
+        Color startColor,
+        float startIntensity,
+        Color baseColor,
+        float baseIntensity,
+        float duration)
+    {
+        duration =
+            Mathf.Max(
+                0.01f,
+                duration
+            );
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    elapsed / duration
+                );
+
+            // Fast initial drop with a softer tail looks less like a UI flash.
+            float smoothT =
+                1f -
+                Mathf.Pow(
+                    1f - t,
+                    2.5f
                 );
 
             globalLight.color =
-                targetLightColor;
+                Color.Lerp(
+                    startColor,
+                    baseColor,
+                    smoothT
+                );
 
             globalLight.intensity =
-                targetLightIntensity;
+                Mathf.Lerp(
+                    startIntensity,
+                    baseIntensity,
+                    smoothT
+                );
+
+            yield return null;
         }
 
-        lightningActive =
-            false;
-
-        lightningFlashRoutine =
-            null;
+        globalLight.color = baseColor;
+        globalLight.intensity = baseIntensity;
     }
 
     // =========================================================
@@ -1097,6 +1716,52 @@ public class WeatherManager : MonoBehaviour
     }
 
     // =========================================================
+    // DEBUG WEATHER CONTROL
+    // =========================================================
+
+    public void ApplyDebugWeatherNow()
+    {
+        SetWeather(
+            debugWeather
+        );
+
+        lastDebugWeather =
+            debugWeather;
+    }
+
+    public void SetDebugWeatherOverride(
+        bool enabled)
+    {
+        debugOverrideDailyWeather =
+            enabled;
+    }
+
+    public bool IsDebugWeatherOverrideEnabled()
+    {
+        return debugOverrideDailyWeather;
+    }
+
+    [ContextMenu("Debug Weather - Apply Selected Weather Now")]
+    private void DebugApplySelectedWeatherNow()
+    {
+        ApplyDebugWeatherNow();
+    }
+
+    [ContextMenu("Debug Weather - Enable Daily Override")]
+    private void DebugEnableWeatherOverride()
+    {
+        debugOverrideDailyWeather =
+            true;
+    }
+
+    [ContextMenu("Debug Weather - Disable Daily Override")]
+    private void DebugDisableWeatherOverride()
+    {
+        debugOverrideDailyWeather =
+            false;
+    }
+
+    // =========================================================
     // DEBUG
     // =========================================================
 
@@ -1152,3 +1817,5 @@ public class WeatherManager : MonoBehaviour
         }
     }
 }
+
+

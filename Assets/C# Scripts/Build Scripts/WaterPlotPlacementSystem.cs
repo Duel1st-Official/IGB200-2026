@@ -97,6 +97,52 @@ public class WaterPlotPlacementSystem : MonoBehaviour
         new Vector3(0.75f, 0.75f, 1f);
 
     // =========================================================
+    // DIRT REVEAL
+    // =========================================================
+
+    [Header("Dirt Reveal")]
+    [Tooltip("Single transparent dirt sprite spawned underneath the water plot after placement finishes.")]
+    [SerializeField] private Sprite dirtSprite;
+
+    [Tooltip("Optional material. Leave empty to use the normal sprite material.")]
+    [SerializeField] private Material dirtMaterial;
+
+    [SerializeField] private Vector3 dirtOffset = Vector3.zero;
+
+    [Tooltip("Absolute sorting order used by every dirt sprite. Keep lower than all placed objects.")]
+    [SerializeField] private int dirtSortingOrder = -1000;
+
+    [Range(0.01f, 1f)]
+    [SerializeField] private float dirtStartingScale = 0.08f;
+
+    [Min(0.01f)]
+    [SerializeField] private float dirtRevealDuration = 0.28f;
+
+    [Range(1f, 1.3f)]
+    [SerializeField] private float dirtOvershoot = 1.07f;
+
+    [SerializeField] private Vector2 dirtFinalScale = Vector2.one;
+
+    [SerializeField] private bool dirtHorizontalSpread = true;
+
+    [Range(0f, 0.35f)]
+    [SerializeField] private float dirtHorizontalLead = 0.12f;
+
+    [Min(0f)]
+    [SerializeField] private float dirtFadeDelay = 0.15f;
+
+    [Min(0.05f)]
+    [SerializeField] private float dirtFadeDuration = 1.5f;
+
+    [Header("Dirt Placement Particles")]
+    [SerializeField] private GameObject dirtParticlePrefab;
+
+    [Min(0f)]
+    [SerializeField] private float dirtParticleLifetime = 1.5f;
+
+    [SerializeField] private Vector3 dirtParticleOffset = Vector3.zero;
+
+    // =========================================================
     // PARTICLE
     // =========================================================
 
@@ -672,6 +718,28 @@ public class WaterPlotPlacementSystem : MonoBehaviour
         );
 
         // =====================================================
+        // DIRT - AFTER WATER PLOT IS FULLY PLACED
+        // =====================================================
+
+        GameObject dirtVisual =
+            CreateDirtVisual(
+                newWaterPlot
+            );
+
+        if (dirtVisual != null)
+        {
+            StartCoroutine(
+                AnimateDirtReveal(
+                    dirtVisual
+                )
+            );
+        }
+
+        SpawnDirtParticles(
+            newWaterPlot.transform.position
+        );
+
+        // =====================================================
         // BUILD SOUND
         // =====================================================
 
@@ -730,6 +798,19 @@ public class WaterPlotPlacementSystem : MonoBehaviour
         if (cameraShake != null)
         {
             cameraShake.Shake();
+        }
+
+        // =====================================================
+        // TUTORIAL - WATER PLOT SUCCESSFULLY BUILT
+        // =====================================================
+
+        // Report only after the real Water Plot has completed
+        // its build animation and placement effects.
+        if (newWaterPlot != null)
+        {
+            TutorialEvents.Report(
+                TutorialAction.WaterPlotPlaced
+            );
         }
 
         currentlyPlacing = false;
@@ -871,6 +952,256 @@ public class WaterPlotPlacementSystem : MonoBehaviour
         {
             target.localScale =
                 to;
+        }
+    }
+
+    // =========================================================
+    // CREATE DIRT
+    // =========================================================
+
+    private GameObject CreateDirtVisual(
+        GameObject placedObject)
+    {
+        if (placedObject == null ||
+            dirtSprite == null)
+        {
+            return null;
+        }
+
+        GameObject dirt =
+            new GameObject(
+                "Dirt Visual"
+            );
+
+        dirt.transform.position =
+            placedObject.transform.position +
+            dirtOffset;
+
+        dirt.transform.rotation =
+            Quaternion.identity;
+
+        dirt.transform.localScale =
+            new Vector3(
+                dirtFinalScale.x * dirtStartingScale,
+                dirtFinalScale.y * dirtStartingScale,
+                1f
+            );
+
+        SpriteRenderer renderer =
+            dirt.AddComponent<SpriteRenderer>();
+
+        renderer.sprite = dirtSprite;
+
+        if (dirtMaterial != null)
+        {
+            renderer.material = dirtMaterial;
+        }
+
+        SortingGroup placedSorting =
+            placedObject.GetComponent<SortingGroup>();
+
+        if (placedSorting != null)
+        {
+            renderer.sortingLayerID =
+                placedSorting.sortingLayerID;
+        }
+        else
+        {
+            SpriteRenderer placedRenderer =
+                placedObject.GetComponentInChildren<SpriteRenderer>();
+
+            if (placedRenderer != null)
+            {
+                renderer.sortingLayerID =
+                    placedRenderer.sortingLayerID;
+            }
+        }
+
+        // Absolute low order means dirt can never cover another
+        // plot, trap, or water plot on a different grid row.
+        renderer.sortingOrder =
+            dirtSortingOrder;
+
+        Color startColor =
+            renderer.color;
+
+        startColor.a = 0f;
+        renderer.color = startColor;
+
+        WaterPlotDirtFadeAfterRemoved fadeWatcher =
+            dirt.AddComponent<WaterPlotDirtFadeAfterRemoved>();
+
+        fadeWatcher.Setup(
+            placedObject,
+            renderer,
+            dirtFadeDelay,
+            dirtFadeDuration
+        );
+
+        return dirt;
+    }
+
+    // =========================================================
+    // ANIMATE DIRT
+    // =========================================================
+
+    private IEnumerator AnimateDirtReveal(
+        GameObject dirt)
+    {
+        if (dirt == null)
+        {
+            yield break;
+        }
+
+        SpriteRenderer renderer =
+            dirt.GetComponent<SpriteRenderer>();
+
+        if (renderer == null)
+        {
+            yield break;
+        }
+
+        Vector3 finalScale =
+            new Vector3(
+                dirtFinalScale.x,
+                dirtFinalScale.y,
+                1f
+            );
+
+        Vector3 startScale =
+            new Vector3(
+                finalScale.x * dirtStartingScale,
+                finalScale.y * dirtStartingScale,
+                1f
+            );
+
+        Vector3 overshootScale =
+            finalScale * dirtOvershoot;
+
+        overshootScale.z = 1f;
+
+        Color finalColor = renderer.color;
+        finalColor.a = 1f;
+
+        float growDuration =
+            Mathf.Max(
+                0.01f,
+                dirtRevealDuration * 0.72f
+            );
+
+        float settleDuration =
+            Mathf.Max(
+                0.01f,
+                dirtRevealDuration - growDuration
+            );
+
+        float timer = 0f;
+
+        while (timer < growDuration)
+        {
+            if (dirt == null)
+            {
+                yield break;
+            }
+
+            timer += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    timer / growDuration
+                );
+
+            float xT =
+                dirtHorizontalSpread
+                    ? Mathf.Clamp01(t + dirtHorizontalLead)
+                    : t;
+
+            float easedX = EaseOutCubic(xT);
+            float easedY = EaseOutCubic(t);
+
+            dirt.transform.localScale =
+                new Vector3(
+                    Mathf.Lerp(
+                        startScale.x,
+                        overshootScale.x,
+                        easedX
+                    ),
+                    Mathf.Lerp(
+                        startScale.y,
+                        overshootScale.y,
+                        easedY
+                    ),
+                    1f
+                );
+
+            Color color = finalColor;
+            color.a = EaseOutCubic(t);
+            renderer.color = color;
+
+            yield return null;
+        }
+
+        timer = 0f;
+
+        while (timer < settleDuration)
+        {
+            if (dirt == null)
+            {
+                yield break;
+            }
+
+            timer += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    timer / settleDuration
+                );
+
+            dirt.transform.localScale =
+                Vector3.Lerp(
+                    overshootScale,
+                    finalScale,
+                    EaseOutCubic(t)
+                );
+
+            yield return null;
+        }
+
+        if (dirt != null)
+        {
+            dirt.transform.localScale = finalScale;
+            renderer.color = finalColor;
+        }
+
+        // Dirt deliberately remains unparented so removal shake
+        // on the placed object can never move the dirt.
+    }
+
+    // =========================================================
+    // DIRT PARTICLES
+    // =========================================================
+
+    private void SpawnDirtParticles(
+        Vector3 position)
+    {
+        if (dirtParticlePrefab == null)
+        {
+            return;
+        }
+
+        GameObject particles =
+            Instantiate(
+                dirtParticlePrefab,
+                position + dirtParticleOffset,
+                Quaternion.identity
+            );
+
+        if (dirtParticleLifetime > 0f)
+        {
+            Destroy(
+                particles,
+                dirtParticleLifetime
+            );
         }
     }
 
@@ -1152,3 +1483,95 @@ public class WaterPlotPlacementSystem : MonoBehaviour
         );
     }
 }
+
+// ============================================================================
+// DIRT FADE AFTER WATER PLOT REMOVAL
+// ============================================================================
+
+public class WaterPlotDirtFadeAfterRemoved : MonoBehaviour
+{
+    private GameObject watchedObject;
+    private SpriteRenderer dirtRenderer;
+    private float fadeDelay = 0.15f;
+    private float fadeDuration = 1.5f;
+    private bool fadeStarted = false;
+
+    public void Setup(
+        GameObject placedObject,
+        SpriteRenderer renderer,
+        float delay,
+        float duration)
+    {
+        watchedObject = placedObject;
+        dirtRenderer = renderer;
+        fadeDelay = Mathf.Max(0f, delay);
+        fadeDuration = Mathf.Max(0.05f, duration);
+    }
+
+    private void Update()
+    {
+        if (fadeStarted)
+        {
+            return;
+        }
+
+        // Dirt remains still throughout the object's removal animation.
+        // Fade starts only after the placed object has actually been destroyed.
+        if (watchedObject == null)
+        {
+            fadeStarted = true;
+            StartCoroutine(FadeAwayRoutine());
+        }
+    }
+
+    private IEnumerator FadeAwayRoutine()
+    {
+        if (fadeDelay > 0f)
+        {
+            yield return new WaitForSeconds(fadeDelay);
+        }
+
+        if (dirtRenderer == null)
+        {
+            Destroy(gameObject);
+            yield break;
+        }
+
+        Color startingColor = dirtRenderer.color;
+        float startingAlpha = startingColor.a;
+        float timer = 0f;
+
+        while (timer < fadeDuration)
+        {
+            timer += Time.deltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    timer / fadeDuration
+                );
+
+            float smoothT =
+                t * t * (3f - (2f * t));
+
+            Color color = startingColor;
+
+            color.a =
+                Mathf.Lerp(
+                    startingAlpha,
+                    0f,
+                    smoothT
+                );
+
+            dirtRenderer.color = color;
+
+            yield return null;
+        }
+
+        Color finalColor = dirtRenderer.color;
+        finalColor.a = 0f;
+        dirtRenderer.color = finalColor;
+
+        Destroy(gameObject);
+    }
+}
+

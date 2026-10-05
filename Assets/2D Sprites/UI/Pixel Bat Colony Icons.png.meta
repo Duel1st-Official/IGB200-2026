@@ -1,0 +1,311 @@
+fileFormatVersion: 2
+guid: d69b6f3ffbb5bd644bac021602e5fce1
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 4370445552164610525
+    second: Pixel Bat Colony Icons_0
+  - first:
+      213: 2282531212041669693
+    second: Pixel Bat Colony Icons_1
+  - first:
+      213: 7367574120081583798
+    second: Pixel Bat Colony Icons_2
+  - first:
+      213: -8595997606606917955
+    second: Pixel Bat Colony Icons_3
+  - first:
+      213: -2535914995014849113
+    second: Pixel Bat Colony Icons_4
+  - first:
+      213: 3921835428471377072
+    second: Pixel Bat Colony Icons_5
+  - first:
+      213: -344561437856683972
+    second: Pixel Bat Colony Icons_6
+  - first:
+      213: 384718725637243275
+    second: Pixel Bat Colony Icons_7
+  - first:
+      213: 4212081590766088165
+    second: Pixel Bat Colony Icons_8
+  - first:
+      213: 8927250169045760916
+    second: Pixel Bat Colony Icons_9
+  - first:
+      213: 6467445270486100878
+    second: Pixel Bat Colony Icons_10
+  - first:
+      213: 3443388938555645379
+    second: Pixel Bat Colony Icons_11
+  - first:
+      213: 8713082141586838124
+    second: Pixel Bat Colony Icons_12
+  - first:
+      213: 1011513071115145588
+    second: Pixel Bat Colony Icons_13
+  - first:
+      213: 7078636170839659982
+    second: Pixel Bat Colony Icons_14
+  - first:
+      213: -2145222703704050933
+    second: Pixel Bat Colony Icons_15
+  - first:
+      213: 6284539493105932942
+    second: Pixel Bat Colony Icons_16
+  - first:
+      213: 5859915927634480636
+    second: Pixel Bat Colony Icons_17
+  - first:
+      213: -3963214445491346260
+    second: Pixel Bat Colony Icons_18
+  - first:
+      213: 114013404229600874
+    second: Pixel Bat Colony Icons_19
+  - first:
+      213: 8237189851699129328
+    second: Pixel Bat Colony Icons_20
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Pixel Bat Colony Icons_0
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 257
+        width: 253
+        height: 267
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd125f6f211f6ac30800000000000000
+      internalID: 4370445552164610525
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Pixel Bat Colony Icons_1
+      rect:
+        serializedVersion: 2
+        x: 353
+        y: 231
+        width: 288
+        height: 332
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d3c4c724b0e2daf10800000000000000
+      internalID: 2282531212041669693
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Pixel Bat Colony Icons_2
+      rect:
+        serializedVersion: 2
+        x: 671
+        y: 238
+        width: 383
+        height: 295
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6bee2db80a1ee3660800000000000000
+      internalID: 7367574120081583798
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Pixel Bat Colony Icons_3
+      rect:
+        serializedVersion: 2
+        x: 1070
+        y: 241
+        width: 284
+        height: 297
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dbe261868b1e4b880800000000000000
+      internalID: -8595997606606917955
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Pixel Bat Colony Icons_4
+      rect:
+        serializedVersion: 2
+        x: 1401
+        y: 169
+        width: 590
+        height: 422
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7adad857fbe9eccd0800000000000000
+      internalID: -2535914995014849113
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 8ec86722a532bf642a7711eb78415b32
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Pixel Bat Colony Icons_0: 4370445552164610525
+      Pixel Bat Colony Icons_1: 2282531212041669693
+      Pixel Bat Colony Icons_10: 6467445270486100878
+      Pixel Bat Colony Icons_11: 3443388938555645379
+      Pixel Bat Colony Icons_12: 8713082141586838124
+      Pixel Bat Colony Icons_13: 1011513071115145588
+      Pixel Bat Colony Icons_14: 7078636170839659982
+      Pixel Bat Colony Icons_15: -2145222703704050933
+      Pixel Bat Colony Icons_16: 6284539493105932942
+      Pixel Bat Colony Icons_17: 5859915927634480636
+      Pixel Bat Colony Icons_18: -3963214445491346260
+      Pixel Bat Colony Icons_19: 114013404229600874
+      Pixel Bat Colony Icons_2: 7367574120081583798
+      Pixel Bat Colony Icons_20: 8237189851699129328
+      Pixel Bat Colony Icons_3: -8595997606606917955
+      Pixel Bat Colony Icons_4: -2535914995014849113
+      Pixel Bat Colony Icons_5: 3921835428471377072
+      Pixel Bat Colony Icons_6: -344561437856683972
+      Pixel Bat Colony Icons_7: 384718725637243275
+      Pixel Bat Colony Icons_8: 4212081590766088165
+      Pixel Bat Colony Icons_9: 8927250169045760916
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

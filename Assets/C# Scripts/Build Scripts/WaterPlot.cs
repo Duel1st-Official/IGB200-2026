@@ -1,7 +1,174 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 public class WaterPlot : MonoBehaviour
 {
+    [Header("Destroyed Warning")]
+    [SerializeField] private bool showDestroyedWarning = true;
+    [Tooltip("Drag the 16x16 warning sprite here.")]
+    [SerializeField] private Sprite destroyedWarningSprite;
+    [SerializeField] private Color destroyedWarningColor = Color.white;
+    [Tooltip("World-space offset above the destroyed plot.")]
+    [SerializeField] private Vector2 destroyedWarningOffset = new Vector2(0f, 0.35f);
+    [Tooltip("Warning icon height in world units. Aspect ratio is preserved.")]
+    [Min(0.01f)][SerializeField] private float destroyedWarningSize = 0.5f;
+    [Min(0f)][SerializeField] private float destroyedWarningBounceHeight = 0.04f;
+    [Min(0f)][SerializeField] private float destroyedWarningBounceSpeed = 1.5f;
+    [SerializeField] private int destroyedWarningSortingOffset = 20;
+    private SpriteRenderer destroyedWarningRenderer;
+
+    [Header("Destroyed plot / debris")]
+    [SerializeField] private bool destroyed;
+    [SerializeField] private Sprite debrisSprite;
+    [SerializeField] private SpriteRenderer debrisRenderer;
+    [SerializeField] private string destructionCause;
+    [SerializeField] private int criticalSoilDays;
+    private int soilCheckedDay = -1;
+    public bool IsDestroyed() { return destroyed; }
+    public string GetDestructionCause() { return destructionCause; }
+    public bool DestroyWaterPlot(string cause)
+    {
+        if (destroyed) return false;
+        destroyed = true; destructionCause = cause;
+        waterQuality = 0f; waterState = WaterState.Destroyed; deteriorationDayProgress = 0;
+        ApplyDebrisVisual();
+        onWaterQualityChanged?.Invoke(); onWaterStateChanged?.Invoke();
+        return true;
+    }
+    private void ApplyDebrisVisual()
+    {
+        if (debrisRenderer == null) debrisRenderer = waterRenderer;
+        if (debrisRenderer == null) debrisRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (debrisRenderer == null) return;
+        if (waterRenderer != null && waterRenderer != debrisRenderer) waterRenderer.enabled = false;
+        debrisRenderer.enabled = true;
+        if (debrisSprite != null) debrisRenderer.sprite = debrisSprite;
+        debrisRenderer.color = debrisSprite != null ? Color.white : new Color(0.25f, 0.19f, 0.17f);
+    }
+    private void CheckSoilDamage()
+    {
+        if (destroyed || endDaySystem == null || endDaySystem.HasGameEnded()) return;
+        int day = endDaySystem.GetCurrentDay();
+        if (day < 1) return;
+        if (soilCheckedDay < 1 || day < soilCheckedDay) { soilCheckedDay = day; criticalSoilDays = 0; return; }
+        if (day == soilCheckedDay) return;
+        soilCheckedDay = day;
+        RangerStation station = FindFirstObjectByType<RangerStation>();
+        if (station == null) return;
+        PlotDisasterSystem settings = PlotDisasterSystem.GetOrCreate();
+        criticalSoilDays = station.GetSoilHealth() <= settings.criticalSoilHealth ? criticalSoilDays + 1 : 0;
+        if (criticalSoilDays >= Mathf.Max(1, settings.consecutiveCriticalDays)) DestroyWaterPlot("Critical soil health");
+    }
+    private void RefreshDestroyedWarning()
+    {
+        bool visible =
+            showDestroyedWarning &&
+            destroyed &&
+            destroyedWarningSprite != null;
+
+        if (!visible)
+        {
+            if (destroyedWarningRenderer != null)
+            {
+                destroyedWarningRenderer.gameObject.SetActive(false);
+            }
+
+            return;
+        }
+
+        if (destroyedWarningRenderer == null)
+        {
+            GameObject marker =
+                new GameObject("Destroyed Warning Icon");
+
+            marker.layer = gameObject.layer;
+            marker.transform.SetParent(transform, false);
+
+            destroyedWarningRenderer =
+                marker.AddComponent<SpriteRenderer>();
+        }
+
+        destroyedWarningRenderer.gameObject.SetActive(true);
+        destroyedWarningRenderer.sprite = destroyedWarningSprite;
+        destroyedWarningRenderer.color = destroyedWarningColor;
+
+        SpriteRenderer baseRenderer = debrisRenderer != null ? debrisRenderer : waterRenderer;
+
+        Vector3 basePosition =
+            baseRenderer != null
+                ? new Vector3(
+                    baseRenderer.bounds.center.x,
+                    baseRenderer.bounds.max.y,
+                    transform.position.z)
+                : transform.position;
+
+        float bounce =
+            Mathf.Sin(
+                Time.time *
+                Mathf.Max(0f, destroyedWarningBounceSpeed) *
+                Mathf.PI * 2f) *
+            Mathf.Max(0f, destroyedWarningBounceHeight);
+
+        Transform markerTransform =
+            destroyedWarningRenderer.transform;
+
+        markerTransform.rotation = Quaternion.identity;
+
+        Vector3 objectScale =
+            transform.lossyScale;
+
+        float size =
+            Mathf.Max(0.01f, destroyedWarningSize) /
+            Mathf.Max(
+                0.0001f,
+                destroyedWarningSprite.bounds.size.y);
+
+        markerTransform.localScale =
+            new Vector3(
+                size /
+                Mathf.Max(
+                    0.0001f,
+                    Mathf.Abs(objectScale.x)),
+                size /
+                Mathf.Max(
+                    0.0001f,
+                    Mathf.Abs(objectScale.y)),
+                1f);
+
+        markerTransform.position =
+            basePosition +
+            new Vector3(
+                destroyedWarningOffset.x,
+                destroyedWarningOffset.y + bounce,
+                0f);
+
+        markerTransform.position -=
+            markerTransform.TransformVector(
+                destroyedWarningSprite.bounds.center);
+
+        if (baseRenderer != null)
+        {
+            destroyedWarningRenderer.sortingLayerID =
+                baseRenderer.sortingLayerID;
+
+            destroyedWarningRenderer.sortingOrder =
+                baseRenderer.sortingOrder +
+                destroyedWarningSortingOffset;
+        }
+    }
+
+    [ContextMenu("Debug - Destroy Water Plot")]
+    private void DebugDestroyWaterPlot() { DestroyWaterPlot("Debug"); }
+
+
+    private void OnDisable()
+    {
+        if (destroyedWarningRenderer != null)
+        {
+            destroyedWarningRenderer.gameObject.SetActive(false);
+        }
+    }
+
     // =========================================================
     // WATER STATE
     // =========================================================
@@ -12,8 +179,9 @@ public class WaterPlot : MonoBehaviour
         Dirty,
         Murky,
 
-        // Legacy alias for older code.
-        Polluted = Murky
+        // Legacy compatibility.
+        Polluted = Murky,
+        Destroyed = 3
     }
 
     // =========================================================
@@ -21,114 +189,154 @@ public class WaterPlot : MonoBehaviour
     // =========================================================
 
     [Header("References")]
-    [SerializeField] private SpriteRenderer spriteRenderer;
 
-    [Tooltip("Used to detect when a new day begins.")]
-    [SerializeField] private EndDaySystem endDaySystem;
+    [Tooltip("Automatically finds the EndDaySystem if empty.")]
+    [SerializeField]
+    private EndDaySystem endDaySystem;
+
+    [Tooltip("Automatically finds the WeatherManager if empty.")]
+    [SerializeField]
+    private WeatherManager weatherManager;
 
     // =========================================================
-    // WATER SPRITES
+    // WATER QUALITY
     // =========================================================
 
-    [Header("Water Sprites")]
+    [Header("Water Quality")]
 
-    [Tooltip("Sprite shown when the water is completely clean.")]
-    [SerializeField] private Sprite cleanSprite;
+    [Tooltip(
+        "Current water quality. 100 = perfectly clean, " +
+        "0 = completely polluted."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float waterQuality = 100f;
 
-    [Tooltip("Sprite shown when the water is dirty.")]
-    [SerializeField] private Sprite dirtySprite;
+    [Tooltip(
+        "Quality at or above this value is considered Clean."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float cleanQualityThreshold = 70f;
 
-    [Tooltip("Sprite shown when the water is at its dirtiest stage.")]
-    [SerializeField] private Sprite murkySprite;
+    [Tooltip(
+        "Quality at or below this value is considered Murky."
+    )]
+    [Range(0f, 100f)]
+    [SerializeField]
+    private float murkyQualityThreshold = 30f;
 
     // =========================================================
     // WATER STATE
     // =========================================================
 
     [Header("Water State")]
-    [SerializeField] private WaterState currentState = WaterState.Clean;
 
+    [SerializeField]
+    private WaterState waterState =
+        WaterState.Clean;
+
+    // =========================================================
+    // DETERIORATION
+    // =========================================================
+
+    [Header("Water Deterioration")]
+
+    [Tooltip(
+        "How many days must pass before natural water " +
+        "deterioration occurs. 2 = twice as long as before."
+    )]
+    [Min(1)]
+    [SerializeField]
+    private int daysPerDeterioration = 2;
+
+    [Tooltip(
+        "How much Water Quality is lost whenever the " +
+        "deterioration timer completes."
+    )]
     [Range(0f, 100f)]
-    [SerializeField] private float quality = 100f;
+    [SerializeField]
+    private float deteriorationAmount = 25f;
+
+    [Tooltip(
+        "Enable automatic Water deterioration."
+    )]
+    [SerializeField]
+    private bool deteriorateDaily = true;
+
+    [SerializeField]
+    private int deteriorationDayProgress = 0;
 
     // =========================================================
-    // STAGE QUALITY
+    // WEATHER
     // =========================================================
 
-    [Header("Stage Quality Values")]
+    [Header("Weather")]
 
-    [Range(0f, 100f)]
-    [SerializeField] private float cleanQuality = 100f;
+    [Tooltip(
+        "If enabled, weather determines whether a day counts " +
+        "toward deterioration."
+    )]
+    [SerializeField]
+    private bool weatherAffectsWater = true;
 
-    [Range(0f, 100f)]
-    [SerializeField] private float dirtyQuality = 50f;
+    [Tooltip("Sunny days count toward deterioration.")]
+    [SerializeField]
+    private bool deteriorateOnSunnyDays = true;
 
-    [Range(0f, 100f)]
-    [SerializeField] private float murkyQuality = 0f;
+    [Tooltip("Rainy days count toward deterioration.")]
+    [SerializeField]
+    private bool deteriorateOnRainDays = true;
 
-    // =========================================================
-    // QUALITY THRESHOLDS
-    // =========================================================
-
-    [Header("Quality Thresholds")]
-
-    [Tooltip("Quality at or below this becomes Dirty.")]
-    [Range(0f, 100f)]
-    [SerializeField] private float dirtyThreshold = 65f;
-
-    [Tooltip("Quality at or below this becomes Murky.")]
-    [Range(0f, 100f)]
-    [SerializeField] private float murkyThreshold = 30f;
+    [Tooltip("Thunder days count toward deterioration.")]
+    [SerializeField]
+    private bool deteriorateOnThunderDays = true;
 
     // =========================================================
-    // DAILY WEATHER DIRTINESS
+    // VISUALS
     // =========================================================
 
-    [Header("Daily Weather Dirtiness")]
+    [Header("Visuals")]
 
-    [Tooltip("Automatically make this Water Plot dirtier whenever a new day begins.")]
-    [SerializeField] private bool dirtyEachNewDay = true;
+    [SerializeField]
+    private SpriteRenderer waterRenderer;
 
-    [Tooltip("How many dirtiness stages are added after a Sunny day.")]
-    [Range(0, 2)]
-    [SerializeField] private int sunnyDirtyStages = 1;
+    [SerializeField]
+    private Sprite cleanSprite;
 
-    [Tooltip("How many dirtiness stages are added after a Rain day.")]
-    [Range(0, 2)]
-    [SerializeField] private int rainDirtyStages = 1;
+    [SerializeField]
+    private Sprite dirtySprite;
 
-    [Tooltip("How many dirtiness stages are added after a thunderstorm day.")]
-    [Range(0, 2)]
-    [SerializeField] private int thunderDirtyStages = 2;
+    [SerializeField]
+    private Sprite murkySprite;
 
     // =========================================================
-    // OPTIONAL OLD DEGRADATION
+    // EVENTS
     // =========================================================
 
-    [Header("Automatic Real-Time Degradation")]
+    [Header("Events")]
 
-    [Tooltip("Leave this OFF if dirtiness should mainly happen between days.")]
-    [SerializeField] private bool degradeOverTime = false;
+    public UnityEvent onWaterCleaned;
 
-    [Tooltip("Water quality lost per second when real-time degradation is enabled.")]
-    [SerializeField] private float degradationRate = 0.25f;
+    public UnityEvent onWaterBecameDirty;
+
+    public UnityEvent onWaterBecameMurky;
+
+    public UnityEvent onWaterStateChanged;
+
+    public UnityEvent onWaterQualityChanged;
 
     // =========================================================
     // DEBUG
     // =========================================================
 
     [Header("Debug")]
-    [SerializeField] private bool showDebugLogs = false;
 
-    // =========================================================
-    // PRIVATE
-    // =========================================================
+    [SerializeField]
+    private bool showDebugLogs = false;
 
+    [SerializeField]
     private int lastProcessedDay = -1;
-
-    // Weather from the CURRENT day.
-    // When the day changes, this represents the day that just ended.
-    private string recordedDayWeather = "Sunny";
 
     // =========================================================
     // AWAKE
@@ -136,45 +344,17 @@ public class WaterPlot : MonoBehaviour
 
     private void Awake()
     {
-        // -----------------------------------------------------
-        // SPRITE RENDERER
-        // -----------------------------------------------------
+        AutoAssignReferences();
 
-        if (spriteRenderer == null)
-        {
-            spriteRenderer =
-                GetComponent<SpriteRenderer>();
-
-            if (spriteRenderer == null)
-            {
-                spriteRenderer =
-                    GetComponentInChildren<SpriteRenderer>();
-            }
-        }
-
-        // -----------------------------------------------------
-        // END DAY SYSTEM
-        // -----------------------------------------------------
-
-        if (endDaySystem == null)
-        {
-            endDaySystem =
-                FindFirstObjectByType<EndDaySystem>();
-        }
-
-        // -----------------------------------------------------
-        // QUALITY
-        // -----------------------------------------------------
-
-        quality =
+        waterQuality =
             Mathf.Clamp(
-                quality,
+                waterQuality,
                 0f,
                 100f
             );
 
-        UpdateStateFromQuality();
-        RefreshSprite();
+        UpdateStateFromQuality(false);
+        UpdateVisuals();
     }
 
     // =========================================================
@@ -183,19 +363,7 @@ public class WaterPlot : MonoBehaviour
 
     private void Start()
     {
-        // -----------------------------------------------------
-        // FIND END DAY SYSTEM
-        // -----------------------------------------------------
-
-        if (endDaySystem == null)
-        {
-            endDaySystem =
-                FindFirstObjectByType<EndDaySystem>();
-        }
-
-        // -----------------------------------------------------
-        // RECORD CURRENT DAY
-        // -----------------------------------------------------
+        AutoAssignReferences();
 
         if (endDaySystem != null)
         {
@@ -203,32 +371,8 @@ public class WaterPlot : MonoBehaviour
                 endDaySystem.GetCurrentDay();
         }
 
-        // -----------------------------------------------------
-        // RECORD TODAY'S WEATHER
-        // -----------------------------------------------------
-
-        recordedDayWeather =
-            GetCurrentWeatherName();
-
-        // -----------------------------------------------------
-        // REFRESH STATE
-        // -----------------------------------------------------
-
-        UpdateStateFromQuality();
-        RefreshSprite();
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                gameObject.name +
-                " started on Day " +
-                lastProcessedDay +
-                " | Weather: " +
-                recordedDayWeather +
-                " | Water: " +
-                currentState
-            );
-        }
+        UpdateStateFromQuality(false);
+        UpdateVisuals();
     }
 
     // =========================================================
@@ -237,347 +381,279 @@ public class WaterPlot : MonoBehaviour
 
     private void Update()
     {
-        // -----------------------------------------------------
-        // NEW DAY CHECK
-        // -----------------------------------------------------
-
-        CheckForNewDay();
-
-        // -----------------------------------------------------
-        // OPTIONAL REAL-TIME DEGRADATION
-        // -----------------------------------------------------
-
-        if (!degradeOverTime)
+        if (destroyed) return; CheckSoilDamage(); if (destroyed) return;
+        if (endDaySystem == null ||
+            weatherManager == null)
         {
-            return;
-        }
-
-        if (quality <= 0f)
-        {
-            return;
-        }
-
-        PolluteWater(
-            degradationRate *
-            Time.deltaTime
-        );
-    }
-
-    // =========================================================
-    // CHECK NEW DAY
-    // =========================================================
-
-    private void CheckForNewDay()
-    {
-        if (!dirtyEachNewDay)
-        {
-            return;
+            AutoAssignReferences();
         }
 
         if (endDaySystem == null)
         {
-            endDaySystem =
-                FindFirstObjectByType<EndDaySystem>();
-
-            if (endDaySystem == null)
-            {
-                return;
-            }
+            return;
         }
 
         int currentDay =
             endDaySystem.GetCurrentDay();
 
-        // First-time safety.
         if (lastProcessedDay < 0)
         {
             lastProcessedDay =
                 currentDay;
 
-            recordedDayWeather =
-                GetCurrentWeatherName();
-
             return;
         }
 
-        // Still the same day.
-        if (currentDay ==
-            lastProcessedDay)
+        if (currentDay <= lastProcessedDay)
         {
             return;
         }
 
-        // -----------------------------------------------------
-        // A NEW DAY HAS STARTED
-        //
-        // recordedDayWeather contains the weather from the
-        // day that just finished.
-        // -----------------------------------------------------
+        while (lastProcessedDay < currentDay)
+        {
+            lastProcessedDay++;
 
-        ApplyWeatherDirtiness(
-            recordedDayWeather
-        );
+            ProcessNewDay();
+        }
+    }
 
-        // -----------------------------------------------------
-        // SAVE NEW DAY
-        // -----------------------------------------------------
+    private void LateUpdate()
+    {
+        RefreshDestroyedWarning();
+    }
 
-        lastProcessedDay =
-            currentDay;
+    // =========================================================
+    // AUTO ASSIGN
+    // =========================================================
 
-        // -----------------------------------------------------
-        // RECORD THE NEW DAY'S WEATHER
-        //
-        // EndDaySystem randomizes the new weather when the
-        // new day begins. This becomes the weather remembered
-        // for tomorrow.
-        // -----------------------------------------------------
+    private void AutoAssignReferences()
+    {
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
 
-        recordedDayWeather =
-            GetCurrentWeatherName();
+        if (weatherManager == null)
+        {
+            weatherManager =
+                FindFirstObjectByType<WeatherManager>();
+        }
+
+        if (waterRenderer == null)
+        {
+            waterRenderer =
+                GetComponent<SpriteRenderer>();
+
+            if (waterRenderer == null)
+            {
+                waterRenderer =
+                    GetComponentInChildren<SpriteRenderer>();
+            }
+        }
+    }
+
+    // =========================================================
+    // ACTION PHASE
+    // =========================================================
+
+    public bool CanPerformPlayerAction()
+    {
+        if (destroyed) return false;
+        if (endDaySystem == null)
+        {
+            endDaySystem =
+                FindFirstObjectByType<EndDaySystem>();
+        }
+
+        if (endDaySystem == null)
+        {
+            return true;
+        }
+
+        return endDaySystem.IsActionPhaseActive();
+    }
+
+    // =========================================================
+    // PROCESS NEW DAY
+    // =========================================================
+
+    private void ProcessNewDay()
+    {
+        if (destroyed) return;
+        if (!deteriorateDaily)
+        {
+            return;
+        }
+
+        if (weatherAffectsWater &&
+            !ShouldWeatherDeteriorateWater())
+        {
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    "[WaterPlot] " +
+                    gameObject.name +
+                    " did not deteriorate today."
+                );
+            }
+
+            return;
+        }
+
+        deteriorationDayProgress++;
 
         if (showDebugLogs)
         {
             Debug.Log(
+                "[WaterPlot] " +
                 gameObject.name +
-                " entered Day " +
-                currentDay +
-                " | Previous Weather: " +
-                recordedDayWeather +
-                " | Water State: " +
-                currentState
+                " deterioration timer: " +
+                deteriorationDayProgress +
+                "/" +
+                daysPerDeterioration
             );
         }
-    }
 
-    // =========================================================
-    // APPLY WEATHER DIRTINESS
-    // =========================================================
-
-    private void ApplyWeatherDirtiness(
-        string previousWeather)
-    {
-        int stages =
-            1;
-
-        // -----------------------------------------------------
-        // SUNNY
-        // -----------------------------------------------------
-
-        if (previousWeather ==
-            "Sunny")
+        if (deteriorationDayProgress <
+            daysPerDeterioration)
         {
-            stages =
-                sunnyDirtyStages;
+            return;
         }
 
-        // -----------------------------------------------------
-        // RAIN
-        // -----------------------------------------------------
+        deteriorationDayProgress = 0;
 
-        else if (previousWeather ==
-                 "Rain")
-        {
-            stages =
-                rainDirtyStages;
-        }
-
-        // -----------------------------------------------------
-        // THUNDERSTORM
-        // -----------------------------------------------------
-
-        else if (previousWeather ==
-                     "RainAndThunder" ||
-                 previousWeather ==
-                     "Thunder" ||
-                 previousWeather ==
-                     "Storm")
-        {
-            stages =
-                thunderDirtyStages;
-        }
-
-        // -----------------------------------------------------
-        // APPLY STAGES
-        // -----------------------------------------------------
-
-        DirtyByStages(
-            stages
+        // IMPORTANT:
+        // Automatic deterioration bypasses the PLAYER action
+        // lock because this is part of new-day simulation.
+        PolluteWater(
+            deteriorationAmount
         );
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                gameObject.name +
-                " received " +
-                stages +
-                " dirtiness stage(s) from yesterday's " +
-                previousWeather +
-                " weather."
-            );
-        }
     }
 
     // =========================================================
-    // GET CURRENT WEATHER NAME
+    // WEATHER CHECK
     // =========================================================
 
-    private string GetCurrentWeatherName()
+    private bool ShouldWeatherDeteriorateWater()
     {
-        if (WeatherManager.Instance == null)
+        if (weatherManager == null)
         {
-            return "Sunny";
+            return true;
         }
 
-        return
-            WeatherManager.Instance
-                .GetCurrentWeather()
-                .ToString();
+        if (weatherManager.IsRainAndThunder() ||
+            weatherManager.IsThunder())
+        {
+            return deteriorateOnThunderDays;
+        }
+
+        if (weatherManager.IsRaining() ||
+            weatherManager.IsRainOnly())
+        {
+            return deteriorateOnRainDays;
+        }
+
+        if (weatherManager.IsSunny())
+        {
+            return deteriorateOnSunnyDays;
+        }
+
+        return true;
     }
 
     // =========================================================
-    // DIRTY BY MULTIPLE STAGES
+    // SET WATER QUALITY
     // =========================================================
 
-    public void DirtyByStages(
-        int stages)
+    public void SetWaterQuality(
+        float value)
     {
-        stages =
+        if (destroyed) return;
+        float oldQuality =
+            waterQuality;
+
+        waterQuality =
             Mathf.Clamp(
-                stages,
-                0,
-                2
+                value,
+                0f,
+                100f
             );
 
-        for (int i = 0;
-             i < stages;
-             i++)
+        UpdateStateFromQuality(true);
+
+        if (!Mathf.Approximately(
+                oldQuality,
+                waterQuality))
         {
-            DirtyOneStage();
+            onWaterQualityChanged?.Invoke();
         }
-    }
-
-    // =========================================================
-    // CLEAN ONE STAGE
-    // =========================================================
-
-    /// <summary>
-    /// Murky -> Dirty
-    /// Dirty -> Clean
-    /// Clean -> Clean
-    /// </summary>
-    public void CleanOneStage()
-    {
-        switch (currentState)
-        {
-            // =================================================
-            // MURKY -> DIRTY
-            // =================================================
-
-            case WaterState.Murky:
-
-                SetDirtyState();
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        gameObject.name +
-                        " cleaned from MURKY to DIRTY."
-                    );
-                }
-
-                break;
-
-            // =================================================
-            // DIRTY -> CLEAN
-            // =================================================
-
-            case WaterState.Dirty:
-
-                SetCleanState();
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        gameObject.name +
-                        " cleaned from DIRTY to CLEAN."
-                    );
-                }
-
-                break;
-
-            // =================================================
-            // ALREADY CLEAN
-            // =================================================
-
-            case WaterState.Clean:
-
-                if (showDebugLogs)
-                {
-                    Debug.Log(
-                        gameObject.name +
-                        " is already CLEAN."
-                    );
-                }
-
-                break;
-        }
-
-        RefreshSprite();
-    }
-
-    // =========================================================
-    // DIRTY ONE STAGE
-    // =========================================================
-
-    /// <summary>
-    /// Clean -> Dirty
-    /// Dirty -> Murky
-    /// Murky -> Murky
-    /// </summary>
-    public void DirtyOneStage()
-    {
-        switch (currentState)
-        {
-            // =================================================
-            // CLEAN -> DIRTY
-            // =================================================
-
-            case WaterState.Clean:
-
-                SetDirtyState();
-
-                break;
-
-            // =================================================
-            // DIRTY -> MURKY
-            // =================================================
-
-            case WaterState.Dirty:
-
-                SetMurkyState();
-
-                break;
-
-            // =================================================
-            // ALREADY MURKY
-            // =================================================
-
-            case WaterState.Murky:
-
-                break;
-        }
-
-        RefreshSprite();
 
         if (showDebugLogs)
         {
             Debug.Log(
+                "[WaterPlot] " +
                 gameObject.name +
-                " dirtied one stage. State: " +
-                currentState
+                " Quality: " +
+                oldQuality.ToString("0.#") +
+                " -> " +
+                waterQuality.ToString("0.#")
             );
         }
+    }
+
+    // =========================================================
+    // CLEAN WATER BY AMOUNT
+    // =========================================================
+
+    public void CleanWater(
+        float amount)
+    {
+        // =====================================================
+        // ACTION PHASE LOCK
+        // =====================================================
+
+        if (!CanPerformPlayerAction())
+        {
+            return;
+        }
+
+        if (amount <= 0f)
+        {
+            return;
+        }
+
+        SetWaterQuality(
+            waterQuality +
+            Mathf.Abs(amount)
+        );
+
+        deteriorationDayProgress = 0;
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[WaterPlot] " +
+                gameObject.name +
+                " cleaned by " +
+                amount.ToString("0.#") +
+                ". Timer reset."
+            );
+        }
+    }
+
+    // =========================================================
+    // CLEAN WATER
+    // =========================================================
+
+    public void CleanWater()
+    {
+        if (!CanPerformPlayerAction())
+        {
+            return;
+        }
+
+        MakeCleanInternal();
     }
 
     // =========================================================
@@ -592,115 +668,206 @@ public class WaterPlot : MonoBehaviour
             return;
         }
 
-        quality -=
-            amount;
-
-        quality =
-            Mathf.Clamp(
-                quality,
-                0f,
-                100f
-            );
-
-        UpdateStateFromQuality();
-        RefreshSprite();
+        SetWaterQuality(
+            waterQuality -
+            Mathf.Abs(amount)
+        );
 
         if (showDebugLogs)
         {
             Debug.Log(
+                "[WaterPlot] " +
                 gameObject.name +
-                " water dirtied by " +
-                amount +
-                ". Quality: " +
-                quality +
-                " | State: " +
-                currentState
+                " polluted by " +
+                amount.ToString("0.#")
             );
         }
     }
 
     // =========================================================
-    // CLEAN WATER BY AMOUNT
+    // INTERNAL MAKE CLEAN
     // =========================================================
 
-    public void CleanWater(
-        float amount)
+    private void MakeCleanInternal()
     {
-        if (amount <= 0f)
-        {
-            return;
-        }
+        if (destroyed) return;
+        deteriorationDayProgress = 0;
 
-        quality +=
-            amount;
-
-        quality =
-            Mathf.Clamp(
-                quality,
-                0f,
-                100f
-            );
-
-        UpdateStateFromQuality();
-        RefreshSprite();
+        SetWaterQuality(
+            100f
+        );
 
         if (showDebugLogs)
         {
             Debug.Log(
+                "[WaterPlot] " +
                 gameObject.name +
-                " water quality increased by " +
-                amount +
-                ". Quality: " +
-                quality +
-                " | State: " +
-                currentState
+                " made fully CLEAN."
             );
         }
     }
 
     // =========================================================
-    // SET WATER QUALITY
-    // =========================================================
-
-    public void SetWaterQuality(
-        float newQuality)
-    {
-        quality =
-            Mathf.Clamp(
-                newQuality,
-                0f,
-                100f
-            );
-
-        UpdateStateFromQuality();
-        RefreshSprite();
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                gameObject.name +
-                " water quality set to " +
-                quality +
-                ". State: " +
-                currentState
-            );
-        }
-    }
-
-    // =========================================================
-    // MAKE CLEAN
+    // MAKE FULLY CLEAN
     // =========================================================
 
     public void MakeClean()
     {
-        SetCleanState();
-        RefreshSprite();
+        if (!CanPerformPlayerAction())
+        {
+            return;
+        }
+
+        MakeCleanInternal();
+    }
+
+    // =========================================================
+    // MAKE FULLY POLLUTED
+    // =========================================================
+
+    public void MakePolluted()
+    {
+        if (destroyed) return;
+        deteriorationDayProgress = 0;
+
+        SetWaterQuality(
+            0f
+        );
 
         if (showDebugLogs)
         {
             Debug.Log(
+                "[WaterPlot] " +
                 gameObject.name +
-                " water made CLEAN."
+                " made fully MURKY."
+            );
+        }
+    }
+
+    // =========================================================
+    // STATE FROM QUALITY
+    // =========================================================
+
+    private void UpdateStateFromQuality(
+        bool invokeEvents)
+    {
+        if (destroyed) { waterQuality = 0f; waterState = WaterState.Destroyed; return; }
+        WaterState newState;
+
+        if (waterQuality >=
+            cleanQualityThreshold)
+        {
+            newState =
+                WaterState.Clean;
+        }
+        else if (waterQuality <=
+                 murkyQualityThreshold)
+        {
+            newState =
+                WaterState.Murky;
+        }
+        else
+        {
+            newState =
+                WaterState.Dirty;
+        }
+
+        SetWaterStateInternal(
+            newState,
+            invokeEvents
+        );
+    }
+
+    // =========================================================
+    // SET WATER STATE
+    // =========================================================
+
+    public void SetWaterState(
+        WaterState newState)
+    {
+        if (newState == WaterState.Destroyed) { DestroyWaterPlot("Manual state change"); return; }
+        if (destroyed) return;
+        switch (newState)
+        {
+            case WaterState.Clean:
+
+                MakeCleanInternal();
+
+                break;
+
+            case WaterState.Dirty:
+
+                deteriorationDayProgress = 0;
+
+                SetWaterQuality(
+                    (
+                        cleanQualityThreshold +
+                        murkyQualityThreshold
+                    ) * 0.5f
+                );
+
+                break;
+
+            case WaterState.Murky:
+
+                MakePolluted();
+
+                break;
+        }
+    }
+
+    // =========================================================
+    // INTERNAL STATE CHANGE
+    // =========================================================
+
+    private void SetWaterStateInternal(
+        WaterState newState,
+        bool invokeEvents)
+    {
+        WaterState oldState =
+            waterState;
+
+        waterState =
+            newState;
+
+        UpdateVisuals();
+
+        if (oldState ==
+            waterState)
+        {
+            return;
+        }
+
+        if (invokeEvents)
+        {
+            if (waterState ==
+                WaterState.Clean)
+            {
+                onWaterCleaned?.Invoke();
+            }
+            else if (waterState ==
+                     WaterState.Dirty)
+            {
+                onWaterBecameDirty?.Invoke();
+            }
+            else if (waterState ==
+                     WaterState.Murky)
+            {
+                onWaterBecameMurky?.Invoke();
+            }
+
+            onWaterStateChanged?.Invoke();
+        }
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                "[WaterPlot] " +
+                gameObject.name +
+                " State: " +
+                oldState +
+                " -> " +
+                waterState
             );
         }
     }
@@ -711,16 +878,18 @@ public class WaterPlot : MonoBehaviour
 
     public void MakeDirty()
     {
-        SetDirtyState();
-        RefreshSprite();
+        if (destroyed) return;
+        deteriorationDayProgress = 0;
 
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                gameObject.name +
-                " water made DIRTY."
-            );
-        }
+        float dirtyQuality =
+            (
+                cleanQualityThreshold +
+                murkyQualityThreshold
+            ) * 0.5f;
+
+        SetWaterQuality(
+            dirtyQuality
+        );
     }
 
     // =========================================================
@@ -729,153 +898,96 @@ public class WaterPlot : MonoBehaviour
 
     public void MakeMurky()
     {
-        SetMurkyState();
-        RefreshSprite();
-
-        if (showDebugLogs)
-        {
-            Debug.Log(
-                gameObject.name +
-                " water made MURKY."
-            );
-        }
+        MakePolluted();
     }
 
     // =========================================================
-    // LEGACY MAKE POLLUTED
+    // LEGACY POLLUTE
     // =========================================================
 
-    public void MakePolluted()
+    public void Pollute()
     {
-        MakeMurky();
+        MakePolluted();
     }
 
     // =========================================================
-    // INTERNAL CLEAN STATE
+    // LEGACY CLEAN
     // =========================================================
 
-    private void SetCleanState()
+    public void Clean()
     {
-        currentState =
-            WaterState.Clean;
-
-        quality =
-            Mathf.Clamp(
-                cleanQuality,
-                0f,
-                100f
-            );
-    }
-
-    // =========================================================
-    // INTERNAL DIRTY STATE
-    // =========================================================
-
-    private void SetDirtyState()
-    {
-        currentState =
-            WaterState.Dirty;
-
-        quality =
-            Mathf.Clamp(
-                dirtyQuality,
-                0f,
-                100f
-            );
-    }
-
-    // =========================================================
-    // INTERNAL MURKY STATE
-    // =========================================================
-
-    private void SetMurkyState()
-    {
-        currentState =
-            WaterState.Murky;
-
-        quality =
-            Mathf.Clamp(
-                murkyQuality,
-                0f,
-                100f
-            );
-    }
-
-    // =========================================================
-    // UPDATE STATE FROM QUALITY
-    // =========================================================
-
-    private void UpdateStateFromQuality()
-    {
-        if (quality <=
-            murkyThreshold)
-        {
-            currentState =
-                WaterState.Murky;
-        }
-        else if (quality <=
-                 dirtyThreshold)
-        {
-            currentState =
-                WaterState.Dirty;
-        }
-        else
-        {
-            currentState =
-                WaterState.Clean;
-        }
-    }
-
-    // =========================================================
-    // REFRESH SPRITE
-    // =========================================================
-
-    private void RefreshSprite()
-    {
-        if (spriteRenderer == null)
+        if (!CanPerformPlayerAction())
         {
             return;
         }
 
-        switch (currentState)
-        {
-            // =================================================
-            // CLEAN
-            // =================================================
+        MakeCleanInternal();
+    }
 
+    // =========================================================
+    // LEGACY PURIFY
+    // =========================================================
+
+    public void PurifyWater()
+    {
+        if (!CanPerformPlayerAction())
+        {
+            return;
+        }
+
+        MakeCleanInternal();
+    }
+
+    // =========================================================
+    // MANUAL DETERIORATION
+    // =========================================================
+
+    public void DeteriorateWater()
+    {
+        PolluteWater(
+            deteriorationAmount
+        );
+    }
+
+    // =========================================================
+    // VISUALS
+    // =========================================================
+
+    private void UpdateVisuals()
+    {
+        if (destroyed) { ApplyDebrisVisual(); return; }
+        if (waterRenderer == null)
+        {
+            return;
+        }
+
+        switch (waterState)
+        {
             case WaterState.Clean:
 
                 if (cleanSprite != null)
                 {
-                    spriteRenderer.sprite =
+                    waterRenderer.sprite =
                         cleanSprite;
                 }
 
                 break;
 
-            // =================================================
-            // DIRTY
-            // =================================================
-
             case WaterState.Dirty:
 
                 if (dirtySprite != null)
                 {
-                    spriteRenderer.sprite =
+                    waterRenderer.sprite =
                         dirtySprite;
                 }
 
                 break;
 
-            // =================================================
-            // MURKY
-            // =================================================
-
             case WaterState.Murky:
 
                 if (murkySprite != null)
                 {
-                    spriteRenderer.sprite =
+                    waterRenderer.sprite =
                         murkySprite;
                 }
 
@@ -884,55 +996,105 @@ public class WaterPlot : MonoBehaviour
     }
 
     // =========================================================
-    // GET QUALITY
-    // =========================================================
-
-    public float GetWaterQuality()
-    {
-        return quality;
-    }
-
-    // =========================================================
-    // GET STATE
+    // GETTERS
     // =========================================================
 
     public WaterState GetWaterState()
     {
-        return currentState;
+        return waterState;
     }
 
-    // =========================================================
-    // STATE CHECKS
-    // =========================================================
+    public Sprite GetCurrentDisplayedSprite()
+    {
+        if (destroyed)
+        {
+            if (debrisRenderer != null &&
+                debrisRenderer.sprite != null)
+            {
+                return debrisRenderer.sprite;
+            }
+
+            return debrisSprite;
+        }
+
+        if (waterRenderer == null)
+        {
+            AutoAssignReferences();
+        }
+
+        if (waterRenderer != null &&
+            waterRenderer.sprite != null)
+        {
+            return waterRenderer.sprite;
+        }
+
+        switch (waterState)
+        {
+            case WaterState.Clean:
+                return cleanSprite;
+
+            case WaterState.Dirty:
+                return dirtySprite;
+
+            case WaterState.Murky:
+                return murkySprite;
+        }
+
+        return null;
+    }
+
+    public float GetWaterQuality()
+    {
+        if (destroyed) return 0f;
+        return waterQuality;
+    }
 
     public bool IsClean()
     {
+        if (destroyed) return false;
         return
-            currentState ==
+            waterState ==
             WaterState.Clean;
     }
 
     public bool IsDirty()
     {
+        if (destroyed) return false;
         return
-            currentState ==
+            waterState ==
             WaterState.Dirty;
     }
 
     public bool IsMurky()
     {
+        if (destroyed) return false;
         return
-            currentState ==
+            waterState ==
             WaterState.Murky;
     }
-
-    // =========================================================
-    // LEGACY CHECK
-    // =========================================================
 
     public bool IsPolluted()
     {
         return IsMurky();
+    }
+
+    // =========================================================
+    // DETERIORATION GETTERS
+    // =========================================================
+
+    public int GetDaysPerDeteriorationStage()
+    {
+        return daysPerDeterioration;
+    }
+
+    public int GetDaysSinceLastDeterioration()
+    {
+        return deteriorationDayProgress;
+    }
+
+    public float GetDeteriorationAmount()
+    {
+        return deteriorationAmount;
     }
 
     // =========================================================
@@ -941,55 +1103,125 @@ public class WaterPlot : MonoBehaviour
 
     public bool CanClean()
     {
-        return !IsClean();
+        // This now also tells the UI that cleaning is unavailable
+        // once the action phase has ended.
+
+        return
+            waterState != WaterState.Clean &&
+            CanPerformPlayerAction();
     }
 
     // =========================================================
-    // BAT WATER VALUE
+    // CLEAN ONE STAGE
     // =========================================================
 
-    public float GetBatWaterValue()
+    public void CleanOneStage()
     {
-        switch (currentState)
+        // =====================================================
+        // ACTION PHASE LOCK
+        // =====================================================
+
+        if (!CanPerformPlayerAction())
         {
-            case WaterState.Clean:
-
-                return 1f;
-
-            case WaterState.Dirty:
-
-                return 0.5f;
-
-            case WaterState.Murky:
-
-                return 0f;
+            return;
         }
 
-        return 0f;
-    }
+        if (waterState == WaterState.Clean)
+        {
+            return;
+        }
 
-    // =========================================================
-    // DAY / WEATHER DEBUG INFO
-    // =========================================================
+        deteriorationDayProgress = 0;
 
-    public int GetLastProcessedDay()
-    {
-        return lastProcessedDay;
-    }
+        // =====================================================
+        // MURKY -> DIRTY
+        // =====================================================
 
-    public string GetRecordedWeather()
-    {
-        return recordedDayWeather;
+        if (waterState == WaterState.Murky)
+        {
+            float dirtyQuality =
+                (
+                    cleanQualityThreshold +
+                    murkyQualityThreshold
+                ) * 0.5f;
+
+            SetWaterQuality(
+                dirtyQuality
+            );
+
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    "[WaterPlot] " +
+                    gameObject.name +
+                    " cleaned one stage: MURKY -> DIRTY"
+                );
+            }
+
+            return;
+        }
+
+        // =====================================================
+        // DIRTY -> CLEAN
+        // =====================================================
+
+        if (waterState == WaterState.Dirty)
+        {
+            SetWaterQuality(
+                100f
+            );
+
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    "[WaterPlot] " +
+                    gameObject.name +
+                    " cleaned one stage: DIRTY -> CLEAN"
+                );
+            }
+        }
     }
 
     // =========================================================
     // DEBUG
     // =========================================================
 
+    [ContextMenu("Debug - Clean +10")]
+    private void DebugCleanSmall()
+    {
+        CleanWater(
+            10f
+        );
+    }
+
+    [ContextMenu("Debug - Clean +25")]
+    private void DebugCleanMedium()
+    {
+        CleanWater(
+            25f
+        );
+    }
+
     [ContextMenu("Debug - Make Clean")]
     private void DebugMakeClean()
     {
         MakeClean();
+    }
+
+    [ContextMenu("Debug - Pollute -10")]
+    private void DebugPolluteSmall()
+    {
+        PolluteWater(
+            10f
+        );
+    }
+
+    [ContextMenu("Debug - Pollute -25")]
+    private void DebugPolluteMedium()
+    {
+        PolluteWater(
+            25f
+        );
     }
 
     [ContextMenu("Debug - Make Dirty")]
@@ -1004,63 +1236,77 @@ public class WaterPlot : MonoBehaviour
         MakeMurky();
     }
 
-    [ContextMenu("Debug - Clean One Stage")]
-    private void DebugCleanOneStage()
+    [ContextMenu("Debug - Make Polluted")]
+    private void DebugMakePolluted()
     {
-        CleanOneStage();
+        MakePolluted();
     }
 
-    [ContextMenu("Debug - Dirty One Stage")]
-    private void DebugDirtyOneStage()
+    [ContextMenu("Debug - Add Deterioration Day")]
+    private void DebugAddDeteriorationDay()
     {
-        DirtyOneStage();
+        deteriorationDayProgress++;
+
+        Debug.Log(
+            "[WaterPlot] " +
+            gameObject.name +
+            " deterioration timer: " +
+            deteriorationDayProgress +
+            "/" +
+            daysPerDeterioration
+        );
+
+        if (deteriorationDayProgress >=
+            daysPerDeterioration)
+        {
+            deteriorationDayProgress = 0;
+
+            PolluteWater(
+                deteriorationAmount
+            );
+        }
     }
 
-    [ContextMenu("Debug - Dirty Two Stages")]
-    private void DebugDirtyTwoStages()
+    [ContextMenu("Debug - Reset Deterioration Timer")]
+    private void DebugResetDeteriorationTimer()
     {
-        DirtyByStages(
-            2
+        deteriorationDayProgress = 0;
+
+        Debug.Log(
+            "[WaterPlot] " +
+            gameObject.name +
+            " deterioration timer reset."
         );
     }
 
-    [ContextMenu("Debug - Apply Sunny Day")]
-    private void DebugSunnyDay()
+    [ContextMenu("Debug - Auto Assign References")]
+    private void DebugAutoAssignReferences()
     {
-        ApplyWeatherDirtiness(
-            "Sunny"
-        );
-    }
+        AutoAssignReferences();
 
-    [ContextMenu("Debug - Apply Rain Day")]
-    private void DebugRainDay()
-    {
-        ApplyWeatherDirtiness(
-            "Rain"
-        );
-    }
+        Debug.Log(
+            "[WaterPlot] AUTO ASSIGN" +
 
-    [ContextMenu("Debug - Apply Thunder Day")]
-    private void DebugThunderDay()
-    {
-        ApplyWeatherDirtiness(
-            "RainAndThunder"
-        );
-    }
+            "\nEnd Day System: " +
+            (
+                endDaySystem != null
+                    ? endDaySystem.name
+                    : "NOT FOUND"
+            ) +
 
-    [ContextMenu("Debug - Pollute 25")]
-    private void DebugPollute25()
-    {
-        PolluteWater(
-            25f
-        );
-    }
+            "\nWeather Manager: " +
+            (
+                weatherManager != null
+                    ? weatherManager.name
+                    : "NOT FOUND"
+            ) +
 
-    [ContextMenu("Debug - Clean 25")]
-    private void DebugClean25()
-    {
-        CleanWater(
-            25f
+            "\nSprite Renderer: " +
+            (
+                waterRenderer != null
+                    ? waterRenderer.name
+                    : "NOT FOUND"
+            )
         );
     }
 }

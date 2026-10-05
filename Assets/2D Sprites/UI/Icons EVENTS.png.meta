@@ -1,0 +1,557 @@
+fileFormatVersion: 2
+guid: e769a0a2aa2bf9e47bfe837b91cef9f5
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -2332379822669794800
+    second: Icons EVENTS_0
+  - first:
+      213: -7679154562806728526
+    second: Icons EVENTS_1
+  - first:
+      213: -2789748989052739038
+    second: Icons EVENTS_2
+  - first:
+      213: -9121041574954095295
+    second: Icons EVENTS_3
+  - first:
+      213: -5541011540849110159
+    second: Icons EVENTS_4
+  - first:
+      213: 1959801532370561471
+    second: Icons EVENTS_5
+  - first:
+      213: -861708453558541168
+    second: Icons EVENTS_6
+  - first:
+      213: -3849205813412593395
+    second: Icons EVENTS_7
+  - first:
+      213: -104025231697851404
+    second: Icons EVENTS_8
+  - first:
+      213: -7155757099603143681
+    second: Icons EVENTS_9
+  - first:
+      213: -4246965114957548309
+    second: Icons EVENTS_10
+  - first:
+      213: -1043302443510915361
+    second: Icons EVENTS_11
+  - first:
+      213: 8603421841838752658
+    second: Icons EVENTS_12
+  - first:
+      213: 5571795949272832048
+    second: Icons EVENTS_13
+  - first:
+      213: 146763854582527968
+    second: Icons EVENTS_14
+  - first:
+      213: -3860735088858729448
+    second: Icons EVENTS_15
+  - first:
+      213: -4866872413967724326
+    second: Icons EVENTS_16
+  - first:
+      213: 6899746860696423303
+    second: Icons EVENTS_17
+  - first:
+      213: -3449523764276543373
+    second: Icons EVENTS_18
+  - first:
+      213: 426913434654907799
+    second: Icons EVENTS_19
+  - first:
+      213: -2306831311123818952
+    second: Icons EVENTS_20
+  - first:
+      213: -215849263604744619
+    second: Icons EVENTS_21
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Icons EVENTS_0
+      rect:
+        serializedVersion: 2
+        x: 60
+        y: 909
+        width: 253
+        height: 255
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0127a74a8e8b1afd0800000000000000
+      internalID: -2332379822669794800
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_1
+      rect:
+        serializedVersion: 2
+        x: 348
+        y: 917
+        width: 263
+        height: 278
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2b8b59c6c992e6590800000000000000
+      internalID: -7679154562806728526
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_2
+      rect:
+        serializedVersion: 2
+        x: 635
+        y: 915
+        width: 268
+        height: 268
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 222a10f3312d849d0800000000000000
+      internalID: -2789748989052739038
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_3
+      rect:
+        serializedVersion: 2
+        x: 941
+        y: 913
+        width: 272
+        height: 276
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14daa4f430d8b6180800000000000000
+      internalID: -9121041574954095295
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_4
+      rect:
+        serializedVersion: 2
+        x: 59
+        y: 641
+        width: 263
+        height: 263
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 17359537c5f5a13b0800000000000000
+      internalID: -5541011540849110159
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_5
+      rect:
+        serializedVersion: 2
+        x: 366
+        y: 640
+        width: 242
+        height: 248
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fb9a6373c1d923b10800000000000000
+      internalID: 1959801532370561471
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_6
+      rect:
+        serializedVersion: 2
+        x: 649
+        y: 628
+        width: 248
+        height: 253
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 09421bd1ab89a04f0800000000000000
+      internalID: -861708453558541168
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_7
+      rect:
+        serializedVersion: 2
+        x: 939
+        y: 615
+        width: 273
+        height: 275
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d018c28e4bfd49ac0800000000000000
+      internalID: -3849205813412593395
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_8
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 322
+        width: 283
+        height: 278
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fbc8f85a9d6e8ef0800000000000000
+      internalID: -104025231697851404
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_9
+      rect:
+        serializedVersion: 2
+        x: 345
+        y: 339
+        width: 277
+        height: 271
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ff3dc2ba4d4a1bc90800000000000000
+      internalID: -7155757099603143681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_10
+      rect:
+        serializedVersion: 2
+        x: 663
+        y: 375
+        width: 225
+        height: 212
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: be4ba75babfbf05c0800000000000000
+      internalID: -4246965114957548309
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_11
+      rect:
+        serializedVersion: 2
+        x: 945
+        y: 331
+        width: 247
+        height: 262
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fde1c3d84f17581f0800000000000000
+      internalID: -1043302443510915361
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_12
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 71
+        width: 243
+        height: 236
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 293c2af059e756770800000000000000
+      internalID: 8603421841838752658
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_13
+      rect:
+        serializedVersion: 2
+        x: 346
+        y: 72
+        width: 272
+        height: 268
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0381e5d25eef25d40800000000000000
+      internalID: 5571795949272832048
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_14
+      rect:
+        serializedVersion: 2
+        x: 658
+        y: 62
+        width: 243
+        height: 258
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0e7324ab2f8690200800000000000000
+      internalID: 146763854582527968
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Icons EVENTS_15
+      rect:
+        serializedVersion: 2
+        x: 938
+        y: 63
+        width: 255
+        height: 256
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81470b844e9eb6ac0800000000000000
+      internalID: -3860735088858729448
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 23b3ce0e6d503c449aaa5022be936a90
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Icons EVENTS_0: -2332379822669794800
+      Icons EVENTS_1: -7679154562806728526
+      Icons EVENTS_10: -4246965114957548309
+      Icons EVENTS_11: -1043302443510915361
+      Icons EVENTS_12: 8603421841838752658
+      Icons EVENTS_13: 5571795949272832048
+      Icons EVENTS_14: 146763854582527968
+      Icons EVENTS_15: -3860735088858729448
+      Icons EVENTS_16: -4866872413967724326
+      Icons EVENTS_17: 6899746860696423303
+      Icons EVENTS_18: -3449523764276543373
+      Icons EVENTS_19: 426913434654907799
+      Icons EVENTS_2: -2789748989052739038
+      Icons EVENTS_20: -2306831311123818952
+      Icons EVENTS_21: -215849263604744619
+      Icons EVENTS_3: -9121041574954095295
+      Icons EVENTS_4: -5541011540849110159
+      Icons EVENTS_5: 1959801532370561471
+      Icons EVENTS_6: -861708453558541168
+      Icons EVENTS_7: -3849205813412593395
+      Icons EVENTS_8: -104025231697851404
+      Icons EVENTS_9: -7155757099603143681
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

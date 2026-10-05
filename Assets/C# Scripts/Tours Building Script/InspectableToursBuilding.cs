@@ -36,6 +36,12 @@ public class InspectableToursBuilding : MonoBehaviour
     [SerializeField] private bool allowClick = true;
     [SerializeField] private float interactionDistance = 5f;
 
+    [Header("Tutorial Lock")]
+    [Tooltip("Enable this only in the Tutorial scene. The Tours building cannot be inspected until the CONSERVATION TOURS step.")]
+    [SerializeField] private bool lockUntilConservationToursStep = false;
+
+    private bool tutorialUnlocked = false;
+
     // =========================================================
     // PLAYER
     // =========================================================
@@ -141,6 +147,12 @@ public class InspectableToursBuilding : MonoBehaviour
 
     private void Update()
     {
+        if (lockUntilConservationToursStep && !tutorialUnlocked)
+        {
+            SetHovered(false);
+            return;
+        }
+
         if (selectionWheel == null ||
             mainCamera == null ||
             spriteRenderer == null)
@@ -231,6 +243,9 @@ public class InspectableToursBuilding : MonoBehaviour
 
     private void InspectToursBuilding()
     {
+        if (lockUntilConservationToursStep && !tutorialUnlocked)
+            return;
+
         if (toursBuilding == null)
         {
             if (showDebugLogs)
@@ -359,6 +374,20 @@ public class InspectableToursBuilding : MonoBehaviour
 
         spriteRenderer.sharedMaterial =
             normalMaterial;
+    }
+
+    // =========================================================
+    // TUTORIAL
+    // =========================================================
+
+    public void UnlockForTutorial()
+    {
+        tutorialUnlocked = true;
+    }
+
+    public bool IsUnlockedForTutorial()
+    {
+        return !lockUntilConservationToursStep || tutorialUnlocked;
     }
 
     // =========================================================

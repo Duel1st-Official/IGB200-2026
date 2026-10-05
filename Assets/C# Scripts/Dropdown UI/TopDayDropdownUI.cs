@@ -10,26 +10,203 @@ public class TopDayDropdownUI : MonoBehaviour
     // REFERENCES
     // =========================================================
 
+    [Header("Day Progress Position - Always Visible")]
+    [Tooltip("Optional container for the progress bar and its text. Defaults to Day Progress Visual. Use a separate sibling of Dropdown Panel.")]
+    [SerializeField] private RectTransform dayProgressMoveTarget;
+    [Tooltip("Distance downward in UI units when the top bar is Always visible.")]
+    [Min(0f)][SerializeField] private float alwaysVisibleProgressDrop = 150f;
+    [Min(0.01f)][SerializeField] private float progressMoveSpeed = 15f;
+    private RectTransform cachedProgressMoveTarget;
+    private Vector2 originalProgressPosition;
+
+    private void UpdateProgressPosition()
+    {
+        RectTransform target = dayProgressMoveTarget != null
+            ? dayProgressMoveTarget : dayProgressVisual;
+        if (target == null) return;
+
+        // Never move the dropdown itself, or a shared parent containing it.
+        if (dropdownPanel != null &&
+            (target == dropdownPanel || dropdownPanel.IsChildOf(target))) return;
+
+        if (cachedProgressMoveTarget != target)
+        {
+            if (cachedProgressMoveTarget != null)
+                cachedProgressMoveTarget.anchoredPosition = originalProgressPosition;
+            cachedProgressMoveTarget = target;
+            originalProgressPosition = target.anchoredPosition;
+        }
+
+        bool alwaysVisible = endDaySystem != null &&
+            endDaySystem.GetShowTopDayBar() && !endDaySystem.IsTransitionRunning();
+        Vector2 destination = originalProgressPosition;
+        // Children already inherit the dropdown's slide; avoid doubling it.
+        bool movesWithDropdown = dropdownPanel != null && target.IsChildOf(dropdownPanel);
+        if (alwaysVisible && !movesWithDropdown)
+            destination += Vector2.down * Mathf.Max(0f, alwaysVisibleProgressDrop);
+
+        float blend = 1f - Mathf.Exp(-Mathf.Max(0.01f, progressMoveSpeed) * Time.unscaledDeltaTime);
+        target.anchoredPosition = Vector2.Lerp(target.anchoredPosition, destination, blend);
+    }
+
+
     [Header("References")]
     [SerializeField] private SelectionWheel selectionWheel;
     [SerializeField] private EndDaySystem endDaySystem;
 
-    [Tooltip("The entire dropdown panel that slides down from the top.")]
-    [SerializeField] private RectTransform dropdownPanel;
+    [Tooltip(
+        "The entire dropdown panel that slides down from the top."
+    )]
+    [SerializeField]
+    private RectTransform dropdownPanel;
 
-    [Tooltip("Invisible or visible area at the top of the screen that opens the dropdown when hovered.")]
-    [SerializeField] private RectTransform topHoverZone;
+    [Tooltip(
+        "Invisible or visible area at the top of the screen " +
+        "that opens the dropdown when hovered."
+    )]
+    [SerializeField]
+    private RectTransform topHoverZone;
 
     // =========================================================
-    // DAY / TIME TEXT
+    // DAY / TIME
     // =========================================================
 
     [Header("Day / Time")]
     [SerializeField] private TMP_Text dayText;
     [SerializeField] private TMP_Text timeText;
 
-    [Tooltip("Use AM / PM display instead of 24-hour time.")]
-    [SerializeField] private bool use12HourClock = true;
+    [Tooltip(
+        "Use AM / PM display instead of 24-hour time."
+    )]
+    [SerializeField]
+    private bool use12HourClock = true;
+
+    // =========================================================
+    // DAY PROGRESS
+    // =========================================================
+
+    [Header("Day Progress")]
+
+    [Tooltip(
+        "Slider showing how much of the player's action phase has passed."
+    )]
+    [SerializeField]
+    private Slider dayProgressBar;
+
+    [Tooltip(
+        "Optional text beside the progress bar."
+    )]
+    [SerializeField]
+    private TMP_Text dayProgressText;
+
+    [Tooltip(
+        "Show the progress as a percentage."
+    )]
+    [SerializeField]
+    private bool showProgressPercentage = false;
+
+    [Tooltip(
+        "Text shown while the player can still perform actions."
+    )]
+    [SerializeField]
+    private string actionPhaseText = "ACTION TIME";
+
+    [Tooltip(
+        "Text shown once the action phase has finished."
+    )]
+    [SerializeField]
+    private string actionPhaseFinishedText = "DAY FINISHED";
+
+    // =========================================================
+    // DAY PROGRESS CROSS FADE
+    // =========================================================
+
+    [Header("Day Progress Cross Fade")]
+
+    [Tooltip(
+        "CanvasGroup containing the entire Day Progress display. " +
+        "Put the progress bar and its text under the same parent."
+    )]
+    [SerializeField]
+    private CanvasGroup dayProgressCanvasGroup;
+
+    [Tooltip(
+        "Optional RectTransform used to slightly scale the Day Progress " +
+        "display while it fades."
+    )]
+    [SerializeField]
+    private RectTransform dayProgressVisual;
+
+    [Tooltip(
+        "How quickly the Day Progress display fades in and out."
+    )]
+    [SerializeField]
+    private float progressFadeSpeed = 10f;
+
+    [Tooltip(
+        "How quickly the Day Progress display scales in and out."
+    )]
+    [SerializeField]
+    private float progressScaleSpeed = 10f;
+
+    [Tooltip(
+        "Scale of the Day Progress display while hidden."
+    )]
+    [Range(0.5f, 1f)]
+    [SerializeField]
+    private float progressHiddenScale = 0.94f;
+
+    [Tooltip(
+        "Fade the progress display as soon as the player hovers " +
+        "the top hover zone."
+    )]
+    [SerializeField]
+    private bool fadeProgressImmediatelyOnHover = true;
+
+    // =========================================================
+    // END DAY ATTENTION
+    // =========================================================
+
+    [Header("End Day Attention")]
+
+    [SerializeField] private bool forceDropdownOpenAtDayEnd = true;
+
+    [Tooltip("Pulse the top day bar when the day has finished. No shaking or rotation is used.")]
+    [SerializeField] private bool pulseAtDayEnd = true;
+
+    [Tooltip("Visual that pulses at day end. If empty, Dropdown Panel is used.")]
+    [SerializeField] private RectTransform dropdownWiggleVisual;
+
+    [Range(1f, 1.3f)]
+    [SerializeField] private float wigglePulseScale = 1.06f;
+
+    [Min(0.01f)]
+    [SerializeField] private float wiggleSpeed = 1.8f;
+
+    [Min(0.01f)]
+    [SerializeField] private float wiggleReturnSpeed = 12f;
+
+    [Header("End Day Button Attention")]
+
+    [SerializeField] private bool enlargeEndDayButtonNearDayEnd = true;
+
+    [Tooltip("0.85 means the button begins growing during the final 15% of the day.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float endDayButtonGrowStartProgress = 0.85f;
+
+    [Tooltip("Final scale of the button when the day reaches 100%.")]
+    [Range(1f, 3f)]
+    [SerializeField] private float endDayButtonFinishedScale = 1.8f;
+
+    [Tooltip("Extra scale added by the pulse after the day has finished.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float endDayButtonPulseAmount = 0.22f;
+
+    [Min(0.01f)]
+    [SerializeField] private float endDayButtonPulseSpeed = 2.2f;
+
+    [Min(0.01f)]
+    [SerializeField] private float endDayButtonScaleSpeed = 10f;
 
     // =========================================================
     // WEATHER
@@ -44,8 +221,11 @@ public class TopDayDropdownUI : MonoBehaviour
     [SerializeField] private Sprite rainIcon;
     [SerializeField] private Sprite thunderIcon;
 
-    [Tooltip("How often the weather icon checks for changes.")]
-    [SerializeField] private float weatherRefreshInterval = 0.25f;
+    [Tooltip(
+        "How often the weather icon checks for changes."
+    )]
+    [SerializeField]
+    private float weatherRefreshInterval = 0.25f;
 
     // =========================================================
     // END DAY
@@ -60,20 +240,34 @@ public class TopDayDropdownUI : MonoBehaviour
 
     [Header("Dropdown Button Audio")]
 
-    [Tooltip("AudioSource used for dropdown button sounds. If empty, one will be found or created automatically.")]
-    [SerializeField] private AudioSource audioSource;
+    [Tooltip(
+        "AudioSource used for dropdown button sounds. " +
+        "If empty, one will be found or created automatically."
+    )]
+    [SerializeField]
+    private AudioSource audioSource;
 
-    [Tooltip("Random sounds played when hovering over the End Day button.")]
-    [SerializeField] private AudioClip[] buttonHoverSounds = new AudioClip[3];
+    [Tooltip(
+        "Random sounds played when hovering over the End Day button."
+    )]
+    [SerializeField]
+    private AudioClip[] buttonHoverSounds =
+        new AudioClip[3];
 
-    [Tooltip("Random sounds played when clicking the End Day button.")]
-    [SerializeField] private AudioClip[] buttonClickSounds = new AudioClip[3];
+    [Tooltip(
+        "Random sounds played when clicking the End Day button."
+    )]
+    [SerializeField]
+    private AudioClip[] buttonClickSounds =
+        new AudioClip[3];
 
     [Range(0f, 1f)]
-    [SerializeField] private float buttonHoverVolume = 0.6f;
+    [SerializeField]
+    private float buttonHoverVolume = 0.6f;
 
     [Range(0f, 1f)]
-    [SerializeField] private float buttonClickVolume = 0.8f;
+    [SerializeField]
+    private float buttonClickVolume = 0.8f;
 
     [Header("Button Audio Pitch")]
     [SerializeField] private float audioPitchMin = 0.95f;
@@ -85,17 +279,29 @@ public class TopDayDropdownUI : MonoBehaviour
 
     [Header("Dropdown Behaviour")]
 
-    [Tooltip("Delay before opening after the mouse enters the top area.")]
-    [SerializeField] private float openDelay = 0.05f;
+    [Tooltip(
+        "Delay before opening after the mouse enters the top area."
+    )]
+    [SerializeField]
+    private float openDelay = 0.05f;
 
-    [Tooltip("Delay before closing after the mouse leaves.")]
-    [SerializeField] private float closeDelay = 0.20f;
+    [Tooltip(
+        "Delay before closing after the mouse leaves."
+    )]
+    [SerializeField]
+    private float closeDelay = 0.20f;
 
-    [Tooltip("How quickly the dropdown slides.")]
-    [SerializeField] private float slideSpeed = 15f;
+    [Tooltip(
+        "How quickly the dropdown slides."
+    )]
+    [SerializeField]
+    private float slideSpeed = 15f;
 
-    [Tooltip("How far downward the dropdown travels when opened.")]
-    [SerializeField] private float dropdownDistance = 150f;
+    [Tooltip(
+        "How far downward the dropdown travels when opened."
+    )]
+    [SerializeField]
+    private float dropdownDistance = 150f;
 
     // =========================================================
     // DEFAULT DISPLAY
@@ -128,25 +334,22 @@ public class TopDayDropdownUI : MonoBehaviour
     private EventTrigger endDayEventTrigger;
     private EventTrigger.Entry hoverEntry;
 
+    private bool wasDayFinishedLastFrame;
+
+    private RectTransform endDayButtonRect;
+    private Vector3 endDayButtonBaseScale = Vector3.one;
+
     // =========================================================
     // START
     // =========================================================
 
     private void Start()
     {
-        // -----------------------------------------------------
-        // SELECTION WHEEL
-        // -----------------------------------------------------
-
         if (selectionWheel == null)
         {
             selectionWheel =
                 FindFirstObjectByType<SelectionWheel>();
         }
-
-        // -----------------------------------------------------
-        // END DAY SYSTEM
-        // -----------------------------------------------------
 
         if (endDaySystem == null)
         {
@@ -154,15 +357,7 @@ public class TopDayDropdownUI : MonoBehaviour
                 FindFirstObjectByType<EndDaySystem>();
         }
 
-        // -----------------------------------------------------
-        // AUDIO
-        // -----------------------------------------------------
-
         SetupAudioSource();
-
-        // -----------------------------------------------------
-        // END DAY BUTTON
-        // -----------------------------------------------------
 
         if (endDayButton != null)
         {
@@ -171,11 +366,22 @@ public class TopDayDropdownUI : MonoBehaviour
             );
 
             SetupEndDayButtonHover();
+
+            endDayButtonRect =
+                endDayButton.transform as RectTransform;
+
+            if (endDayButtonRect != null)
+            {
+                endDayButtonBaseScale =
+                    endDayButtonRect.localScale;
+            }
         }
 
-        // -----------------------------------------------------
-        // POSITIONS
-        // -----------------------------------------------------
+        SetupProgressBar();
+
+        SetupProgressCrossFade();
+
+        SetupEndDayAttention();
 
         CacheDropdownPositions();
 
@@ -188,10 +394,6 @@ public class TopDayDropdownUI : MonoBehaviour
         dropdownOpen =
             false;
 
-        // -----------------------------------------------------
-        // DEFAULT DISPLAY
-        // -----------------------------------------------------
-
         displayedDay =
             defaultDay;
 
@@ -200,10 +402,6 @@ public class TopDayDropdownUI : MonoBehaviour
 
         displayedMinute =
             defaultMinute;
-
-        // -----------------------------------------------------
-        // USE END DAY SYSTEM VALUES
-        // -----------------------------------------------------
 
         if (endDaySystem != null)
         {
@@ -220,6 +418,100 @@ public class TopDayDropdownUI : MonoBehaviour
         RefreshDayText();
         RefreshTimeText();
         UpdateWeatherDisplay();
+        RefreshDayProgress();
+
+        wasDayFinishedLastFrame =
+            IsDayFinished();
+    }
+
+    // =========================================================
+    // PROGRESS BAR SETUP
+    // =========================================================
+
+    private void SetupProgressBar()
+    {
+        if (dayProgressBar == null)
+        {
+            return;
+        }
+
+        dayProgressBar.minValue =
+            0f;
+
+        dayProgressBar.maxValue =
+            1f;
+
+        dayProgressBar.wholeNumbers =
+            false;
+
+        dayProgressBar.interactable =
+            false;
+
+        dayProgressBar.SetValueWithoutNotify(
+            0f
+        );
+    }
+
+    // =========================================================
+    // PROGRESS CROSS FADE SETUP
+    // =========================================================
+
+    private void SetupProgressCrossFade()
+    {
+        if (dayProgressVisual == null &&
+            dayProgressBar != null)
+        {
+            dayProgressVisual =
+                dayProgressBar.transform.parent
+                    as RectTransform;
+        }
+
+        if (dayProgressCanvasGroup == null &&
+            dayProgressVisual != null)
+        {
+            dayProgressCanvasGroup =
+                dayProgressVisual.GetComponent<CanvasGroup>();
+
+            if (dayProgressCanvasGroup == null)
+            {
+                dayProgressCanvasGroup =
+                    dayProgressVisual.gameObject
+                        .AddComponent<CanvasGroup>();
+            }
+        }
+
+        if (dayProgressCanvasGroup != null)
+        {
+            dayProgressCanvasGroup.alpha =
+                1f;
+
+            dayProgressCanvasGroup.interactable =
+                false;
+
+            dayProgressCanvasGroup.blocksRaycasts =
+                false;
+        }
+
+        if (dayProgressVisual != null)
+        {
+            dayProgressVisual.localScale =
+                Vector3.one;
+        }
+    }
+
+    // =========================================================
+    // END DAY ATTENTION SETUP
+    // =========================================================
+
+    private void SetupEndDayAttention()
+    {
+        if (dropdownWiggleVisual == null)
+        {
+            dropdownWiggleVisual =
+                dropdownPanel;
+        }
+
+        ResetDropdownWiggleImmediately();
     }
 
     // =========================================================
@@ -267,7 +559,8 @@ public class TopDayDropdownUI : MonoBehaviour
         if (endDayEventTrigger == null)
         {
             endDayEventTrigger =
-                endDayButton.gameObject.AddComponent<EventTrigger>();
+                endDayButton.gameObject
+                    .AddComponent<EventTrigger>();
         }
 
         if (endDayEventTrigger.triggers == null)
@@ -303,10 +596,6 @@ public class TopDayDropdownUI : MonoBehaviour
 
     private void Update()
     {
-        // -----------------------------------------------------
-        // FIND SYSTEM IF NEEDED
-        // -----------------------------------------------------
-
         if (endDaySystem == null)
         {
             endDaySystem =
@@ -319,55 +608,158 @@ public class TopDayDropdownUI : MonoBehaviour
                 FindFirstObjectByType<SelectionWheel>();
         }
 
-        // -----------------------------------------------------
-        // DAY / TIME
-        // -----------------------------------------------------
-
         UpdateDayAndTimeFromSystem();
 
-        // -----------------------------------------------------
-        // WEATHER
-        // -----------------------------------------------------
+        RefreshDayProgress();
 
-        weatherTimer +=
-            Time.unscaledDeltaTime;
+        UpdateEndDayButtonAttention();
 
-        if (weatherTimer >=
-            weatherRefreshInterval)
+        UpdateWeatherTimer();
+
+        bool dayFinished =
+            IsDayFinished();
+
+        // =====================================================
+        // NEW DAY DETECTED
+        // =====================================================
+
+        if (wasDayFinishedLastFrame &&
+            !dayFinished)
         {
-            weatherTimer =
+            dropdownOpen =
+                false;
+
+            openTimer =
                 0f;
 
-            UpdateWeatherDisplay();
+            closeTimer =
+                0f;
+
+            ResetEndDayButtonAttentionImmediately();
         }
 
-        // -----------------------------------------------------
-        // TRANSITION RUNNING
-        // -----------------------------------------------------
+        wasDayFinishedLastFrame =
+            dayFinished;
+
+        // =====================================================
+        // TRANSITION
+        // =====================================================
 
         if (endDaySystem != null &&
             endDaySystem.IsTransitionRunning())
         {
             CloseDropdownImmediately();
 
+            UpdateProgressCrossFade(
+                false
+            );
+
+            UpdateDropdownWiggle(
+                false
+            );
+
+            ResetEndDayButtonAttentionImmediately();
+
             return;
         }
 
-        // -----------------------------------------------------
-        // NORMAL MODE ONLY
-        // -----------------------------------------------------
+        // The pause-menu preference controls the actual slide position.
+        // Transition handling above still closes the bar while doors/reports run.
+        if (endDaySystem != null && endDaySystem.GetShowTopDayBar())
+        {
+
+            dropdownOpen = true;
+            openTimer = 0f;
+            closeTimer = 0f;
+            UpdateDropdownPosition();
+            UpdateProgressCrossFade(false);
+            UpdateDropdownWiggle(dayFinished && pulseAtDayEnd);
+            return;
+        }
+
+        // =====================================================
+        // FORCED END DAY MODE
+        // =====================================================
+
+        if (dayFinished)
+        {
+            UpdateEndDayAttentionState();
+
+            return;
+        }
+
+        // =====================================================
+        // NORMAL MODE LOCK
+        // =====================================================
 
         if (!CanUseDropdown())
         {
             CloseDropdownImmediately();
 
+            UpdateProgressCrossFade(
+                false
+            );
+
+            UpdateDropdownWiggle(
+                false
+            );
+
             return;
         }
 
-        // -----------------------------------------------------
-        // HOVER
-        // -----------------------------------------------------
+        // =====================================================
+        // NORMAL HOVER BEHAVIOUR
+        // =====================================================
 
+        UpdateNormalDropdownBehaviour();
+
+        UpdateDropdownWiggle(
+            false
+        );
+    }
+
+    // =========================================================
+    // WEATHER TIMER
+    // =========================================================
+
+    private void UpdateWeatherTimer()
+    {
+        weatherTimer +=
+            Time.unscaledDeltaTime;
+
+        if (weatherTimer <
+            weatherRefreshInterval)
+        {
+            return;
+        }
+
+        weatherTimer =
+            0f;
+
+        UpdateWeatherDisplay();
+    }
+
+    // =========================================================
+    // IS DAY FINISHED
+    // =========================================================
+
+    private bool IsDayFinished()
+    {
+        if (endDaySystem == null)
+        {
+            return false;
+        }
+
+        return
+            endDaySystem.HasReachedDayEnd();
+    }
+
+    // =========================================================
+    // NORMAL DROPDOWN
+    // =========================================================
+
+    private void UpdateNormalDropdownBehaviour()
+    {
         bool hoveringTop =
             IsPointerOverRect(
                 topHoverZone
@@ -384,7 +776,7 @@ public class TopDayDropdownUI : MonoBehaviour
             hoveringPanel;
 
         // -----------------------------------------------------
-        // OPEN TIMER
+        // OPEN
         // -----------------------------------------------------
 
         if (!dropdownOpen &&
@@ -406,7 +798,7 @@ public class TopDayDropdownUI : MonoBehaviour
         }
 
         // -----------------------------------------------------
-        // CLOSE TIMER
+        // CLOSE
         // -----------------------------------------------------
 
         if (dropdownOpen &&
@@ -432,6 +824,389 @@ public class TopDayDropdownUI : MonoBehaviour
         // -----------------------------------------------------
 
         UpdateDropdownPosition();
+
+        // -----------------------------------------------------
+        // PROGRESS VISIBILITY
+        // -----------------------------------------------------
+
+        bool hideProgress;
+
+        if (fadeProgressImmediatelyOnHover)
+        {
+            hideProgress =
+                hoveringTop ||
+                dropdownOpen;
+        }
+        else
+        {
+            hideProgress =
+                dropdownOpen;
+        }
+
+        UpdateProgressCrossFade(
+            hideProgress
+        );
+    }
+
+    // =========================================================
+    // END DAY ATTENTION STATE
+    // =========================================================
+
+    private void UpdateEndDayAttentionState()
+    {
+        // -----------------------------------------------------
+        // FORCE DROPDOWN OPEN
+        // -----------------------------------------------------
+
+        if (forceDropdownOpenAtDayEnd)
+        {
+            dropdownOpen =
+                true;
+
+            openTimer =
+                0f;
+
+            closeTimer =
+                0f;
+        }
+
+        // -----------------------------------------------------
+        // KEEP PROGRESS HIDDEN
+        // -----------------------------------------------------
+
+        UpdateProgressCrossFade(
+            true
+        );
+
+        // -----------------------------------------------------
+        // SLIDE DROPDOWN INTO VIEW
+        // -----------------------------------------------------
+
+        UpdateDropdownPosition();
+
+        // -----------------------------------------------------
+        // WIGGLE
+        // -----------------------------------------------------
+
+        UpdateDropdownWiggle(
+            pulseAtDayEnd
+        );
+    }
+
+    // =========================================================
+    // END DAY WIGGLE
+    // =========================================================
+
+    private void UpdateDropdownWiggle(
+        bool shouldPulse)
+    {
+        if (dropdownWiggleVisual == null)
+        {
+            return;
+        }
+
+        // Explicitly remove all rotation/shaking.
+        dropdownWiggleVisual.localRotation =
+            Quaternion.identity;
+
+        float targetScale = 1f;
+
+        if (shouldPulse)
+        {
+            float pulse =
+                (Mathf.Sin(
+                    Time.unscaledTime *
+                    Mathf.Max(0.01f, wiggleSpeed) *
+                    Mathf.PI * 2f
+                ) + 1f) * 0.5f;
+
+            targetScale =
+                Mathf.Lerp(
+                    1f,
+                    wigglePulseScale,
+                    pulse
+                );
+        }
+
+        float smoothing =
+            1f -
+            Mathf.Exp(
+                -Mathf.Max(0.01f, wiggleReturnSpeed) *
+                Time.unscaledDeltaTime
+            );
+
+        dropdownWiggleVisual.localScale =
+            Vector3.Lerp(
+                dropdownWiggleVisual.localScale,
+                Vector3.one * targetScale,
+                smoothing
+            );
+    }
+
+    // =========================================================
+    // RESET WIGGLE
+    // =========================================================
+
+    private void ResetDropdownWiggleImmediately()
+    {
+        if (dropdownWiggleVisual == null)
+        {
+            return;
+        }
+
+        dropdownWiggleVisual.localRotation =
+            Quaternion.identity;
+
+        dropdownWiggleVisual.localScale =
+            Vector3.one;
+    }
+
+    // =========================================================
+    // END DAY BUTTON ATTENTION
+    // =========================================================
+
+    private void UpdateEndDayButtonAttention()
+    {
+        if (endDayButton == null)
+        {
+            return;
+        }
+
+        if (endDayButtonRect == null)
+        {
+            endDayButtonRect =
+                endDayButton.transform as RectTransform;
+
+            if (endDayButtonRect == null)
+            {
+                return;
+            }
+
+            endDayButtonBaseScale =
+                endDayButtonRect.localScale;
+        }
+
+        float targetMultiplier = 1f;
+
+        if (enlargeEndDayButtonNearDayEnd &&
+            endDaySystem != null &&
+            !endDaySystem.IsTransitionRunning())
+        {
+            float progress =
+                Mathf.Clamp01(
+                    endDaySystem.GetDayProgress()
+                );
+
+            float start =
+                Mathf.Clamp01(
+                    endDayButtonGrowStartProgress
+                );
+
+            if (progress >= start)
+            {
+                float growT =
+                    Mathf.InverseLerp(
+                        start,
+                        1f,
+                        progress
+                    );
+
+                growT =
+                    growT * growT *
+                    (3f - 2f * growT);
+
+                targetMultiplier =
+                    Mathf.Lerp(
+                        1f,
+                        endDayButtonFinishedScale,
+                        growT
+                    );
+            }
+
+            if (IsDayFinished())
+            {
+                float pulse =
+                    (Mathf.Sin(
+                        Time.unscaledTime *
+                        Mathf.Max(
+                            0.01f,
+                            endDayButtonPulseSpeed
+                        ) *
+                        Mathf.PI * 2f
+                    ) + 1f) * 0.5f;
+
+                targetMultiplier =
+                    endDayButtonFinishedScale +
+                    pulse *
+                    endDayButtonPulseAmount;
+            }
+        }
+
+        float smoothing =
+            1f -
+            Mathf.Exp(
+                -Mathf.Max(
+                    0.01f,
+                    endDayButtonScaleSpeed
+                ) *
+                Time.unscaledDeltaTime
+            );
+
+        endDayButtonRect.localScale =
+            Vector3.Lerp(
+                endDayButtonRect.localScale,
+                endDayButtonBaseScale *
+                targetMultiplier,
+                smoothing
+            );
+    }
+
+    private void ResetEndDayButtonAttentionImmediately()
+    {
+        if (endDayButtonRect != null)
+        {
+            endDayButtonRect.localScale =
+                endDayButtonBaseScale;
+        }
+    }
+
+    // =========================================================
+    // PROGRESS CROSS FADE
+    // =========================================================
+
+    private void UpdateProgressCrossFade(
+        bool hideProgress)
+    {
+        UpdateProgressPosition();
+        float delta =
+            Time.unscaledDeltaTime;
+
+        // -----------------------------------------------------
+        // ALPHA
+        // -----------------------------------------------------
+
+        if (dayProgressCanvasGroup != null)
+        {
+            float targetAlpha =
+                hideProgress
+                    ? 0f
+                    : 1f;
+
+            float fadeAmount =
+                1f -
+                Mathf.Exp(
+                    -Mathf.Max(
+                        0.01f,
+                        progressFadeSpeed
+                    ) *
+                    delta
+                );
+
+            dayProgressCanvasGroup.alpha =
+                Mathf.Lerp(
+                    dayProgressCanvasGroup.alpha,
+                    targetAlpha,
+                    fadeAmount
+                );
+
+            dayProgressCanvasGroup.interactable =
+                false;
+
+            dayProgressCanvasGroup.blocksRaycasts =
+                false;
+        }
+
+        // -----------------------------------------------------
+        // SCALE
+        // -----------------------------------------------------
+
+        if (dayProgressVisual != null)
+        {
+            float targetScale =
+                hideProgress
+                    ? progressHiddenScale
+                    : 1f;
+
+            float scaleAmount =
+                1f -
+                Mathf.Exp(
+                    -Mathf.Max(
+                        0.01f,
+                        progressScaleSpeed
+                    ) *
+                    delta
+                );
+
+            dayProgressVisual.localScale =
+                Vector3.Lerp(
+                    dayProgressVisual.localScale,
+                    Vector3.one *
+                    targetScale,
+                    scaleAmount
+                );
+        }
+    }
+
+    // =========================================================
+    // DAY PROGRESS
+    // =========================================================
+
+    private void RefreshDayProgress()
+    {
+        if (endDaySystem == null)
+        {
+            return;
+        }
+
+        UpdateDayProgress(
+            endDaySystem.GetDayProgress()
+        );
+    }
+
+    public void UpdateDayProgress(
+        float progress)
+    {
+        progress =
+            Mathf.Clamp01(
+                progress
+            );
+
+        if (dayProgressBar != null)
+        {
+            dayProgressBar.SetValueWithoutNotify(
+                progress
+            );
+        }
+
+        if (dayProgressText == null)
+        {
+            return;
+        }
+
+        if (endDaySystem != null &&
+            endDaySystem.HasReachedDayEnd())
+        {
+            dayProgressText.text =
+                actionPhaseFinishedText;
+
+            return;
+        }
+
+        if (showProgressPercentage)
+        {
+            dayProgressText.text =
+                actionPhaseText +
+                " " +
+                Mathf.RoundToInt(
+                    progress * 100f
+                ) +
+                "%";
+        }
+        else
+        {
+            dayProgressText.text =
+                actionPhaseText;
+        }
     }
 
     // =========================================================
@@ -478,10 +1253,6 @@ public class TopDayDropdownUI : MonoBehaviour
         int newMinute =
             endDaySystem.GetCurrentMinute();
 
-        // -----------------------------------------------------
-        // DAY CHANGED
-        // -----------------------------------------------------
-
         if (newDay !=
             displayedDay)
         {
@@ -490,10 +1261,6 @@ public class TopDayDropdownUI : MonoBehaviour
 
             RefreshDayText();
         }
-
-        // -----------------------------------------------------
-        // TIME CHANGED
-        // -----------------------------------------------------
 
         if (newHour !=
                 displayedHour ||
@@ -585,10 +1352,6 @@ public class TopDayDropdownUI : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // 24 HOUR
-        // =====================================================
-
         if (!use12HourClock)
         {
             timeText.text =
@@ -598,10 +1361,6 @@ public class TopDayDropdownUI : MonoBehaviour
 
             return;
         }
-
-        // =====================================================
-        // 12 HOUR
-        // =====================================================
 
         string period =
             displayedHour >= 12
@@ -636,18 +1395,10 @@ public class TopDayDropdownUI : MonoBehaviour
             return;
         }
 
-        // Using ToString keeps this compatible with the
-        // existing WeatherManager enum without requiring
-        // the enum type to be duplicated here.
-
         string weather =
             WeatherManager.Instance
                 .GetCurrentWeather()
                 .ToString();
-
-        // =====================================================
-        // SUNNY
-        // =====================================================
 
         if (weather ==
             "Sunny")
@@ -667,10 +1418,6 @@ public class TopDayDropdownUI : MonoBehaviour
             return;
         }
 
-        // =====================================================
-        // RAIN
-        // =====================================================
-
         if (weather ==
             "Rain")
         {
@@ -688,10 +1435,6 @@ public class TopDayDropdownUI : MonoBehaviour
 
             return;
         }
-
-        // =====================================================
-        // THUNDER STORM
-        // =====================================================
 
         if (weather ==
                 "RainAndThunder" ||
@@ -711,8 +1454,6 @@ public class TopDayDropdownUI : MonoBehaviour
                 weatherText.text =
                     "Storm";
             }
-
-            return;
         }
     }
 
@@ -722,15 +1463,13 @@ public class TopDayDropdownUI : MonoBehaviour
 
     private void HandleEndDayButton()
     {
-        // -----------------------------------------------------
-        // BUTTON CLICK SFX
-        // -----------------------------------------------------
+        if (Time.timeScale <= 0f || (!CanUseDropdown() && !IsDayFinished())) return;
 
-        PlayButtonClickSound();
-
-        // -----------------------------------------------------
-        // FIND SYSTEM
-        // -----------------------------------------------------
+        if (endDayButton == null ||
+            !endDayButton.interactable)
+        {
+            return;
+        }
 
         if (endDaySystem == null)
         {
@@ -743,24 +1482,25 @@ public class TopDayDropdownUI : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
-        // ALREADY TRANSITIONING
-        // -----------------------------------------------------
-
         if (endDaySystem.IsTransitionRunning())
         {
             return;
         }
 
-        // -----------------------------------------------------
-        // CLOSE DROPDOWN
-        // -----------------------------------------------------
+        PlayButtonClickSound();
 
-        CloseDropdown();
+        // Stop the attention effects immediately.
+        ResetDropdownWiggleImmediately();
+        ResetEndDayButtonAttentionImmediately();
 
-        // -----------------------------------------------------
-        // END DAY
-        // -----------------------------------------------------
+        dropdownOpen =
+            false;
+
+        openTimer =
+            0f;
+
+        closeTimer =
+            0f;
 
         endDaySystem.EndDay();
     }
@@ -830,10 +1570,6 @@ public class TopDayDropdownUI : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
-        // COUNT VALID CLIPS
-        // -----------------------------------------------------
-
         int validCount =
             0;
 
@@ -851,10 +1587,6 @@ public class TopDayDropdownUI : MonoBehaviour
         {
             return;
         }
-
-        // -----------------------------------------------------
-        // PICK RANDOM VALID CLIP
-        // -----------------------------------------------------
 
         int chosenValidIndex =
             Random.Range(
@@ -894,22 +1626,26 @@ public class TopDayDropdownUI : MonoBehaviour
             return;
         }
 
-        // -----------------------------------------------------
-        // RANDOM PITCH
-        // -----------------------------------------------------
-
         float oldPitch =
             audioSource.pitch;
 
-        audioSource.pitch =
-            Random.Range(
+        float minPitch =
+            Mathf.Min(
                 audioPitchMin,
                 audioPitchMax
             );
 
-        // -----------------------------------------------------
-        // PLAY
-        // -----------------------------------------------------
+        float maxPitch =
+            Mathf.Max(
+                audioPitchMin,
+                audioPitchMax
+            );
+
+        audioSource.pitch =
+            Random.Range(
+                minPitch,
+                maxPitch
+            );
 
         audioSource.PlayOneShot(
             chosenClip,
@@ -942,7 +1678,8 @@ public class TopDayDropdownUI : MonoBehaviour
 
     public void OpenDropdown()
     {
-        if (!CanUseDropdown())
+        if (!CanUseDropdown() &&
+            !IsDayFinished())
         {
             return;
         }
@@ -963,6 +1700,21 @@ public class TopDayDropdownUI : MonoBehaviour
 
     public void CloseDropdown()
     {
+        // Once the day has finished, mouse/UI calls are not
+        // allowed to close the dropdown. EndDaySystem can still
+        // hide it during its transition through the immediate
+        // close path.
+        if (IsDayFinished() &&
+            forceDropdownOpenAtDayEnd &&
+            (endDaySystem == null ||
+             !endDaySystem.IsTransitionRunning()))
+        {
+            dropdownOpen =
+                true;
+
+            return;
+        }
+
         dropdownOpen =
             false;
 
@@ -993,6 +1745,8 @@ public class TopDayDropdownUI : MonoBehaviour
             dropdownPanel.anchoredPosition =
                 hiddenPosition;
         }
+
+        ResetDropdownWiggleImmediately();
     }
 
     // =========================================================
@@ -1093,11 +1847,12 @@ public class TopDayDropdownUI : MonoBehaviour
         }
 
         return
-            RectTransformUtility.RectangleContainsScreenPoint(
-                rect,
-                Input.mousePosition,
-                uiCamera
-            );
+            RectTransformUtility
+                .RectangleContainsScreenPoint(
+                    rect,
+                    Input.mousePosition,
+                    uiCamera
+                );
     }
 
     // =========================================================
@@ -1106,20 +1861,12 @@ public class TopDayDropdownUI : MonoBehaviour
 
     private void OnDestroy()
     {
-        // -----------------------------------------------------
-        // BUTTON CLICK LISTENER
-        // -----------------------------------------------------
-
         if (endDayButton != null)
         {
             endDayButton.onClick.RemoveListener(
                 HandleEndDayButton
             );
         }
-
-        // -----------------------------------------------------
-        // HOVER LISTENER
-        // -----------------------------------------------------
 
         if (endDayEventTrigger != null &&
             hoverEntry != null &&
@@ -1131,3 +1878,6 @@ public class TopDayDropdownUI : MonoBehaviour
         }
     }
 }
+
+
+

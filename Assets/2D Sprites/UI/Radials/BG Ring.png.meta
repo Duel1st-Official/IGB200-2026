@@ -1,0 +1,753 @@
+fileFormatVersion: 2
+guid: 5c7b8c3abf03f754088ddb3daf65dda5
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8543211488666862124
+    second: BG Ring_0
+  - first:
+      213: 1119967104088915373
+    second: BG Ring_1
+  - first:
+      213: -7161167708305963522
+    second: BG Ring_2
+  - first:
+      213: 4470250608819471020
+    second: BG Ring_3
+  - first:
+      213: -8782879406423688707
+    second: BG Ring_4
+  - first:
+      213: -3095069057623453741
+    second: BG Ring_5
+  - first:
+      213: -5660620523670846246
+    second: BG Ring_6
+  - first:
+      213: -2820777437968990728
+    second: BG Ring_7
+  - first:
+      213: 6682383086017085487
+    second: BG Ring_8
+  - first:
+      213: -4888884822189364581
+    second: BG Ring_9
+  - first:
+      213: -8779874321905254231
+    second: BG Ring_10
+  - first:
+      213: 3324964507843610038
+    second: BG Ring_11
+  - first:
+      213: -3453464133578755566
+    second: BG Ring_12
+  - first:
+      213: 1861060621047637779
+    second: BG Ring_13
+  - first:
+      213: 932777568805702898
+    second: BG Ring_14
+  - first:
+      213: 3927620809720094467
+    second: BG Ring_15
+  - first:
+      213: 2814593872690944576
+    second: BG Ring_16
+  - first:
+      213: -3746834831935730629
+    second: BG Ring_17
+  - first:
+      213: 6099197078340307056
+    second: BG Ring_18
+  - first:
+      213: 2009610723874698087
+    second: BG Ring_19
+  - first:
+      213: -5679146618313283486
+    second: BG Ring_20
+  - first:
+      213: 6733500538422447876
+    second: BG Ring_21
+  - first:
+      213: 4774127870575747232
+    second: BG Ring_22
+  - first:
+      213: 5430720747468693792
+    second: BG Ring_23
+  - first:
+      213: -5768099157815734252
+    second: BG Ring_24
+  - first:
+      213: 1635980735818575398
+    second: BG Ring_25
+  - first:
+      213: 411883329247859817
+    second: BG Ring_26
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: BG Ring_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 626
+        width: 635
+        height: 611
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c224607c5959f8670800000000000000
+      internalID: 8543211488666862124
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_1
+      rect:
+        serializedVersion: 2
+        x: 638
+        y: 633
+        width: 633
+        height: 604
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dadb757b52cea8f00800000000000000
+      internalID: 1119967104088915373
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_2
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 635
+        height: 629
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef5cc6929eb6e9c90800000000000000
+      internalID: -7161167708305963522
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_3
+      rect:
+        serializedVersion: 2
+        x: 633
+        y: 0
+        width: 638
+        height: 629
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ca288ab8e35890e30800000000000000
+      internalID: 4470250608819471020
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_5
+      rect:
+        serializedVersion: 2
+        x: 877
+        y: 625
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3df0d09271b1c05d0800000000000000
+      internalID: -3095069057623453741
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_6
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 336
+        width: 55
+        height: 50
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ad4405eff9f6171b0800000000000000
+      internalID: -5660620523670846246
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_7
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 368
+        width: 9
+        height: 12
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8fdfb638dd59ad8d0800000000000000
+      internalID: -2820777437968990728
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_9
+      rect:
+        serializedVersion: 2
+        x: 1188
+        y: 358
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b9aaa991821372cb0800000000000000
+      internalID: -4888884822189364581
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_11
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 292
+        width: 15
+        height: 39
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6b5cccc7a95a42e20800000000000000
+      internalID: 3324964507843610038
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_12
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 310
+        width: 17
+        height: 24
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2127c71faa4d210d0800000000000000
+      internalID: -3453464133578755566
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_13
+      rect:
+        serializedVersion: 2
+        x: 1207
+        y: 320
+        width: 11
+        height: 13
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 317230746c0d3d910800000000000000
+      internalID: 1861060621047637779
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_14
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 288
+        width: 19
+        height: 12
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2fccd1bb144e1fc00800000000000000
+      internalID: 932777568805702898
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_15
+      rect:
+        serializedVersion: 2
+        x: 1186
+        y: 291
+        width: 20
+        height: 22
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 30f5cc72156b18630800000000000000
+      internalID: 3927620809720094467
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_16
+      rect:
+        serializedVersion: 2
+        x: 636
+        y: 103
+        width: 6
+        height: 132
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 04a1cb007327f0720800000000000000
+      internalID: 2814593872690944576
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_17
+      rect:
+        serializedVersion: 2
+        x: 304
+        y: 31
+        width: 47
+        height: 47
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b3c096a6291900cc0800000000000000
+      internalID: -3746834831935730629
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_18
+      rect:
+        serializedVersion: 2
+        x: 382
+        y: 47
+        width: 23
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 07803958d63b4a450800000000000000
+      internalID: 6099197078340307056
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_19
+      rect:
+        serializedVersion: 2
+        x: 983
+        y: 53
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 763fd555e4293eb10800000000000000
+      internalID: 2009610723874698087
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_20
+      rect:
+        serializedVersion: 2
+        x: 416
+        y: 29
+        width: 21
+        height: 20
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 26863147d3e9f21b0800000000000000
+      internalID: -5679146618313283486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_21
+      rect:
+        serializedVersion: 2
+        x: 434
+        y: 34
+        width: 15
+        height: 15
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 40f42976013327d50800000000000000
+      internalID: 6733500538422447876
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_22
+      rect:
+        serializedVersion: 2
+        x: 439
+        y: 28
+        width: 9
+        height: 8
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0a0a5fdf00c114240800000000000000
+      internalID: 4774127870575747232
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_23
+      rect:
+        serializedVersion: 2
+        x: 448
+        y: 23
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 02127332fbbcd5b40800000000000000
+      internalID: 5430720747468693792
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_24
+      rect:
+        serializedVersion: 2
+        x: 911
+        y: 30
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 410d92d606893ffa0800000000000000
+      internalID: -5768099157815734252
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_25
+      rect:
+        serializedVersion: 2
+        x: 350
+        y: 0
+        width: 85
+        height: 26
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62e29d9bfcb24b610800000000000000
+      internalID: 1635980735818575398
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BG Ring_26
+      rect:
+        serializedVersion: 2
+        x: 458
+        y: 16
+        width: 30
+        height: 11
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96459b8a4bd47b500800000000000000
+      internalID: 411883329247859817
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: d22db73807513ef4ca44833cee715acb
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      BG Ring_0: 8543211488666862124
+      BG Ring_1: 1119967104088915373
+      BG Ring_10: -8779874321905254231
+      BG Ring_11: 3324964507843610038
+      BG Ring_12: -3453464133578755566
+      BG Ring_13: 1861060621047637779
+      BG Ring_14: 932777568805702898
+      BG Ring_15: 3927620809720094467
+      BG Ring_16: 2814593872690944576
+      BG Ring_17: -3746834831935730629
+      BG Ring_18: 6099197078340307056
+      BG Ring_19: 2009610723874698087
+      BG Ring_2: -7161167708305963522
+      BG Ring_20: -5679146618313283486
+      BG Ring_21: 6733500538422447876
+      BG Ring_22: 4774127870575747232
+      BG Ring_23: 5430720747468693792
+      BG Ring_24: -5768099157815734252
+      BG Ring_25: 1635980735818575398
+      BG Ring_26: 411883329247859817
+      BG Ring_3: 4470250608819471020
+      BG Ring_4: -8782879406423688707
+      BG Ring_5: -3095069057623453741
+      BG Ring_6: -5660620523670846246
+      BG Ring_7: -2820777437968990728
+      BG Ring_8: 6682383086017085487
+      BG Ring_9: -4888884822189364581
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
