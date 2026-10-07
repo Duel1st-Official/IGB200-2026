@@ -144,10 +144,11 @@ public class PlotPlacementSystem : MonoBehaviour
         renderer.sprite =
             dirtSprite;
 
-        if (dirtMaterial != null)
+        Material resolvedDirtMaterial = GetDirtLightingMaterial();
+
+        if (resolvedDirtMaterial != null)
         {
-            renderer.material =
-                dirtMaterial;
+            renderer.sharedMaterial = resolvedDirtMaterial;
         }
 
         // Use the same sorting layer as the plot, but give EVERY dirt
@@ -201,6 +202,33 @@ public class PlotPlacementSystem : MonoBehaviour
     // =========================================================
     // DIRT REVEAL ANIMATION
     // =========================================================
+    // =========================================================
+    // DIRT 2D LIGHTING MATERIAL
+    // =========================================================
+
+    private Material GetDirtLightingMaterial()
+    {
+        if (dirtMaterial != null)
+            return dirtMaterial;
+
+        Shader litShader =
+            Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
+
+        if (litShader == null)
+        {
+            Debug.LogWarning(
+                "PlotPlacementSystem: URP 2D Sprite-Lit-Default shader was not found. " +
+                "Assign a Sprite-Lit material to Dirt Material."
+            );
+            return null;
+        }
+
+        dirtMaterial = new Material(litShader);
+        dirtMaterial.name = "Runtime Dirt - Sprite Lit";
+        return dirtMaterial;
+    }
+
+
 
     private IEnumerator AnimateDirtReveal(
         GameObject dirt,
