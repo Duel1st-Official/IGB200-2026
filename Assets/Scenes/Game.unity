@@ -3710,6 +3710,7 @@ MonoBehaviour:
   toursBuildingIcon: {fileID: 481905512}
   reputationSlider: {fileID: 1527387219}
   startTourButton: {fileID: 168508740}
+  lockStartTourButtonForTutorial: 0
   closeButton: {fileID: 249708554}
   uiAudioSource: {fileID: 2141893256}
   openSound: {fileID: 8300000, guid: dfe570a2d89a5054d974f6b634a6eea8, type: 3}
@@ -3997,7 +3998,7 @@ MonoBehaviour:
   - {fileID: 2141893256}
   musicSources:
   - {fileID: 435230144}
-  musicClip: {fileID: 8300000, guid: 3c541d1cad4498a478bd8b2775d7f4ab, type: 3}
+  musicClip: {fileID: 8300000, guid: 37c79fcc1ae4f8a46908054d672f3efc, type: 3}
   playMusicOnStart: 1
   loopMusic: 1
   musicBaseVolume: 0.7
@@ -39236,6 +39237,7 @@ MonoBehaviour:
   inspectedOutlineMaterial: {fileID: 2100000, guid: 5c384300163ef6a47ae2a417297810d1, type: 2}
   allowClick: 1
   interactionDistance: 5
+  lockUntilConservationToursStep: 0
   player: {fileID: 2017383258}
   showDebugLogs: 0
 --- !u!114 &1766345117

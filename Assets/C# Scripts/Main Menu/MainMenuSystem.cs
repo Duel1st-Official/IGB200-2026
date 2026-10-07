@@ -85,6 +85,16 @@ public class MainMenuSystem : MonoBehaviour
     [Header("Menu animations")]
     [SerializeField] private bool animateMenu = true;
     [SerializeField, Range(0.1f, 0.8f)] private float pagePopDuration = 0.3f;
+
+    [Header("Credits / Brief readability")]
+    [Tooltip("Dark translucent panel placed behind the Credits and Project Brief content.")]
+    [SerializeField] private Color contentDarkPanelColor = new Color(0.015f, 0.025f, 0.03f, 0.72f);
+    [SerializeField, Range(0f, 0.12f)] private float contentPanelInset = 0.025f;
+
+    [Header("Stronger button animation")]
+    [SerializeField, Range(1f, 1.25f)] private float buttonHoverScale = 1.10f;
+    [SerializeField, Range(0.01f, 0.3f)] private float buttonHoverDuration = 0.10f;
+    [SerializeField, Range(1f, 1.25f)] private float buttonPressScale = 1.06f;
     private Coroutine pageAnimation;
     private GameObject animatedPage;
     private static readonly Color Ink = new Color(1f, 0.97f, 0.86f);
@@ -276,7 +286,7 @@ public class MainMenuSystem : MonoBehaviour
     }
     private Button Button(Transform parent, string title, float bottom, UnityAction action)
     {
-        RectTransform slot = Rect(title + " Slot", parent, new Vector2(0.26f, bottom), new Vector2(0.74f, bottom + 0.12f));
+        RectTransform slot = Rect(title + " Slot", parent, new Vector2(0.20f, bottom), new Vector2(0.80f, bottom + 0.145f));
         RectTransform rect = Rect(title, slot, Vector2.zero, Vector2.one);
         AspectRatioFitter fit = rect.gameObject.AddComponent<AspectRatioFitter>();
         fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
@@ -284,11 +294,15 @@ public class MainMenuSystem : MonoBehaviour
         Image image = rect.gameObject.AddComponent<Image>(); image.sprite = buttonSprite;
         image.color = buttonSprite != null ? Color.white : new Color(0.5f, 0.28f, 0.12f);
         Button button = rect.gameObject.AddComponent<Button>(); button.targetGraphic = image;
-        if (animateMenu) rect.gameObject.AddComponent<MenuPopAnimation>();
+        if (animateMenu)
+        {
+            EnhancedMenuHover pop = rect.gameObject.AddComponent<EnhancedMenuHover>();
+            pop.Configure(buttonHoverScale, buttonHoverDuration, buttonPressScale);
+        }
         button.onClick.AddListener(action);
         EventTrigger hoverTrigger = rect.gameObject.AddComponent<EventTrigger>();
         AddCreditEvent(hoverTrigger, EventTriggerType.PointerEnter, () => Hover(button));
-        Text(rect, title, new Vector2(0.06f, 0.1f), new Vector2(0.94f, 0.9f), 32f, new Color(1f, 0.95f, 0.8f));
+        Text(rect, title, new Vector2(0.05f, 0.08f), new Vector2(0.95f, 0.92f), 38f, new Color(1f, 0.95f, 0.8f));
         return button;
     }
     private GameObject Page(string name, Transform parent)
@@ -335,6 +349,8 @@ public class MainMenuSystem : MonoBehaviour
         fit.aspectRatio = 1.6f;
         home = Page("Home", panel); question = Page("First Time", panel); credits = Page("Credits", panel);
         brief = Page("Project Brief", panel);
+        CreateDarkContentPanel(credits.transform, "Credits Dark Panel");
+        CreateDarkContentPanel(brief.transform, "Project Brief Dark Panel");
         logoRect = Rect("Game Logo", home.transform, new Vector2(0.16f, 0.58f), new Vector2(0.84f, 0.98f));
         Image logo = logoRect.gameObject.AddComponent<Image>(); logo.sprite = logoSprite;
         logo.preserveAspect = true; logo.raycastTarget = false; logo.enabled = logoSprite != null;
@@ -356,13 +372,36 @@ public class MainMenuSystem : MonoBehaviour
         Button(question.transform, "BACK", 0.17f, Back);
         Text(credits.transform, "CREDITS", new Vector2(0.1f, 0.76f), new Vector2(0.9f, 0.88f), 44f, Ink);
         BuildDevelopers(credits.transform);
-        Button(credits.transform, "PROJECT BRIEF", 0.27f, OpenProjectBrief);
-        creditsBack = Button(credits.transform, "MAIN MENU", 0.13f, Back);
+        Button(credits.transform, "PROJECT BRIEF", 0.245f, OpenProjectBrief);
+        creditsBack = Button(credits.transform, "MAIN MENU", 0.075f, Back);
         Text(brief.transform, "INDUSTRY PARTNER PROJECT BRIEF", new Vector2(0.1f, 0.76f), new Vector2(0.9f, 0.89f), 36f, Ink);
         BuildCreditsScroll(brief.transform);
-        briefBack = Button(brief.transform, "BACK TO CREDITS", 0.15f, OpenCredits);
+        briefBack = Button(brief.transform, "BACK TO CREDITS", 0.09f, OpenCredits);
         status = Text(panel, "", new Vector2(0.10f, 0.035f), new Vector2(0.90f, 0.12f), 20f, Ink);
     }
+    private void CreateDarkContentPanel(Transform parent, string panelName)
+    {
+        float inset = Mathf.Clamp(contentPanelInset, 0f, 0.12f);
+
+        RectTransform darkRect = Rect(
+            panelName,
+            parent,
+            new Vector2(0.035f + inset, 0.035f + inset),
+            new Vector2(0.965f - inset, 0.965f - inset));
+
+        Image dark = darkRect.gameObject.AddComponent<Image>();
+        dark.color = contentDarkPanelColor;
+        dark.raycastTarget = false;
+
+        // Keep it behind every title, portrait, text and button on the page.
+        darkRect.SetAsFirstSibling();
+
+        CanvasGroup group = darkRect.gameObject.AddComponent<CanvasGroup>();
+        group.alpha = 1f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+    }
+
     private void BuildCreditsScroll(Transform parent)
     {
         RectTransform viewport = Rect("Credits Scroll", parent, new Vector2(0.13f, 0.31f), new Vector2(0.87f, 0.72f));
@@ -393,7 +432,11 @@ public class MainMenuSystem : MonoBehaviour
             RectTransform tile = Rect(dev.name, parent, new Vector2(left + 0.006f, 0.53f), new Vector2(right - 0.006f, 0.735f));
             Image hit = tile.gameObject.AddComponent<Image>(); hit.color = new Color(0.55f, 0.35f, 0.15f, 0.12f);
             Button select = tile.gameObject.AddComponent<Button>(); select.targetGraphic = hit;
-            if (animateMenu) tile.gameObject.AddComponent<MenuPopAnimation>();
+            if (animateMenu)
+            {
+                EnhancedMenuHover pop = tile.gameObject.AddComponent<EnhancedMenuHover>();
+                pop.Configure(1.08f, buttonHoverDuration, 1.04f);
+            }
             if (dev.characterSprite != null)
             {
                 Image portrait = Rect("Character", tile, new Vector2(0.12f, 0.25f), new Vector2(0.88f, 0.95f)).gameObject.AddComponent<Image>();
@@ -477,3 +520,72 @@ public class MainMenuSystem : MonoBehaviour
 
 
 
+
+
+public class EnhancedMenuHover : MonoBehaviour,
+    IPointerEnterHandler, IPointerExitHandler,
+    IPointerDownHandler, IPointerUpHandler,
+    ISelectHandler, IDeselectHandler
+{
+    private Vector3 baseScale = Vector3.one;
+    private float hoverScale = 1.10f;
+    private float pressScale = 1.06f;
+    private float speed = 12f;
+    private bool hovered;
+    private bool pressed;
+    private bool selected;
+
+    public void Configure(float hover, float duration, float press)
+    {
+        hoverScale = Mathf.Max(1f, hover);
+        pressScale = Mathf.Max(1f, press);
+        speed = 1f / Mathf.Max(0.01f, duration);
+    }
+
+    private void Awake()
+    {
+        baseScale = transform.localScale;
+    }
+
+    private void OnEnable()
+    {
+        // Do NOT recapture the current scale here.
+        // A page can be disabled while the button is still enlarged from hover.
+        // Recapturing that enlarged scale caused it to grow again every time
+        // the player transitioned between menu pages.
+        hovered = false;
+        pressed = false;
+        selected = false;
+
+        transform.localScale = baseScale;
+    }
+
+    private void OnDisable()
+    {
+        hovered = false;
+        pressed = false;
+        selected = false;
+
+        // Always leave the button at its original scale before the page
+        // is hidden, so reopening the page can never accumulate scale.
+        transform.localScale = baseScale;
+    }
+
+    private void Update()
+    {
+        float multiplier = pressed
+            ? pressScale
+            : (hovered || selected ? hoverScale : 1f);
+
+        Vector3 target = baseScale * multiplier;
+        float t = 1f - Mathf.Exp(-speed * Time.unscaledDeltaTime);
+        transform.localScale = Vector3.Lerp(transform.localScale, target, t);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData) => hovered = true;
+    public void OnPointerExit(PointerEventData eventData) { hovered = false; pressed = false; }
+    public void OnPointerDown(PointerEventData eventData) => pressed = true;
+    public void OnPointerUp(PointerEventData eventData) => pressed = false;
+    public void OnSelect(BaseEventData eventData) => selected = true;
+    public void OnDeselect(BaseEventData eventData) { selected = false; pressed = false; }
+}

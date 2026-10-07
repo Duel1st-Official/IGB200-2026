@@ -337,9 +337,14 @@ MonoBehaviour:
   creditsTransitionDuration: 0.75
   motionBlurStrength: 0.012
   backgroundSlide: 0.025
+  enableHeatwave: 1
+  heatwaveIntensity: 0.6
+  heatwaveDistortion: 0.003
+  heatwaveSpeed: 0.65
+  heatwaveWarmth: 0.12
   logoSprite: {fileID: -7352339073622421304, guid: 5928b8ac9dfcd6643a9a293d8fb4e63d, type: 3}
   buttonSprite: {fileID: 21300000, guid: 6c3649449e4d4484cae170aa65686c55, type: 3}
-  musicClip: {fileID: 8300000, guid: a67a160d3dcfe7b4da9f81b71d5686b8, type: 3}
+  musicClip: {fileID: 8300000, guid: ce93e398a92c21b4b89d0e9583aec2f2, type: 3}
   clickSound: {fileID: 8300000, guid: 2deb3ae7097dc2a4ca5c695099e9e84e, type: 3}
   hoverSound: {fileID: 8300000, guid: 7de3303959607664f869d0c840487b40, type: 3}
   hoverVolume: 0.5

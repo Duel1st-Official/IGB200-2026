@@ -27,10 +27,6 @@ public class PlayerMovement : MonoBehaviour
     // =========================================================
     // TUTORIAL
     // =========================================================
-
-    private bool tutorialMovementReported;
-
-
     // =========================================================
     // START
     // =========================================================
@@ -80,8 +76,6 @@ public class PlayerMovement : MonoBehaviour
         }
 
         SetBarFill(0f);
-
-        tutorialMovementReported = false;
     }
 
 
@@ -157,8 +151,6 @@ public class PlayerMovement : MonoBehaviour
             TutorialEvents.Report(
                 TutorialAction.PlayerMoved
             );
-
-            tutorialMovementReported = true;
         }
 
         // =========================
@@ -464,10 +456,7 @@ public class PlayerMovement : MonoBehaviour
     /// movement trigger if we ever need to test
     /// or replay the movement tutorial.
     /// </summary>
-    public void ResetTutorialMovementReport()
-    {
-        tutorialMovementReported = false;
-    }
+
 
 
     // =========================================================

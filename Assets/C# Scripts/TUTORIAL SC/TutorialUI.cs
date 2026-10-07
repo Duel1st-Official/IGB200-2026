@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Video;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
@@ -12,24 +13,27 @@ public class TutorialUI : MonoBehaviour
     [SerializeField] private Image dimBackground;
     [SerializeField] private RectTransform tutorialPanel;
 
-    [Header("Title Image")]
-    [SerializeField] private Image titleImage;
-    [SerializeField] private Vector2 titleImageMaxSize = new Vector2(520f, 100f);
+    [Header("Information Panel UI")]
+    public Image informationTitleImage;
+    public TMP_Text informationDescriptionText;
+    public TMP_Text informationProgressText;
+    public Button informationContinueButton;
+    public TMP_Text informationContinueButtonText;
+    public CanvasGroup informationContentCanvasGroup;
+    [SerializeField] private Vector2 informationTitleImageMaxSize = new Vector2(520f, 100f);
 
-    [Header("Text")]
-    [SerializeField] private TMP_Text descriptionText;
-    [SerializeField] private TMP_Text progressText;
-
-    [Header("Optional")]
-    [SerializeField] private Button continueButton;
-    [Tooltip("Optional. If empty, the script finds a TMP text component inside the Continue button.")]
-    [SerializeField] private TMP_Text continueButtonText;
+    [Header("Video / Action Panel UI")]
+    public Image videoTitleImage;
+    public TMP_Text videoDescriptionText;
+    public TMP_Text videoProgressText;
+    public Button videoContinueButton;
+    public TMP_Text videoContinueButtonText;
+    public CanvasGroup videoContentCanvasGroup;
+    [SerializeField] private Vector2 videoTitleImageMaxSize = new Vector2(520f, 100f);
 
     [Header("Finish Transition")]
-    [Tooltip("Optional full-screen black Image. If empty, one is created automatically at runtime.")]
     [SerializeField] private Image fadeToBlackImage;
-    [Min(0.05f)]
-    [SerializeField] private float fadeToBlackDuration = 1.25f;
+    [Min(0.05f)][SerializeField] private float fadeToBlackDuration = 1.25f;
 
     [Header("Panel Hover")]
     [Tooltip("How much larger the tutorial panel becomes while the mouse is over it.")]
@@ -40,6 +44,23 @@ public class TutorialUI : MonoBehaviour
     [SerializeField] private float hoverScaleSpeed = 12f;
 
     private bool panelHovered;
+
+    [Header("Panel Layouts")]
+    [Tooltip("Drag your Information tutorial panel GameObject here.")]
+    public GameObject informationTutorialPanel;
+
+    [Tooltip("Drag your Video/Action tutorial panel GameObject here.")]
+    public GameObject videoTutorialPanel;
+
+    [Header("Panel Rect Transforms")]
+    [Tooltip("RectTransform of the Information tutorial panel. Can be left empty if the GameObject above has a RectTransform.")]
+    public RectTransform informationTutorialPanelRect;
+
+    [Tooltip("RectTransform of the Video/Action tutorial panel. Can be left empty if the GameObject above has a RectTransform.")]
+    public RectTransform videoTutorialPanelRect;
+
+    [Header("Tutorial Video")]
+    [SerializeField] private TutorialVideoDisplay tutorialVideoDisplay;
 
     [Header("Animation")]
     [SerializeField] private float showDuration = 0.22f;
@@ -54,15 +75,19 @@ public class TutorialUI : MonoBehaviour
     [Tooltip("How long the new step content fades in.")]
     [Min(0.01f)]
     [SerializeField] private float contentFadeInDuration = 0.18f;
-    [Tooltip("Recommended: assign a Content Root containing the title, description, progress, hint and Continue button. The wooden/parchment panel should NOT be inside this CanvasGroup.")]
-    [SerializeField] private CanvasGroup contentCanvasGroup;
-
     private Coroutine routine;
     private Coroutine contentRoutine;
     private Vector3 baseScale = Vector3.one;
+    private Vector3 informationPanelBaseScale = Vector3.one;
+    private Vector3 videoPanelBaseScale = Vector3.one;
     private bool hasShownContent;
+    private bool usingVideoActionPanel;
 
-    public Button ContinueButton => continueButton;
+    public Button InformationContinueButton => informationContinueButton;
+    public Button VideoContinueButton => videoContinueButton;
+    public Button ContinueButton => usingVideoActionPanel
+        ? videoContinueButton
+        : informationContinueButton;
 
     private void Update()
     {
@@ -71,6 +96,29 @@ public class TutorialUI : MonoBehaviour
 
     private void Awake()
     {
+        if (tutorialVideoDisplay == null)
+            tutorialVideoDisplay = GetComponentInChildren<TutorialVideoDisplay>(true);
+
+        if (informationTutorialPanelRect == null && informationTutorialPanel != null)
+            informationTutorialPanelRect = informationTutorialPanel.GetComponent<RectTransform>();
+
+        if (videoTutorialPanelRect == null && videoTutorialPanel != null)
+            videoTutorialPanelRect = videoTutorialPanel.GetComponent<RectTransform>();
+
+        if (informationTutorialPanelRect != null)
+            informationPanelBaseScale = informationTutorialPanelRect.localScale;
+
+        if (videoTutorialPanelRect != null)
+            videoPanelBaseScale = videoTutorialPanelRect.localScale;
+
+        if (informationContinueButtonText == null && informationContinueButton != null)
+            informationContinueButtonText = informationContinueButton.GetComponentInChildren<TMP_Text>(true);
+
+        if (videoContinueButtonText == null && videoContinueButton != null)
+            videoContinueButtonText = videoContinueButton.GetComponentInChildren<TMP_Text>(true);
+
+        SetupFadeToBlackImage();
+
         if (rootCanvasGroup == null)
         {
             rootCanvasGroup = GetComponent<CanvasGroup>();
@@ -82,10 +130,6 @@ public class TutorialUI : MonoBehaviour
         if (tutorialPanel != null)
             baseScale = tutorialPanel.localScale;
 
-        if (continueButtonText == null && continueButton != null)
-            continueButtonText = continueButton.GetComponentInChildren<TMP_Text>(true);
-
-        SetupFadeToBlackImage();
         HideImmediate();
     }
 
@@ -125,29 +169,58 @@ public class TutorialUI : MonoBehaviour
         bool showContinue,
         bool showDim)
     {
-        if (titleImage != null)
-        {
-            titleImage.sprite = titleSprite;
-            titleImage.gameObject.SetActive(titleSprite != null);
+        ApplyContentToPanel(
+            informationTitleImage,
+            informationDescriptionText,
+            informationProgressText,
+            informationContinueButton,
+            informationTitleImageMaxSize,
+            titleSprite, description, current, total, showContinue);
 
-            if (titleSprite != null)
-            {
-                titleImage.preserveAspect = true;
-                FitTitleImage(titleSprite);
-            }
-        }
-
-        if (descriptionText != null)
-            descriptionText.text = description;
-
-        if (progressText != null)
-            progressText.text = current + " / " + total;
-
-        if (continueButton != null)
-            continueButton.gameObject.SetActive(showContinue);
+        ApplyContentToPanel(
+            videoTitleImage,
+            videoDescriptionText,
+            videoProgressText,
+            videoContinueButton,
+            videoTitleImageMaxSize,
+            titleSprite, description, current, total, showContinue);
 
         if (dimBackground != null)
             dimBackground.gameObject.SetActive(showDim);
+    }
+
+    private void ApplyContentToPanel(
+        Image panelTitle,
+        TMP_Text panelDescription,
+        TMP_Text panelProgress,
+        Button panelContinue,
+        Vector2 maxTitleSize,
+        Sprite titleSprite,
+        string description,
+        int current,
+        int total,
+        bool showContinue)
+    {
+        if (panelTitle != null)
+        {
+            panelTitle.sprite = titleSprite;
+            panelTitle.gameObject.SetActive(titleSprite != null);
+
+            if (titleSprite != null)
+            {
+                panelTitle.preserveAspect = true;
+                FitTitleImage(panelTitle, titleSprite, maxTitleSize);
+            }
+        }
+
+        if (panelDescription != null)
+            panelDescription.text = description;
+
+        if (panelProgress != null)
+            panelProgress.text = current + " / " + total;
+
+        if (panelContinue != null)
+            panelContinue.gameObject.SetActive(showContinue);
     }
 
     private IEnumerator CrossFadeContentRoutine(
@@ -197,28 +270,44 @@ public class TutorialUI : MonoBehaviour
 
     private float GetContentAlpha()
     {
-        return contentCanvasGroup != null
-            ? contentCanvasGroup.alpha
-            : 1f;
+        CanvasGroup activeGroup = usingVideoActionPanel
+            ? videoContentCanvasGroup
+            : informationContentCanvasGroup;
+
+        return activeGroup != null ? activeGroup.alpha : 1f;
     }
 
     private void SetContentAlpha(float alpha)
     {
-        if (contentCanvasGroup != null)
-        {
-            contentCanvasGroup.alpha = alpha;
-            return;
-        }
+        if (informationContentCanvasGroup != null)
+            informationContentCanvasGroup.alpha = alpha;
 
-        SetGraphicAlpha(titleImage, alpha);
-        SetGraphicAlpha(descriptionText, alpha);
-        SetGraphicAlpha(progressText, alpha);
+        if (videoContentCanvasGroup != null)
+            videoContentCanvasGroup.alpha = alpha;
 
-        if (continueButton != null)
+        SetPanelGraphicAlpha(informationTitleImage, informationDescriptionText,
+            informationProgressText, informationContinueButton, alpha);
+
+        SetPanelGraphicAlpha(videoTitleImage, videoDescriptionText,
+            videoProgressText, videoContinueButton, alpha);
+    }
+
+    private void SetPanelGraphicAlpha(
+        Graphic title,
+        Graphic description,
+        Graphic progress,
+        Button button,
+        float alpha)
+    {
+        SetGraphicAlpha(title, alpha);
+        SetGraphicAlpha(description, alpha);
+        SetGraphicAlpha(progress, alpha);
+
+        if (button != null)
         {
-            CanvasGroup group = continueButton.GetComponent<CanvasGroup>();
+            CanvasGroup group = button.GetComponent<CanvasGroup>();
             if (group == null)
-                group = continueButton.gameObject.AddComponent<CanvasGroup>();
+                group = button.gameObject.AddComponent<CanvasGroup>();
             group.alpha = alpha;
         }
     }
@@ -236,53 +325,78 @@ public class TutorialUI : MonoBehaviour
         group.alpha = alpha;
     }
 
-    private void FitTitleImage(Sprite sprite)
+    private void FitTitleImage(Image targetImage, Sprite sprite, Vector2 maxSize)
     {
-        if (titleImage == null || sprite == null)
+        if (targetImage == null || sprite == null)
             return;
 
         float width = sprite.rect.width;
         float height = sprite.rect.height;
-
         if (width <= 0f || height <= 0f)
             return;
 
-        float scale = Mathf.Min(
-            titleImageMaxSize.x / width,
-            titleImageMaxSize.y / height,
-            1f);
+        float scale = Mathf.Min(maxSize.x / width, maxSize.y / height);
+        targetImage.rectTransform.SetSizeWithCurrentAnchors(
+            RectTransform.Axis.Horizontal, width * scale);
+        targetImage.rectTransform.SetSizeWithCurrentAnchors(
+            RectTransform.Axis.Vertical, height * scale);
+    }
 
-        titleImage.rectTransform.SetSizeWithCurrentAnchors(
-            RectTransform.Axis.Horizontal,
-            width * scale);
+    public void SetPanelLayout(bool useVideoActionPanel)
+    {
+        usingVideoActionPanel = useVideoActionPanel;
 
-        titleImage.rectTransform.SetSizeWithCurrentAnchors(
-            RectTransform.Axis.Vertical,
-            height * scale);
+        if (informationTutorialPanelRect == null && informationTutorialPanel != null)
+            informationTutorialPanelRect = informationTutorialPanel.GetComponent<RectTransform>();
+
+        if (videoTutorialPanelRect == null && videoTutorialPanel != null)
+            videoTutorialPanelRect = videoTutorialPanel.GetComponent<RectTransform>();
+
+        // Exactly one tutorial panel is active at a time.
+        if (useVideoActionPanel)
+        {
+            if (informationTutorialPanel != null)
+                informationTutorialPanel.SetActive(false);
+
+            if (videoTutorialPanel != null)
+                videoTutorialPanel.SetActive(true);
+        }
+        else
+        {
+            if (videoTutorialPanel != null)
+                videoTutorialPanel.SetActive(false);
+
+            if (informationTutorialPanel != null)
+                informationTutorialPanel.SetActive(true);
+
+            // Information steps do not use the demonstration video.
+            if (tutorialVideoDisplay != null)
+                tutorialVideoDisplay.SetVideo(null);
+        }
     }
 
     public void SetContinueButtonLabel(string label)
     {
-        if (continueButtonText == null && continueButton != null)
-            continueButtonText = continueButton.GetComponentInChildren<TMP_Text>(true);
+        if (informationContinueButtonText == null && informationContinueButton != null)
+            informationContinueButtonText = informationContinueButton.GetComponentInChildren<TMP_Text>(true);
 
-        if (continueButtonText != null)
-            continueButtonText.text = label;
-    }
+        if (videoContinueButtonText == null && videoContinueButton != null)
+            videoContinueButtonText = videoContinueButton.GetComponentInChildren<TMP_Text>(true);
 
-    public float GetFadeToBlackDuration()
-    {
-        return Mathf.Max(0.05f, fadeToBlackDuration);
+        if (informationContinueButtonText != null)
+            informationContinueButtonText.text = label;
+
+        if (videoContinueButtonText != null)
+            videoContinueButtonText.text = label;
     }
 
     public IEnumerator FadeEverythingToBlack()
     {
         SetupFadeToBlackImage();
-
-        if (fadeToBlackImage == null)
-            yield break;
+        if (fadeToBlackImage == null) yield break;
 
         fadeToBlackImage.gameObject.SetActive(true);
+        fadeToBlackImage.transform.SetAsLastSibling();
         fadeToBlackImage.raycastTarget = true;
 
         Color c = fadeToBlackImage.color;
@@ -291,14 +405,11 @@ public class TutorialUI : MonoBehaviour
 
         float timer = 0f;
         float duration = Mathf.Max(0.05f, fadeToBlackDuration);
-
         while (timer < duration)
         {
             timer += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(timer / duration);
-            // Smoothstep makes the world and tutorial panel disappear together.
             t = t * t * (3f - 2f * t);
-
             c.a = t;
             fadeToBlackImage.color = c;
             yield return null;
@@ -313,43 +424,36 @@ public class TutorialUI : MonoBehaviour
         if (fadeToBlackImage == null)
         {
             Canvas canvas = GetComponentInParent<Canvas>();
-            if (canvas == null)
-                canvas = FindFirstObjectByType<Canvas>();
-
             if (canvas != null)
             {
-                GameObject fadeObject = new GameObject(
-                    "Tutorial Fade To Black",
-                    typeof(RectTransform),
-                    typeof(CanvasRenderer),
-                    typeof(Image));
+                GameObject go = new GameObject("Tutorial Fade To Black",
+                    typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                go.transform.SetParent(canvas.transform, false);
 
-                fadeObject.transform.SetParent(canvas.transform, false);
-
-                RectTransform rect = fadeObject.GetComponent<RectTransform>();
-                rect.anchorMin = Vector2.zero;
-                rect.anchorMax = Vector2.one;
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-
-                fadeToBlackImage = fadeObject.GetComponent<Image>();
-                fadeToBlackImage.color = new Color(0f, 0f, 0f, 0f);
-                fadeToBlackImage.raycastTarget = true;
-                fadeObject.transform.SetAsLastSibling();
+                RectTransform r = go.GetComponent<RectTransform>();
+                r.anchorMin = Vector2.zero;
+                r.anchorMax = Vector2.one;
+                r.offsetMin = Vector2.zero;
+                r.offsetMax = Vector2.zero;
+                fadeToBlackImage = go.GetComponent<Image>();
             }
         }
 
         if (fadeToBlackImage != null)
         {
-            Color c = fadeToBlackImage.color;
-            c.r = 0f;
-            c.g = 0f;
-            c.b = 0f;
-            c.a = 0f;
-            fadeToBlackImage.color = c;
+            fadeToBlackImage.color = new Color(0f, 0f, 0f, 0f);
             fadeToBlackImage.raycastTarget = false;
             fadeToBlackImage.gameObject.SetActive(false);
         }
+    }
+
+    public void SetTutorialVideo(VideoClip clip)
+    {
+        if (tutorialVideoDisplay == null)
+            tutorialVideoDisplay = GetComponentInChildren<TutorialVideoDisplay>(true);
+
+        if (tutorialVideoDisplay != null)
+            tutorialVideoDisplay.SetVideo(clip);
     }
 
     public void Show()
@@ -411,33 +515,40 @@ public class TutorialUI : MonoBehaviour
 
     private void UpdatePanelHoverScale()
     {
-        if (tutorialPanel == null || !tutorialPanel.gameObject.activeInHierarchy)
+        RectTransform activePanel = GetActiveTutorialPanelRect();
+
+        if (activePanel == null || !activePanel.gameObject.activeInHierarchy)
             return;
 
         bool hoveredNow = RectTransformUtility.RectangleContainsScreenPoint(
-            tutorialPanel,
+            activePanel,
             Input.mousePosition,
             GetTutorialCanvasCamera());
 
         panelHovered = hoveredNow;
 
         float targetMultiplier = panelHovered ? hoverScale : 1f;
-        Vector3 targetScale = baseScale * targetMultiplier;
+        Vector3 panelBaseScale = usingVideoActionPanel
+            ? videoPanelBaseScale
+            : informationPanelBaseScale;
+
+        Vector3 targetScale = panelBaseScale * targetMultiplier;
 
         float t = 1f - Mathf.Exp(-hoverScaleSpeed * Time.unscaledDeltaTime);
 
-        tutorialPanel.localScale = Vector3.Lerp(
-            tutorialPanel.localScale,
+        activePanel.localScale = Vector3.Lerp(
+            activePanel.localScale,
             targetScale,
             t);
     }
 
     private Camera GetTutorialCanvasCamera()
     {
-        if (tutorialPanel == null)
+        RectTransform activePanel = GetActiveTutorialPanelRect();
+        if (activePanel == null)
             return null;
 
-        Canvas canvas = tutorialPanel.GetComponentInParent<Canvas>();
+        Canvas canvas = activePanel.GetComponentInParent<Canvas>();
 
         if (canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay)
             return null;
@@ -445,13 +556,22 @@ public class TutorialUI : MonoBehaviour
         return canvas.worldCamera;
     }
 
+
+    private RectTransform GetActiveTutorialPanelRect()
+    {
+        return usingVideoActionPanel
+            ? videoTutorialPanelRect
+            : informationTutorialPanelRect;
+    }
+
     public void SetPanelScreenPosition(Vector2 screenPosition)
     {
-        if (tutorialPanel == null)
+        RectTransform activePanel = GetActiveTutorialPanelRect();
+
+        if (activePanel == null)
             return;
 
-        Canvas canvas =
-            tutorialPanel.GetComponentInParent<Canvas>();
+        Canvas canvas = activePanel.GetComponentInParent<Canvas>();
 
         RectTransform canvasRect =
             canvas != null
@@ -472,24 +592,22 @@ public class TutorialUI : MonoBehaviour
             cam,
             out Vector2 local))
         {
-            tutorialPanel.anchoredPosition = local;
+            activePanel.anchoredPosition = local;
         }
     }
 
     public Vector2 GetPanelScreenSize()
     {
-        if (tutorialPanel == null)
+        RectTransform activePanel = GetActiveTutorialPanelRect();
+
+        if (activePanel == null)
             return Vector2.zero;
 
-        Vector2 size = tutorialPanel.rect.size;
-
-        size.x *= Mathf.Abs(tutorialPanel.lossyScale.x);
-        size.y *= Mathf.Abs(tutorialPanel.lossyScale.y);
-
+        Vector2 size = activePanel.rect.size;
+        size.x *= Mathf.Abs(activePanel.lossyScale.x);
+        size.y *= Mathf.Abs(activePanel.lossyScale.y);
         return size;
     }
-
-
 
     private IEnumerator ShowRoutine()
     {

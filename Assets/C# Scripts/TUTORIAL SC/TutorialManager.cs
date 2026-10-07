@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Video;
 using UnityEngine.SceneManagement;
 
 public enum TutorialStepType
@@ -45,6 +46,14 @@ public class TutorialStep
     public bool pauseGame = true;
     public bool dimScreen = true;
     public TutorialPanelPosition panelPosition = TutorialPanelPosition.BottomLeft;
+
+    [Header("Panel Override")]
+    [Tooltip("Forces this step to use the Information tutorial panel, even if the Step Type is Wait For Action or Wait For Key.")]
+    public bool forceInformationPanel = false;
+
+    [Header("Tutorial Video")]
+    [Tooltip("Optional looping demonstration video for this step.")]
+    public VideoClip tutorialVideo;
     public Vector2 panelOffset;
 }
 
@@ -97,6 +106,9 @@ public class TutorialManager : MonoBehaviour
     [Range(0f, 1f)][SerializeField] private float actionStepCompleteVolume = 0.9f;
     [Range(0f, 1f)][SerializeField] private float tutorialCompleteVolume = 1f;
 
+    [Header("Tutorial Video")]
+    [SerializeField] private TutorialVideoDisplay tutorialVideoDisplay;
+
     [Header("Completion")]
     [SerializeField] private bool saveCompletion = true;
     [SerializeField] private string completionPlayerPrefsKey = "TutorialCompleted";
@@ -131,6 +143,9 @@ public class TutorialManager : MonoBehaviour
 
         if (worldCamera == null)
             worldCamera = Camera.main;
+
+        if (tutorialVideoDisplay == null)
+            tutorialVideoDisplay = FindFirstObjectByType<TutorialVideoDisplay>(FindObjectsInactive.Include);
 
         FindPlayerIfNeeded();
 
@@ -179,8 +194,14 @@ public class TutorialManager : MonoBehaviour
 
     private void Start()
     {
-        if (tutorialUI != null && tutorialUI.ContinueButton != null)
-            tutorialUI.ContinueButton.onClick.AddListener(ContinueCurrentStep);
+        if (tutorialUI != null)
+        {
+            if (tutorialUI.InformationContinueButton != null)
+                tutorialUI.InformationContinueButton.onClick.AddListener(ContinueCurrentStep);
+
+            if (tutorialUI.VideoContinueButton != null)
+                tutorialUI.VideoContinueButton.onClick.AddListener(ContinueCurrentStep);
+        }
 
         if (playOnStart)
             StartTutorial();
@@ -297,6 +318,14 @@ public class TutorialManager : MonoBehaviour
                 toursButtonController.EnableToursButton();
         }
 
+        // Information steps use the Information panel.
+        // WaitForAction / WaitForKey steps use the Video/Action panel.
+        bool useVideoActionPanel =
+            step.stepType != TutorialStepType.Information &&
+            !step.forceInformationPanel;
+
+        tutorialUI.SetPanelLayout(useVideoActionPanel);
+
         tutorialUI.SetContent(
             step.titleSprite,
             step.description,
@@ -307,6 +336,13 @@ public class TutorialManager : MonoBehaviour
 
         UpdatePresentation();
         tutorialUI.Show();
+
+        if (tutorialUI != null)
+            tutorialUI.SetTutorialVideo(
+                useVideoActionPanel ? step.tutorialVideo : null);
+        else if (tutorialVideoDisplay != null)
+            tutorialVideoDisplay.SetVideo(
+                useVideoActionPanel ? step.tutorialVideo : null);
 
         tutorialUI.SetContinueButtonLabel(
             index == steps.Length - 1

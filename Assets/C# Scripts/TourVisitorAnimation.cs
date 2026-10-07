@@ -87,10 +87,6 @@ public class TourVisitorAnimation : MonoBehaviour
     // =========================================================
 
     [Header("Player Sorting")]
-
-    [Tooltip("Reference sorting order used to decide the visitor's front/behind values. The visitor script does NOT change the player's sorting order.")]
-    [SerializeField] private int playerSortingOrder = 100;
-
     [Tooltip("Visitor sorting order when the player is above / behind the visitor.")]
     [SerializeField] private int visitorInFrontOrder = 110;
 

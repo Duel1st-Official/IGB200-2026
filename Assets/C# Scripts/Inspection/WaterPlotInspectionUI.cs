@@ -194,10 +194,6 @@ public class WaterPlotInspectionUI : MonoBehaviour, IInspectionPanel
     [Header("Mode Behaviour")]
     [SerializeField] private bool closeWhenChangingMode = true;
     [SerializeField] private bool closeWhenSelectionWheelOpens = true;
-
-    [Header("Debug")]
-    [SerializeField] private bool showDebugLogs = false;
-
     // =========================================================
     // PRIVATE
     // =========================================================
