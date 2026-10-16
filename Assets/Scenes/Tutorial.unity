@@ -1330,7 +1330,6 @@ MonoBehaviour:
   closeWhenClickingOutside: 1
   closeWhenChangingMode: 1
   closeWhenSelectionWheelOpens: 1
-  showDebugLogs: 0
 --- !u!114 &51997613
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31920,10 +31919,7 @@ MonoBehaviour:
     tutorialVideo: {fileID: 32900000, guid: cce31da783c825d4894e7c16abac1241, type: 3}
     panelOffset: {x: 0, y: 0}
   - titleSprite: {fileID: 657064511, guid: 6cdd97a61ba02fa4db491eeed811e9fa, type: 3}
-    description: 'Place a Farm Plot to begin restoring habitat
-
-      and attracting
-      prey for the Ghost Bat colony.'
+    description: Place a Farm Plot by usign the scroll wheel in build mode.
     stepType: 2
     requiredKey: 0
     requiredAction: 6
